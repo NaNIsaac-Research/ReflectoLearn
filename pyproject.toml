@@ -1,7 +1,45 @@
 [project]
 name = "reflectolearn"
 version = "0.1.0"
-description = "Add your description here"
+description = "XRR inverse modeling with Abeles streaming + CNN"
 readme = "README.md"
-requires-python = ">=3.14"
-dependencies = []
+requires-python = ">=3.11"
+dependencies = [
+    "torch",
+    "matplotlib",
+    "tqdm",
+    "pandas",
+    "seaborn",
+    "scipy",
+    "pydantic",
+    "pyyaml",
+    "loguru",
+    "tensorboard",
+    "typer",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[project.scripts]
+reflectolearn = "reflectolearn.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/reflectolearn"]
+
+# Windows(로컬 RTX): Blackwell sm_120 지원을 위해 CUDA 12.8 빌드 사용.
+# 다른 플랫폼(Colab/Linux 등)에서는 PyPI 기본 torch 휠을 그대로 사용.
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32'" }]
