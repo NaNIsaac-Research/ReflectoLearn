@@ -10,7 +10,7 @@ import torch
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_serializer, field_validator
 
-from reflectolearn.physics_utils import tth2q
+from reflectolearn.physics import tth2q
 
 # [min, max] 범위 타입
 Range = Annotated[list[float], Field(min_length=2, max_length=2)]

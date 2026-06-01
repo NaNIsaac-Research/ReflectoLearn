@@ -32,11 +32,11 @@ import torch
 from loguru import logger
 from tqdm import tqdm
 
-from reflectolearn.abeles import AbelesMatrix
-from reflectolearn.augmentations import XRRAugmentor
 from reflectolearn.config import Config
-from reflectolearn.generator import param_stats
+from reflectolearn.data import XRRAugmentor, param_stats
 from reflectolearn.model import XRRPhysicsModel
+from reflectolearn.physics import AbelesMatrix
+from reflectolearn.refine import RefineConfig, refine
 
 try:
     plt.style.use("seaborn-v0_8-whitegrid")
@@ -75,6 +75,8 @@ class XRREvaluator:
         n_samples: int = 2000,
         batch_size: int = 200,
         device: torch.device | None = None,
+        refine_enabled: bool = False,
+        refine_config: RefineConfig | None = None,
     ):
         self.checkpoint_path = Path(checkpoint_path)
         self.exp_dir = self.checkpoint_path.parent
@@ -85,6 +87,9 @@ class XRREvaluator:
         self.device = device or torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
+        # 물리 정밀화(refinement): AI 예측을 측정 곡선에 맞춰 보정할지 여부.
+        self.refine_enabled = refine_enabled
+        self.refine_config = refine_config or RefineConfig()
 
         self.model: XRRPhysicsModel | None = None
         self.simulator: AbelesMatrix | None = None
@@ -96,13 +101,16 @@ class XRREvaluator:
         # raw 저장
         self.q_grid: np.ndarray | None = None
         self.p_true: np.ndarray | None = None   # (N, 3) 물리값
-        self.p_pred: np.ndarray | None = None   # (N, 3) 물리값
+        self.p_pred: np.ndarray | None = None   # (N, 3) 물리값 (refine 시 정밀화된 최종값)
+        self.p_pred_ai: np.ndarray | None = None  # (N, 3) refine 전 AI 예측 (refine 시에만)
         self.r_meas: np.ndarray | None = None   # (N, Q) 측정 곡선 (augmented, linear)
         self.r_pred: np.ndarray | None = None   # (N, Q) 예측 파라미터 재시뮬 곡선 (linear)
         self.curve_logmse: np.ndarray | None = None
 
         self.results_df: pd.DataFrame | None = None
         self.summary: dict = {}
+        self.summary_ai: dict = {}               # refine 전 AI 예측 메트릭 (비교용)
+        self.refine_fom: dict | None = None      # {"before", "after"} 평균 LogMSE
 
     # ------------------------------------------------------------------ setup
     def setup(self):
@@ -175,13 +183,30 @@ class XRREvaluator:
         cfg, dev = self.config, self.device
         q = cfg.q_grid.to(dev)
 
-        pt, pp, rm, rp = [], [], [], []
-        logger.info(f"Inference on ~{self.n_samples} synthetic samples...")
+        pt, pp, pp_ai, rm, rp = [], [], [], [], []
+        fom_before_sum = fom_after_sum = 0.0
+        logger.info(f"Inference on ~{self.n_samples} synthetic samples"
+                    f"{' (+refine)' if self.refine_enabled else ''}...")
         for _ in tqdm(range(n_iters), desc="eval"):
             x, p_phys, sub_phys, R_meas = self._gen_eval_batch(self.batch_size)
 
             pred_norm = self.model(x.to(dev))             # (B,3) normalized
-            pred_phys = pred_norm * self.std + self.mean   # denormalize
+            pred_phys = pred_norm * self.std + self.mean   # denormalize (AI 초기 추정)
+
+            # [refine] AI 추정값을 측정 곡선에 맞춰 물리 정밀화 (XRefine 원리).
+            if self.refine_enabled:
+                pred_ai = pred_phys
+                mask = x[:, 1].to(dev)                      # 입력 2번째 채널 = 유효 q 마스크
+                log_r_obs = torch.log10(R_meas.to(dev).clamp_min(1e-15))
+                with torch.enable_grad():
+                    pred_phys, rinfo = refine(
+                        pred_ai.detach(), sub_phys, q, log_r_obs, mask,
+                        cfg.param_ranges, wavelength=cfg.simulation.wavelength,
+                        config=self.refine_config, device=dev,
+                    )
+                fom_before_sum += rinfo["fom_before"]
+                fom_after_sum += rinfo["fom_after"]
+                pp_ai.append(pred_ai.cpu())
 
             # 예측 파라미터 + 실제 substrate 로 재시뮬 (곡선 품질 측정)
             bs = pred_phys.shape[0]
@@ -204,24 +229,45 @@ class XRREvaluator:
         self.p_pred = torch.cat(pp).numpy()
         self.r_meas = torch.cat(rm).numpy()
         self.r_pred = torch.cat(rp).numpy()
+        if self.refine_enabled:
+            self.p_pred_ai = torch.cat(pp_ai).numpy()
+            self.refine_fom = {
+                "before": fom_before_sum / n_iters,
+                "after": fom_after_sum / n_iters,
+            }
 
         lt = np.log10(np.clip(self.r_meas, 1e-15, None))
         lp = np.log10(np.clip(self.r_pred, 1e-15, None))
         self.curve_logmse = np.mean((lt - lp) ** 2, axis=1)
 
     # --------------------------------------------------------------- metrics
-    def calculate_metrics(self):
-        logger.info("Computing metrics...")
-        rows = []
+    @staticmethod
+    def _param_summary(p_true: np.ndarray, p_pred: np.ndarray) -> dict:
+        """파라미터별 MAE/MAPE/RMSE/R2 요약."""
+        out = {}
         for i, name in enumerate(PARAM_NAMES):
-            vt, vp = self.p_true[:, i], self.p_pred[:, i]
+            vt, vp = p_true[:, i], p_pred[:, i]
             err = vp - vt
-            self.summary[name] = {
+            out[name] = {
                 "MAE": float(np.mean(np.abs(err))),
                 "MAPE": float(np.mean(np.abs(err) / (np.abs(vt) + 1e-9)) * 100),
                 "RMSE": float(np.sqrt(np.mean(err ** 2))),
                 "R2": float(1 - np.sum(err ** 2) / (np.sum((vt - vt.mean()) ** 2) + 1e-9)),
             }
+        return out
+
+    def calculate_metrics(self):
+        logger.info("Computing metrics...")
+        self.summary = self._param_summary(self.p_true, self.p_pred)
+        # refine 시: 비교를 위해 AI 예측(정밀화 전) 메트릭도 계산.
+        if self.p_pred_ai is not None:
+            self.summary_ai = self._param_summary(self.p_true, self.p_pred_ai)
+
+        rows = []
+        for name in PARAM_NAMES:
+            i = PARAM_NAMES.index(name)
+            vt, vp = self.p_true[:, i], self.p_pred[:, i]
+            err = vp - vt
             rows.append(pd.DataFrame({
                 "Sample_ID": np.arange(len(vt)),
                 "Parameter": name,
@@ -330,6 +376,19 @@ class XRREvaluator:
                         f"{v['RMSE']:>10.4f} | {v['R2']:>8.4f}")
         logger.info(f"curve LogMSE: mean={self.curve_logmse.mean():.4f} "
                     f"median={np.median(self.curve_logmse):.4f}")
+
+        # refine 전/후 비교 리포트
+        if self.summary_ai:
+            logger.info("\n[Refinement] AI vs Refined (MAE):")
+            cmp_header = f"{'Parameter':<12} | {'AI MAE':>10} | {'Refined MAE':>12} | {'Δ':>8}"
+            logger.info(cmp_header + "\n" + "-" * len(cmp_header))
+            for name in PARAM_NAMES:
+                ai, rf = self.summary_ai[name]["MAE"], self.summary[name]["MAE"]
+                logger.info(f"{name:<12} | {ai:>10.4f} | {rf:>12.4f} | {rf - ai:>+8.4f}")
+        if self.refine_fom:
+            b, a = self.refine_fom["before"], self.refine_fom["after"]
+            imp = (b - a) / b * 100 if b else 0.0
+            logger.info(f"[Refinement] fit FOM (LogMSE): {b:.5f} -> {a:.5f} ({imp:+.1f}%)")
 
     def evaluate_all(self):
         self.run_inference()

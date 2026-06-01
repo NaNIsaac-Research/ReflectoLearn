@@ -41,6 +41,12 @@ random film params ──► Abeles simulator ──► R(q) ──► augment (
   stopping, checkpointing with resume).
 - **Evaluation** — `evaluate.py`: metrics (MAE/MAPE/RMSE/R²) plus diagnostic
   plots (best/worst curves, learning curves, error-vs-value, parity).
+- **Refinement** — `refine.py` + `losses.py`: optional physics refinement that
+  takes the CNN prediction as an initial guess and fits it to the measured curve
+  by gradient descent (Adam) through the differentiable Abeles engine. Uses a
+  multi-stage schedule (scale/footprint → film structure → fine tuning),
+  per-stage loss functions (log-MSE, linear-MSE, correlation, Sobolev, hybrid),
+  and trust-region bounds anchored to the AI guess.
 
 ## Installation
 
@@ -85,6 +91,13 @@ uv run -m reflectolearn evaluate path/to/best.pt --n-samples 2000
 This writes `eval_summary.csv`, `eval_metrics_full.csv`, and `eval_*.png`
 reports to the checkpoint's directory.
 
+Add `--refine` to physics-refine each prediction against its measured curve and
+report AI-vs-refined metrics plus the fit FOM (LogMSE) before/after:
+
+```bash
+uv run -m reflectolearn evaluate path/to/best.pt --refine --trust-margin 0.4
+```
+
 ## Configuration
 
 All settings live in `config.yaml` (validated by Pydantic, see `config.py`).
@@ -106,16 +119,27 @@ Any config field can also be overridden from the command line with
 
 ```
 src/reflectolearn/
-├── cli.py            # Typer CLI: train / evaluate / config
-├── config.py         # Pydantic config schema + YAML I/O
-├── abeles.py         # Differentiable Abeles matrix physics engine
-├── generator.py      # Streaming synthetic-data generator
-├── augmentations.py  # Instrument augmentations
-├── model.py          # XRRPhysicsModel (1D CNN + Fourier features)
-├── train.py          # Trainer (train loop, checkpoints, early stopping)
-├── evaluate.py       # Metrics + diagnostic plots
-└── physics_utils.py  # Helpers (e.g. 2θ → q conversion)
+├── cli.py             # Typer CLI: train / evaluate / config
+├── config.py          # Pydantic config schema + YAML I/O
+├── model.py           # XRRPhysicsModel (1D CNN + Fourier features)
+├── train.py           # Trainer (train loop, checkpoints, early stopping)
+├── evaluate.py        # Metrics + diagnostic plots (+ optional refinement)
+├── physics/           # Forward-simulation physics
+│   ├── abeles.py      #   differentiable Abeles matrix engine
+│   └── utils.py       #   unit helpers (e.g. 2θ → q conversion)
+├── data/              # Data pipeline
+│   ├── augmentations.py  # instrument augmentations
+│   ├── generator.py      # streaming synthetic-data generator
+│   └── dataset.py        # legacy offline HDF5 dataset (unused)
+└── refine/            # Post-AI physics refinement
+    ├── losses.py      #   curve-fitting losses (log/linear/correlation/...)
+    └── pipeline.py    #   gradient-based multi-stage refiner
 ```
+
+Each subpackage re-exports its public API, so imports stay short — e.g.
+`from reflectolearn.physics import AbelesMatrix`,
+`from reflectolearn.data import get_xrr_dataloader`,
+`from reflectolearn.refine import refine`.
 
 ## Requirements
 

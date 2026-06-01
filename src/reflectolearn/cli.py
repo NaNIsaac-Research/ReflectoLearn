@@ -2,7 +2,6 @@
 
 Run via:  uv run -m reflectolearn   (or)  reflectolearn  (installed script)
 """
-
 from __future__ import annotations
 
 import ast
@@ -12,9 +11,8 @@ import torch
 import typer
 from loguru import logger
 
-from reflectolearn.augmentations import XRRAugmentor
 from reflectolearn.config import Config
-from reflectolearn.generator import get_xrr_dataloader, param_stats
+from reflectolearn.data import XRRAugmentor, get_xrr_dataloader, param_stats
 from reflectolearn.model import XRRPhysicsModel
 from reflectolearn.train import Trainer
 
@@ -124,9 +122,15 @@ def evaluate(
         None, "--stats", help="stats.pt. 미지정 시 checkpoint 옆 stats.pt 사용."),
     n_samples: int = typer.Option(2000, "--n-samples", help="평가 합성 샘플 수."),
     batch_size: int = typer.Option(200, "--batch-size", help="추론 배치 크기."),
+    refine: bool = typer.Option(
+        False, "--refine/--no-refine",
+        help="AI 예측을 측정 곡선에 맞춰 물리 정밀화(refinement)하고 전/후 비교."),
+    trust_margin: float = typer.Option(
+        0.4, "--trust-margin", help="refine 시 AI 추정값 기준 trust-region 반폭 비율."),
 ):
     """체크포인트 종합 평가: 메트릭(MAE/MAPE/RMSE/R2) + CSV + 시각화 리포트."""
     from reflectolearn.evaluate import XRREvaluator
+    from reflectolearn.refine import RefineConfig
 
     # checkpoint 미지정 시: config의 save_dir(=save_root/experiment_name)/best.pt 를 사용.
     if checkpoint is None:
@@ -153,6 +157,8 @@ def evaluate(
         n_samples=n_samples,
         batch_size=batch_size,
         device=cfg.device,
+        refine_enabled=refine,
+        refine_config=RefineConfig(trust_margin=trust_margin) if refine else None,
     )
     evaluator.setup()
     evaluator.evaluate_all()

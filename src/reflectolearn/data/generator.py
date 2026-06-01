@@ -5,9 +5,9 @@ from __future__ import annotations
 import torch
 from torch.utils.data import DataLoader, IterableDataset
 
-from reflectolearn.abeles import AbelesMatrix
-from reflectolearn.augmentations import XRRAugmentor
 from reflectolearn.config import Config
+from reflectolearn.data.augmentations import XRRAugmentor
+from reflectolearn.physics import AbelesMatrix
 
 LOG_FLOOR = -15.0  # "no data" value for masked (unmeasured) angles (exp07 표현)
 

@@ -1,4 +1,4 @@
-experiment_name: C:\WorkSpace\05_Resources\Data\XRR_AI\reflectolearn\exp
+experiment_name: C:\WorkSpace\05_Resources\Data\XRR_AI\reflectolearn\exp2
 save_root: C:\WorkSpace\05_Resources\Data\XRR_AI\reflectolearn
 device: cuda
 param_ranges:
