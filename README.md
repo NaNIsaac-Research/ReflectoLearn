@@ -27,9 +27,15 @@ uv run reflectolearn train --config config.yaml --set training.lr=1e-3
 uv run reflectolearn train --config config.yaml --resume path/to/last.pt
 uv run reflectolearn evaluate path/to/best.pt --n-samples 2000
 uv run reflectolearn evaluate path/to/best.pt --refine --trust-margin 0.4
+uv run reflectolearn predict measured.txt -k path/to/best.pt       # real curve, 2 columns (2θ or q, intensity)
+uv run reflectolearn tune --config config.yaml --trials 30         # Optuna search -> config_best.yaml
 ```
 
 Set `save_root` and `experiment_name` in the config first; the default `save_root` is a local Windows path. Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to `save_root/experiment_name`. `evaluate` simulates fresh test curves and writes `eval_summary.csv`, `eval_metrics_full.csv` and `eval_*.png` (parity, error-vs-value, best/worst fits, learning curves) next to the checkpoint. With `--refine` it also reports AI-vs-refined metrics and the log-MSE before and after fitting.
+
+`predict` runs one measured file (`--x-axis tth` or `q`) through the same preprocessing as training, refines by default (`--no-refine` to skip; substrate fixed to the middle of the `substrate` range) and writes `<name>_predict.png` and `<name>_predict.txt` next to the input or to `--out-dir`. `tune` runs short proxy trainings per trial, saves the best config to `config_best.yaml`, the trial table to `config_best_trials.csv` and a resumable study to `config_best_study.db`; `-p section.key` restricts the search to given parameters.
+
+`uv run python -m reflectolearn.report.figures` regenerates the slide figures (`domain_randomization.png`, `sim_to_real.png`, `model_architecture.png`, `refine.png`, `refine_process.png`) in the current directory; `refine.png` needs a trained checkpoint and reads a measured curve from a hard-coded local path (`DEFAULT_REFINE_DATA`).
 
 ## Configuration
 
@@ -48,14 +54,17 @@ Set `save_root` and `experiment_name` in the config first; the default `save_roo
 
 ```
 src/reflectolearn/
-├── cli.py          Typer CLI: config / train / evaluate
+├── cli.py          Typer CLI: config / train / tune / evaluate / predict
 ├── config.py       config schema and YAML I/O
 ├── model.py        XRRPhysicsModel (1D CNN + optional Fourier features of q)
 ├── train.py        Trainer (AdamW, ReduceLROnPlateau, early stopping, checkpoints)
 ├── evaluate.py     metrics (MAE/MAPE/RMSE/R²) and plots
+├── predict.py      inference + refinement on measured curves
+├── tune.py         Optuna hyperparameter search
 ├── physics/        abeles.py (AbelesMatrix), utils.py (2θ → q)
 ├── data/           generator.py (streaming dataset), augmentations.py (XRRAugmentor)
-└── refine/         pipeline.py (refine), losses.py (log/linear MSE, correlation, Sobolev)
+├── refine/         pipeline.py (refine), losses.py (log/linear MSE, correlation, Sobolev)
+└── report/         figures.py (slide figures)
 ```
 
 ## Citation
