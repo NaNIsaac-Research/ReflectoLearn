@@ -3,6 +3,7 @@ name = "reflectolearn"
 version = "0.1.0"
 description = "XRR inverse modeling with Abeles streaming + CNN"
 readme = "README.md"
+authors = [{ name = "Isaac Yong", email = "isaacyong@naver.com" }]
 requires-python = ">=3.11"
 dependencies = [
     "torch",
@@ -17,6 +18,10 @@ dependencies = [
     "tensorboard",
     "typer",
 ]
+
+[project.urls]
+Homepage = "https://github.com/NaNIsaac/ReflectoLearn"
+Repository = "https://github.com/NaNIsaac/ReflectoLearn"
 
 [dependency-groups]
 dev = [

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "ReflectoLearn: XRR inverse modeling with Abeles streaming + CNN"
+authors:
+  - family-names: Yong
+    given-names: Isaac
+    email: isaacyong@naver.com
+    affiliation: "Sogang University"
+repository-code: "https://github.com/NaNIsaac/ReflectoLearn"
+abstract: "Trains a 1D convolutional neural network to solve the X-ray reflectivity (XRR) inverse problem, predicting thin-film thickness, roughness and scattering length density from R(q). Training data is generated on the fly by a vectorized, differentiable Abeles matrix simulator with instrument augmentations."
+keywords:
+  - "X-ray reflectivity"
+  - "XRR"
+  - "deep learning"
+  - "CNN"
+  - "Abeles matrix"
+  - "thin films"
+version: "0.1.0"
+date-released: "2026-06-01"
