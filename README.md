@@ -2,7 +2,7 @@
 
 A 1D CNN that predicts single-layer thin-film parameters (thickness, roughness, SLD) from X-ray reflectivity (XRR) curves, trained on synthetic data from a differentiable Abeles simulator in PyTorch.
 
-Training data is generated on the fly: film and substrate parameters are sampled, `R(q)` is computed by a batched Abeles transfer-matrix engine (Névot-Croce roughness, complex SLD, optional beam footprint), and instrument effects are applied per batch (intensity scale, background, Poisson noise, resolution smearing, footprint, masked angles). No dataset files are needed.
+Training data is generated on the fly: film and substrate parameters are sampled, `R(q)` is computed by a batched Abeles transfer-matrix engine (Névot-Croce roughness, complex SLD, optional beam footprint), and instrument effects are applied per batch (intensity scale, background, Poisson noise, resolution smearing, footprint, masked angles). The forward model also adds domain-randomized nuisances for sim-to-real robustness, which are not predicted: a q-axis zero offset (`tth_offset`), a native-oxide top layer and the Cu Kα2 doublet; each is set under `augmentation` and off at 0. No dataset files are needed.
 
 An optional refinement step takes the CNN prediction as the starting point and fits it to the curve by gradient descent through the same Abeles engine, in stages (scale/footprint, film structure, fine tuning) within trust-region bounds around the CNN guess.
 
@@ -42,7 +42,7 @@ Set `save_root` and `experiment_name` in the config first; the default `save_roo
 | `simulation`   | wavelength, q-range, number of q points |
 | `model`        | CNN width/depth, MLP size, dropout, Fourier features |
 | `training`     | batch size, learning rate, epochs, steps per epoch, patience |
-| `augmentation` | instrument effects |
+| `augmentation` | instrument effects; forward-model randomization (q offset, oxide, Kα2) |
 
 ## Structure
 
