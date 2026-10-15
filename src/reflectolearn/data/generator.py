@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import torch
+from torch import Tensor
 from torch.utils.data import DataLoader, IterableDataset
 
 from reflectolearn.config import Config
 from reflectolearn.data.augmentations import XRRAugmentor
-from reflectolearn.physics import AbelesMatrix
+from reflectolearn.physics import AbelesMatrix, apply_tth_offset
 
-LOG_FLOOR = -15.0  # "no data" value for masked (unmeasured) angles (exp07 표현)
+LOG_FLOOR = -15.0  # "no data" value for masked (unmeasured) angles (exp07 convention)
 
 
 def param_stats(config: Config) -> dict[str, torch.Tensor]:
@@ -32,6 +33,69 @@ def param_stats(config: Config) -> dict[str, torch.Tensor]:
 
 def _sample_uniform(lo: float, hi: float, n: int, device) -> torch.Tensor:
     return torch.rand(n, device=device) * (hi - lo) + lo
+
+
+def simulate_reflectivity(
+    config: Config,
+    q: Tensor,
+    thickness: Tensor,
+    roughness: Tensor,
+    sld: Tensor,
+    sub_sld: Tensor,
+    sub_rough: Tensor,
+    device,
+) -> Tensor:
+    """Map film parameters to reflectivity R(q) with forward-model domain randomization.
+
+    For robustness on real measurements, the following are applied per-sample
+    at simulation time as nuisance effects (not prediction targets):
+      * tth_offset : q-axis zero-point (alignment) error
+      * oxide      : native oxide / surface layer (nuisance layer between ambient and film)
+      * Kalpha2    : Cu K-alpha2 doublet (weighted sum)
+
+    Each effect is controlled by the range/probability in config.augmentation and
+    is disabled when set to 0. All input film parameters are (B,) tensors; the
+    return is (B, Q) linear R.
+    """
+    aug = config.augmentation
+    B = thickness.shape[0]
+    zeros = torch.zeros(B, device=device)
+
+    # Native oxide (nuisance). Always build a 4-medium stack; when no oxide is
+    # present, set thickness 0 + SLD=film so the layer is inert (identical to the
+    # original single-film case).
+    has_ox = (torch.rand(B, device=device) < aug.oxide_prob).float()
+    ox_thk = _sample_uniform(*aug.oxide_thickness, B, device) * has_ox
+    ox_sld = torch.where(has_ox > 0, _sample_uniform(*aug.oxide_sld, B, device), sld)
+    ox_rough = _sample_uniform(*aug.oxide_roughness, B, device)
+    # top = ambient/top-layer interface, mid = top-layer/film interface.
+    top_rough = torch.where(has_ox > 0, ox_rough, roughness)   # oxide surface or film surface
+    mid_rough = torch.where(has_ox > 0, roughness, zeros)      # oxide/film interface (predicted roughness)
+
+    # Media: [ambient, oxide(top), film, substrate]  (N=4)
+    sld_tensor = torch.stack([zeros, ox_sld, sld, sub_sld], dim=1)            # (B, 4)
+    thickness_tensor = torch.stack([zeros, ox_thk, thickness], dim=1)         # (B, 3)
+    roughness_tensor = torch.stack([top_rough, mid_rough, sub_rough], dim=1)  # (B, 3)
+
+    # q-axis zero-point error
+    wl1 = config.simulation.wavelength
+    if aug.tth_offset[0] != 0.0 or aug.tth_offset[1] != 0.0:
+        offset = _sample_uniform(*aug.tth_offset, B, device).unsqueeze(1)     # (B, 1)
+        q_eff = apply_tth_offset(q, offset, wl1)                              # (B, Q)
+    else:
+        q_eff = q
+
+    abeles = AbelesMatrix(device=device)
+    R = abeles.forward(q_eff, thickness_tensor, roughness_tensor, sld_tensor, wavelength=wl1)
+
+    # Cu Kalpha2 doublet: at a given angle, lambda2 photons map to q2 = q*(lambda1/lambda2) -> weighted sum.
+    if aug.kalpha2_ratio > 0.0:
+        ratio = _sample_uniform(0.0, aug.kalpha2_ratio, B, device).unsqueeze(1)  # (B, 1)
+        q2 = q_eff * (wl1 / aug.kalpha2_wavelength)
+        R2 = abeles.forward(q2, thickness_tensor, roughness_tensor, sld_tensor, wavelength=wl1)
+        R = (R + ratio * R2) / (1.0 + ratio)
+
+    return torch.nan_to_num(R.to(torch.float32), nan=1e-15).clamp_min(1e-15)
 
 
 def generate_synthetic_batch(
@@ -61,23 +125,8 @@ def generate_synthetic_batch(
     sub_sld = _sample_uniform(sub.sld[0], sub.sld[1], batch_size, device)
     sub_rough = _sample_uniform(sub.roughness[0], sub.roughness[1], batch_size, device)
 
-    zeros = torch.zeros(batch_size, device=device)
-    # SLD: (B, 3) = [0(ambient), film, substrate]
-    sld_tensor = torch.stack([zeros, sld, sub_sld], dim=1)
-    # thickness: (B, 2) = [0(ambient), film]
-    thickness_tensor = torch.stack([zeros, thickness], dim=1)
-    # roughness: (B, 2) = [film surface, film/substrate interface]
-    roughness_tensor = torch.stack([roughness, sub_rough], dim=1)
-
-    abeles = AbelesMatrix(device=device)
-    R = abeles.forward(
-        q,
-        thickness_tensor,
-        roughness_tensor,
-        sld_tensor,
-        wavelength=config.simulation.wavelength,
-    )
-    R = torch.nan_to_num(R.to(torch.float32), nan=1e-15).clamp_min(1e-15)
+    # Forward model (+ oxide/tth-offset/Kalpha2 domain randomization) -> linear R.
+    R = simulate_reflectivity(config, q, thickness, roughness, sld, sub_sld, sub_rough, device)
 
     # Apply realistic instrument augmentations on linear R.
     # The augmentor returns a validity mask (0 = angle not measured).

@@ -1,19 +1,22 @@
 """
 ReflectoLearn Evaluator
 =======================
-합성 테스트셋에서 학습된 XRRPhysicsModel의 성능을 분석하고 리포트를 생성한다.
+Analyze the performance of a trained XRRPhysicsModel on a synthetic test set and
+generate a report.
 
-PINN(XRefine) 평가기에서 아이디어를 가져오되, 본 프로젝트 구조에 맞게 단순화:
-  - ParamSet 없음 -> 타깃은 정규화된 (B, 3) 텐서 [thickness, roughness, sld]
-  - 모델 출력은 단일 (B, 3) (tuple/fixed_values 없음)
-  - 예측 파라미터로 Abeles 재시뮬레이션하여 곡선 품질(best/worst)을 평가
+Ideas are borrowed from the PINN (XRefine) evaluator but simplified for this
+project's structure:
+  - No ParamSet -> target is a normalized (B, 3) tensor [thickness, roughness, sld]
+  - Model output is a single (B, 3) (no tuple/fixed_values)
+  - Re-simulate with Abeles using the predicted parameters to assess curve quality
+    (best/worst)
 
-생성물 (모두 checkpoint 부모 디렉터리에 저장):
-  - eval_metrics_full.csv       샘플별 true/pred/error
-  - eval_summary.csv            파라미터별 MAE/MAPE/RMSE/R2
-  - eval_1_best_worst.png       best/worst 곡선 + 파라미터 표
+Outputs (all saved in the checkpoint's parent directory):
+  - eval_metrics_full.csv       per-sample true/pred/error
+  - eval_summary.csv            per-parameter MAE/MAPE/RMSE/R2
+  - eval_1_best_worst.png       best/worst curves + parameter table
   - eval_2_learning_curves.png  train/val loss, lr
-  - eval_3_error_vs_value.png   물리값 대비 오차(편향) 산점도
+  - eval_3_error_vs_value.png   error (bias) vs physical value scatter
   - eval_4_parity.png           true vs pred parity (R2)
 """
 from __future__ import annotations
@@ -22,7 +25,7 @@ from pathlib import Path
 
 import matplotlib
 
-matplotlib.use("Agg")  # 헤드리스/윈도우 무관 저장 전용 백엔드
+matplotlib.use("Agg")  # headless save-only backend, independent of any window system
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,7 +36,7 @@ from loguru import logger
 from tqdm import tqdm
 
 from reflectolearn.config import Config
-from reflectolearn.data import XRRAugmentor, param_stats
+from reflectolearn.data import XRRAugmentor, param_stats, simulate_reflectivity
 from reflectolearn.model import XRRPhysicsModel
 from reflectolearn.physics import AbelesMatrix
 from reflectolearn.refine import RefineConfig, refine
@@ -49,12 +52,13 @@ SHORT = {"thickness": "d", "roughness": "sig", "sld": "Rho"}
 
 
 def _build_model(cfg: Config) -> XRRPhysicsModel:
-    """cli._build_model 과 동일 (순환 import 회피용 복제)."""
+    """Same as cli._build_model (duplicated to avoid a circular import)."""
     m = cfg.model
     return XRRPhysicsModel(
         q_len=cfg.simulation.q_points,
         use_fourier=m.use_fourier,
         fourier_scale=m.fourier_scale,
+        fourier_features=m.fourier_features,
         n_channels=m.n_channels,
         depth=m.depth,
         mlp_hidden=m.mlp_hidden,
@@ -87,7 +91,7 @@ class XRREvaluator:
         self.device = device or torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
-        # 물리 정밀화(refinement): AI 예측을 측정 곡선에 맞춰 보정할지 여부.
+        # Physics refinement: whether to refine the AI prediction against the measured curve.
         self.refine_enabled = refine_enabled
         self.refine_config = refine_config or RefineConfig()
 
@@ -98,26 +102,26 @@ class XRREvaluator:
         self.mean: torch.Tensor | None = None
         self.std: torch.Tensor | None = None
 
-        # raw 저장
+        # raw storage
         self.q_grid: np.ndarray | None = None
-        self.p_true: np.ndarray | None = None   # (N, 3) 물리값
-        self.p_pred: np.ndarray | None = None   # (N, 3) 물리값 (refine 시 정밀화된 최종값)
-        self.p_pred_ai: np.ndarray | None = None  # (N, 3) refine 전 AI 예측 (refine 시에만)
-        self.r_meas: np.ndarray | None = None   # (N, Q) 측정 곡선 (augmented, linear)
-        self.r_pred: np.ndarray | None = None   # (N, Q) 예측 파라미터 재시뮬 곡선 (linear)
+        self.p_true: np.ndarray | None = None   # (N, 3) physical values
+        self.p_pred: np.ndarray | None = None   # (N, 3) physical values (final refined values when refining)
+        self.p_pred_ai: np.ndarray | None = None  # (N, 3) AI prediction before refine (only when refining)
+        self.r_meas: np.ndarray | None = None   # (N, Q) measured curve (augmented, linear)
+        self.r_pred: np.ndarray | None = None   # (N, Q) re-simulated curve from predicted params (linear)
         self.curve_logmse: np.ndarray | None = None
 
         self.results_df: pd.DataFrame | None = None
         self.summary: dict = {}
-        self.summary_ai: dict = {}               # refine 전 AI 예측 메트릭 (비교용)
-        self.refine_fom: dict | None = None      # {"before", "after"} 평균 LogMSE
+        self.summary_ai: dict = {}               # pre-refine AI prediction metrics (for comparison)
+        self.refine_fom: dict | None = None      # {"before", "after"} mean LogMSE
 
     # ------------------------------------------------------------------ setup
     def setup(self):
         logger.info(f"Evaluator init: {self.checkpoint_path}")
         ckpt = torch.load(self.checkpoint_path, map_location=self.device, weights_only=False)
 
-        self.config.q_grid  # property 캐시 트리거 불필요하지만 검증
+        self.config.q_grid  # trigger property cache (return value intentionally unused)
         self.q_grid = self.config.q_grid.cpu().numpy()
 
         self.model = _build_model(self.config).to(self.device)
@@ -128,7 +132,7 @@ class XRREvaluator:
         self.augmentor = XRRAugmentor(self.config, self.config.q_grid)
         self.history = ckpt.get("history", {})
 
-        # 정규화 통계: stats.pt 우선, 없으면 config에서 해석적으로 재계산
+        # Normalization stats: prefer stats.pt, otherwise recompute analytically from config
         if self.stats_path and self.stats_path.exists():
             st = torch.load(self.stats_path, map_location=self.device)
         else:
@@ -140,7 +144,7 @@ class XRREvaluator:
     # ------------------------------------------------------------- inference
     @torch.no_grad()
     def _gen_eval_batch(self, bs: int):
-        """generator 로직을 미러링하되 평가에 필요한 raw 도 함께 반환."""
+        """Mirror the generator logic but also return the raw data needed for evaluation."""
         cfg, dev = self.config, self.device
         q = cfg.q_grid.to(dev)
         pr, sub = cfg.param_ranges, cfg.substrate
@@ -151,22 +155,14 @@ class XRREvaluator:
         sub_sld = _rand(*sub.sld, bs, dev)
         sub_rough = _rand(*sub.roughness, bs, dev)
 
-        zeros = torch.zeros(bs, device=dev)
-        sld_tensor = torch.stack([zeros, sld, sub_sld], dim=1)
-        thickness_tensor = torch.stack([zeros, thickness], dim=1)
-        roughness_tensor = torch.stack([roughness, sub_rough], dim=1)
+        # Same forward model as the training generator (includes oxide/tth-offset/Kalpha2).
+        R_clean = simulate_reflectivity(cfg, q, thickness, roughness, sld, sub_sld, sub_rough, dev)
 
-        R_clean = self.simulator.forward(
-            q, thickness_tensor, roughness_tensor, sld_tensor,
-            wavelength=cfg.simulation.wavelength,
-        ).to(torch.float32)
-        R_clean = torch.nan_to_num(R_clean, nan=1e-15).clamp_min(1e-15)
-
-        # 측정 곡선 = augmentation 적용 (mask = 유효 q 영역)
+        # Measured curve = augmentation applied (mask = valid-q region)
         R_meas, mask = self.augmentor.forward(q, R_clean)
         R_meas = R_meas.clamp_min(1e-15)
 
-        # 모델 입력 전처리 (학습과 동일)
+        # Model input preprocessing (same as training)
         LOG_FLOOR = -15.0
         R_max = R_meas.amax(dim=1, keepdim=True).clamp_min(1e-30)
         R_log = torch.log10((R_meas / R_max).clamp_min(1e-15)).clamp_max(0.0)
@@ -191,12 +187,12 @@ class XRREvaluator:
             x, p_phys, sub_phys, R_meas = self._gen_eval_batch(self.batch_size)
 
             pred_norm = self.model(x.to(dev))             # (B,3) normalized
-            pred_phys = pred_norm * self.std + self.mean   # denormalize (AI 초기 추정)
+            pred_phys = pred_norm * self.std + self.mean   # denormalize (initial AI estimate)
 
-            # [refine] AI 추정값을 측정 곡선에 맞춰 물리 정밀화 (XRefine 원리).
+            # [refine] Physics-refine the AI estimate against the measured curve (XRefine principle).
             if self.refine_enabled:
                 pred_ai = pred_phys
-                mask = x[:, 1].to(dev)                      # 입력 2번째 채널 = 유효 q 마스크
+                mask = x[:, 1].to(dev)                      # input channel 2 = valid-q mask
                 log_r_obs = torch.log10(R_meas.to(dev).clamp_min(1e-15))
                 with torch.enable_grad():
                     pred_phys, rinfo = refine(
@@ -208,7 +204,7 @@ class XRREvaluator:
                 fom_after_sum += rinfo["fom_after"]
                 pp_ai.append(pred_ai.cpu())
 
-            # 예측 파라미터 + 실제 substrate 로 재시뮬 (곡선 품질 측정)
+            # Re-simulate with predicted params + true substrate (to measure curve quality)
             bs = pred_phys.shape[0]
             zeros = torch.zeros(bs, device=dev)
             sub_sld, sub_rough = sub_phys[:, 0], sub_phys[:, 1]
@@ -243,7 +239,7 @@ class XRREvaluator:
     # --------------------------------------------------------------- metrics
     @staticmethod
     def _param_summary(p_true: np.ndarray, p_pred: np.ndarray) -> dict:
-        """파라미터별 MAE/MAPE/RMSE/R2 요약."""
+        """Per-parameter MAE/MAPE/RMSE/R2 summary."""
         out = {}
         for i, name in enumerate(PARAM_NAMES):
             vt, vp = p_true[:, i], p_pred[:, i]
@@ -259,7 +255,7 @@ class XRREvaluator:
     def calculate_metrics(self):
         logger.info("Computing metrics...")
         self.summary = self._param_summary(self.p_true, self.p_pred)
-        # refine 시: 비교를 위해 AI 예측(정밀화 전) 메트릭도 계산.
+        # When refining: also compute pre-refine AI prediction metrics for comparison.
         if self.p_pred_ai is not None:
             self.summary_ai = self._param_summary(self.p_true, self.p_pred_ai)
 
@@ -377,7 +373,7 @@ class XRREvaluator:
         logger.info(f"curve LogMSE: mean={self.curve_logmse.mean():.4f} "
                     f"median={np.median(self.curve_logmse):.4f}")
 
-        # refine 전/후 비교 리포트
+        # Before/after refine comparison report
         if self.summary_ai:
             logger.info("\n[Refinement] AI vs Refined (MAE):")
             cmp_header = f"{'Parameter':<12} | {'AI MAE':>10} | {'Refined MAE':>12} | {'Δ':>8}"

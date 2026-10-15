@@ -17,6 +17,7 @@ dependencies = [
     "loguru",
     "tensorboard",
     "typer",
+    "optuna",
 ]
 
 [project.urls]

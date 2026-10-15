@@ -1,13 +1,12 @@
 """Curve-fitting loss functions for physics refinement.
 
-XRefine refine.losses 의 원리를 우리 (B, Q) 텐서 규약에 맞게 이식한 것.
-모든 손실은 동일한 시그니처를 따른다:
+All losses follow the same signature over the (B, Q) tensor convention:
 
-    r_sim:     (B, Q) 시뮬레이션 반사도 (linear, > 0)
-    log_r_obs: (B, Q) 관측 반사도의 log10 값
-    mask:      (B, Q) 유효 q 마스크 (1 = 유효, 0 = 무시; float/bool 모두 허용)
+    r_sim:     (B, Q) simulated reflectivity (linear, > 0)
+    log_r_obs: (B, Q) log10 of observed reflectivity
+    mask:      (B, Q) valid-q mask (1 = valid, 0 = ignore; float or bool accepted)
 
-반환값은 배치에 대한 스칼라 손실(샘플별 마스크 평균 -> 배치 평균).
+Returns a scalar loss over the batch (per-sample masked mean -> batch mean).
 """
 from __future__ import annotations
 
@@ -22,26 +21,26 @@ _EPS = 1e-12
 
 
 def _masked_mean(err: Tensor, mask: Tensor) -> Tensor:
-    """샘플별로 마스크 영역 평균을 낸 뒤 배치 평균. (B, Q) -> scalar."""
+    """Mean over the masked region per sample, then batch mean. (B, Q) -> scalar."""
     m = mask.to(err.dtype)
     per_sample = (err * m).sum(-1) / m.sum(-1).clamp_min(1.0)
     return per_sample.mean()
 
 
 def log_mse_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
-    """log10 공간 MSE. 거칠기/감쇠 같은 동적 영역(fringe) 형상에 민감."""
+    """MSE in log10 space. Sensitive to dynamic-range (fringe) shape such as roughness/attenuation."""
     log_r_sim = torch.log10(r_sim.clamp_min(_EPS))
     return _masked_mean((log_r_sim - log_r_obs) ** 2, mask)
 
 
 def linear_mse_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
-    """선형 공간 MSE. 임계각 부근의 절대 강도(scale)에 민감."""
+    """MSE in linear space. Sensitive to absolute intensity (scale) near the critical angle."""
     r_obs = 10.0 ** log_r_obs
     return _masked_mean((r_sim - r_obs) ** 2, mask)
 
 
 def correlation_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
-    """1 - Pearson 상관. 스케일/감쇠에 불변이라 fringe 주파수(주기) 정합에 강함."""
+    """1 - Pearson correlation. Invariant to scale/attenuation, so strong at matching fringe frequency (period)."""
     log_r_sim = torch.log10(r_sim.clamp_min(_EPS))
     m = mask.to(log_r_sim.dtype)
     n = m.sum(-1).clamp_min(1.0)
@@ -55,7 +54,7 @@ def correlation_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
 
 
 def log_gradient_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
-    """값 MSE + 기울기(Sobolev) MSE. 곡선이 밋밋해지는(기울기 소실) 해를 강하게 벌점."""
+    """Value MSE + gradient (Sobolev) MSE. Strongly penalizes solutions that flatten the curve (vanishing slope)."""
     log_r_sim = torch.log10(r_sim.clamp_min(_EPS))
     diff_sim = log_r_sim[:, 1:] - log_r_sim[:, :-1]
     diff_obs = log_r_obs[:, 1:] - log_r_obs[:, :-1]
@@ -66,11 +65,11 @@ def log_gradient_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
 
 
 def hybrid_linear_log_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
-    """선형(강도/임계각) + log(fringe/동적범위) 혼합 (linear:log = 20:1)."""
+    """Mix of linear (intensity/critical angle) + log (fringe/dynamic range), linear:log = 20:1."""
     return 20.0 * linear_mse_loss(r_sim, log_r_obs, mask) + log_mse_loss(r_sim, log_r_obs, mask)
 
 
-# Presets (이름 -> 함수). refine.RefineStage.loss 에서 이 키로 참조한다.
+# Presets (name -> function). Referenced by these keys in refine.RefineStage.loss.
 LOG_MSE = log_mse_loss
 LINEAR_MSE = linear_mse_loss
 CORRELATION = correlation_loss

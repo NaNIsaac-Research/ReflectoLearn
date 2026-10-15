@@ -11,6 +11,7 @@ from reflectolearn.data.generator import (
     generate_synthetic_batch,
     get_xrr_dataloader,
     param_stats,
+    simulate_reflectivity,
 )
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "generate_synthetic_batch",
     "get_xrr_dataloader",
     "param_stats",
+    "simulate_reflectivity",
     "LOG_FLOOR",
 ]

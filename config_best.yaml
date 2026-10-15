@@ -1,0 +1,79 @@
+experiment_name: C:\WorkSpace\05_Resources\Data\XRR_AI\reflectolearn\exp2
+save_root: C:\WorkSpace\05_Resources\Data\XRR_AI\reflectolearn
+device: cuda
+param_ranges:
+  thickness:
+  - 10.0
+  - 1200.0
+  roughness:
+  - 0.0
+  - 15.0
+  sld:
+  - 5.0
+  - 100.0
+substrate:
+  sld:
+  - 18.0
+  - 22.0
+  roughness:
+  - 1.0
+  - 6.0
+simulation:
+  wavelength: 1.54
+  q_min_tth: 0.05
+  q_max_tth: 15.0
+  q_points: 2000
+  n_samples: 50000
+model:
+  use_fourier: true
+  fourier_scale: 12.439141382061965
+  fourier_features: 32
+  n_channels: 48
+  depth: 7
+  mlp_hidden: 256
+  dropout: 0.06618781769731123
+training:
+  batch_size: 256
+  lr: 0.001371697620470111
+  weight_decay: 1.8079961330936328e-05
+  epochs: 150
+  steps_per_epoch: 200
+  val_steps: 20
+  patience: 50
+augmentation:
+  prob: 0.9
+  i0:
+  - 0.8
+  - 1.2
+  bkg:
+  - -8.0
+  - -5.0
+  poisson_log_scale:
+  - 5.0
+  - 8.0
+  intensity_noise_scale: 0.25
+  res_sigma_range:
+  - 0.0001
+  - 0.006
+  do_footprint: true
+  beam_width_range:
+  - 0.005
+  - 0.015
+  sample_len_range:
+  - 5.0
+  - 30.0
+  tth_offset:
+  - -0.02
+  - 0.02
+  oxide_prob: 0.7
+  oxide_thickness:
+  - 0.0
+  - 40.0
+  oxide_sld:
+  - 5.0
+  - 25.0
+  oxide_roughness:
+  - 0.0
+  - 8.0
+  kalpha2_ratio: 0.5
+  kalpha2_wavelength: 1.54439

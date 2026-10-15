@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Callable
 
 import torch
 import torch.nn as nn
@@ -13,10 +14,12 @@ class Trainer:
         model: nn.Module, train_loader: DataLoader,
         val_loader: DataLoader,
         save_dir: str | Path,
-        lr: float = 2e-4,  # Fourier Feature 모델은 조금 낮은 LR이 안정적임
+        lr: float = 2e-4,  # Fourier-feature models are more stable with a slightly lower LR
         weight_decay: float = 1e-4,
-        patience: int = 20
+        patience: int = 20,
+        verbose: bool = True,   # set False to silence per-trial logs (e.g. during HPO)
     ):
+        self.verbose = verbose
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = model.to(self.device)
 
@@ -26,13 +29,11 @@ class Trainer:
         self.checkpoint_dir = Path(save_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-        # AdamW: L2 정규화가 더 물리적으로 올바르게 작용함
+        # AdamW: decoupled weight decay makes the L2 regularization behave correctly.
         self.optimizer = optim.AdamW(self.model.parameters(), lr=lr, weight_decay=weight_decay)
 
-        # Loss Function
         self.criterion = nn.MSELoss()
 
-        # Scheduler
         self.scheduler = ReduceLROnPlateau(
             self.optimizer, mode='min', patience=7, factor=0.5
         )
@@ -43,11 +44,11 @@ class Trainer:
 
         self.history = {"train": [], "val": [], "lr": []}
 
-        # Mixed Precision Training (성능 및 속도 향상)
-        # self.scaler = torch.amp.GradScaler('cuda') if self.device.type == 'cuda' else None
+        # Mixed-precision training (disabled).
         self.scaler = None
-        print(f"🚀 Trainer initialized on {self.device}")
-        print(f"   - Augmentation: {'Enabled' if getattr(train_loader.dataset, 'augment', False) else 'Disabled'}")
+        if self.verbose:
+            print(f"🚀 Trainer initialized on {self.device}")
+            print(f"   - Augmentation: {'Enabled' if getattr(train_loader.dataset, 'augment', False) else 'Disabled'}")
 
     def _train_epoch(self, epoch: int, total_epochs: int) -> float:
         self.model.train()
@@ -94,13 +95,24 @@ class Trainer:
             running_loss += loss.item()
         return running_loss / len(self.val_loader)
 
-    def train(self, epochs: int, resume_from: str | Path | None = None):
+    def train(
+        self,
+        epochs: int,
+        resume_from: str | Path | None = None,
+        on_epoch_end: Callable[[int, float, float], None] | None = None,
+    ):
+        """Training loop.
+
+        on_epoch_end(epoch, train_loss, val_loss): hook called after validation
+        on every epoch. During hyperparameter search it can report the
+        intermediate val_loss and raise an exception to prune an unpromising trial.
+        """
         start_epoch = self._load_checkpoint(resume_from) if resume_from else 1
 
-        # Dataset이 expand_factor를 가질 경우 실제 학습 샘플 수 출력
         train_size = len(self.train_loader.dataset)
-        print(f"\n[Training Start] Total Samples: {train_size} (Expanded)")
-        print("-" * 70)
+        if self.verbose:
+            print(f"\n[Training Start] Total Samples: {train_size}")
+            print("-" * 70)
 
         epoch = start_epoch
         try:
@@ -115,27 +127,34 @@ class Trainer:
                 self.scheduler.step(val_loss)
                 current_lr = self.optimizer.param_groups[0]['lr']
 
-                print(f"E{epoch:03d} | Train: {train_loss:.6f} | Val: {val_loss:.6f} | LR: {current_lr:.1e}")
+                if self.verbose:
+                    print(f"E{epoch:03d} | Train: {train_loss:.6f} | Val: {val_loss:.6f} | LR: {current_lr:.1e}")
 
                 if val_loss < self.best_val_loss:
                     self.best_val_loss = val_loss
                     self.patience_counter = 0
                     self._save_checkpoint("best.pt", epoch, val_loss)
-                    print("  >>> Best Model Saved!")
+                    if self.verbose:
+                        print("  >>> Best Model Saved!")
                 else:
                     self.patience_counter += 1
 
-                # last.pt는 매 epoch 저장 (early stop 여부와 무관하게)
+                # Save last.pt every epoch, regardless of early stopping.
                 self._save_checkpoint("last.pt", epoch, val_loss)
 
+                # HPO hook: intermediate reporting + pruning (exceptions propagate out of the loop).
+                if on_epoch_end is not None:
+                    on_epoch_end(epoch, train_loss, val_loss)
+
                 if self.patience_counter >= self.early_stop_patience:
-                    print(f"\n🛑 Early stopping at epoch {epoch}")
+                    if self.verbose:
+                        print(f"\n Early stopping at epoch {epoch}")
                     break
 
         except KeyboardInterrupt:
-            print("\n⚠️  KeyboardInterrupt — emergency 저장 중...")
+            print("\nKeyboardInterrupt — saving emergency checkpoint...")
             self._save_checkpoint("emergency_interrupt.pt", epoch, self.best_val_loss)
-            print("✅ Emergency checkpoint saved.")
+            print("Emergency checkpoint saved.")
             raise
 
     def _save_checkpoint(self, filename: str, epoch: int, val_loss: float):
@@ -167,7 +186,7 @@ class Trainer:
             self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
 
         self.history = checkpoint.get('history', self.history)
-        # [FIX] best_val_loss는 별도 키에서 복원 (val_loss = 그 epoch 손실이라 best가 아님)
+        # Restore best_val_loss from its own key (val_loss is that epoch's loss, not the best).
         self.best_val_loss = checkpoint.get('best_val_loss', checkpoint.get('val_loss', float('inf')))
         self.patience_counter = checkpoint.get('patience_counter', 0)
 

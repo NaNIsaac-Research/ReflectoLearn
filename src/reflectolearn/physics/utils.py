@@ -1,7 +1,10 @@
+import math
 from typing import Final, overload
 
 import numpy as np
+import torch
 from numpy.typing import NDArray
+from torch import Tensor
 
 r_e: Final[float] = 2.8179403227e-5  # AA
 
@@ -23,3 +26,14 @@ def tth2q(tth, wavelen: float = 1.5406):
     if isinstance(tth, (int, float)):
         return float(result)
     return result
+
+
+def apply_tth_offset(q: Tensor, offset_deg: Tensor, wavelength: float) -> Tensor:
+    """Apply a q-axis zero-point (alignment) offset: add offset[deg] to the
+    measured 2θ, then convert back to q.
+
+    Differentiable (torch). q: (Q,) or (B, Q); offset_deg: (B, 1) -> returns (B, Q).
+    """
+    sin_th = (q * wavelength / (4.0 * math.pi)).clamp(-1.0, 1.0)
+    tth = 2.0 * torch.rad2deg(torch.asin(sin_th)) + offset_deg
+    return (4.0 * math.pi / wavelength) * torch.sin(torch.deg2rad(0.5 * tth))

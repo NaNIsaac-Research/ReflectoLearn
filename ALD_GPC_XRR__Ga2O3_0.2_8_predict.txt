@@ -1,0 +1,5 @@
+# prediction for ALD_GPC_XRR__Ga2O3_0.2_8.txt
+thickness	230.1240	Å
+roughness	6.7757	Å
+sld	35.3793	×1e-6 Å⁻²
+# FOM(LogMSE)	0.075546
