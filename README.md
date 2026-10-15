@@ -1,148 +1,67 @@
 # ReflectoLearn
 
-XRR inverse modeling with a differentiable Abeles physics engine and a 1D CNN.
+A 1D CNN that predicts single-layer thin-film parameters (thickness, roughness, SLD) from X-ray reflectivity (XRR) curves, trained on synthetic data from a differentiable Abeles simulator in PyTorch.
 
-ReflectoLearn trains a convolutional neural network to solve the X-ray
-reflectivity (XRR) inverse problem: given a measured reflectivity curve `R(q)`,
-predict the **film parameters** of a single thin layer on a substrate —
-thickness, surface roughness, and scattering length density (SLD).
+Training data is generated on the fly: film and substrate parameters are sampled, `R(q)` is computed by a batched Abeles transfer-matrix engine (Névot-Croce roughness, complex SLD, optional beam footprint), and instrument effects are applied per batch (intensity scale, background, Poisson noise, resolution smearing, footprint, masked angles). No dataset files are needed.
 
-Training data is generated **on the fly** by a fully vectorized, autograd-ready
-Abeles matrix simulator, with realistic instrument augmentations (intensity
-scale, background, Poisson noise, resolution smearing, beam footprint) applied
-to each batch. No dataset files are needed.
+An optional refinement step takes the CNN prediction as the starting point and fits it to the curve by gradient descent through the same Abeles engine, in stages (scale/footprint, film structure, fine tuning) within trust-region bounds around the CNN guess.
 
-## How it works
+## Install
 
-```
-random film params ──► Abeles simulator ──► R(q) ──► augment (noise/footprint/...)
-   (thickness,             (physics)                        │
-    roughness, sld)                                         ▼
-                                              log10 + max-norm + valid-q mask
-                                                            │
-                                                            ▼
-                                              XRRPhysicsModel (1D CNN)
-                                                            │
-                                                            ▼
-                                          predicted (thickness, roughness, sld)
-```
-
-- **Physics** — `abeles.py`: Abeles transfer-matrix method with Névot–Croce
-  roughness, complex SLD, and optional beam-footprint correction. Batched and
-  differentiable.
-- **Data** — `generator.py`: infinite streaming `IterableDataset` that samples
-  parameters uniformly and simulates curves per batch.
-- **Augmentation** — `augmentations.py`: `XRRAugmentor` applies instrument
-  effects and returns a validity mask for unmeasured angles.
-- **Model** — `model.py`: `XRRPhysicsModel`, a 1D CNN encoder with optional
-  random Fourier feature mapping of the `q` grid, followed by an MLP regressor
-  that outputs 3 normalized parameters.
-- **Training** — `train.py`: `Trainer` (AdamW, MSE, `ReduceLROnPlateau`, early
-  stopping, checkpointing with resume).
-- **Evaluation** — `evaluate.py`: metrics (MAE/MAPE/RMSE/R²) plus diagnostic
-  plots (best/worst curves, learning curves, error-vs-value, parity).
-- **Refinement** — `refine.py` + `losses.py`: optional physics refinement that
-  takes the CNN prediction as an initial guess and fits it to the measured curve
-  by gradient descent (Adam) through the differentiable Abeles engine. Uses a
-  multi-stage schedule (scale/footprint → film structure → fine tuning),
-  per-stage loss functions (log-MSE, linear-MSE, correlation, Sobolev, hybrid),
-  and trust-region bounds anchored to the AI guess.
-
-## Installation
-
-This project uses [uv](https://github.com/astral-sh/uv).
+Uses [uv](https://docs.astral.sh/uv/); Python 3.11 or newer.
 
 ```bash
+git clone https://github.com/NaNIsaac/ReflectoLearn.git
+cd ReflectoLearn
 uv sync
 ```
 
-On Windows the PyTorch CUDA 12.8 build is used automatically (for RTX/Blackwell
-support); other platforms use the default PyPI `torch` wheel.
+On Windows, `torch` is taken from the PyTorch CUDA 12.8 index; other platforms use the default PyPI wheel.
 
 ## Usage
 
-The CLI is exposed as `reflectolearn` (or run with `uv run -m reflectolearn`).
-
-Write a default config:
-
 ```bash
-uv run -m reflectolearn config --out config.yaml
+uv run reflectolearn config --out config.yaml       # write the default config
+uv run reflectolearn train --config config.yaml
+uv run reflectolearn train --config config.yaml --set training.lr=1e-3
+uv run reflectolearn train --config config.yaml --resume path/to/last.pt
+uv run reflectolearn evaluate path/to/best.pt --n-samples 2000
+uv run reflectolearn evaluate path/to/best.pt --refine --trust-margin 0.4
 ```
 
-Train:
-
-```bash
-uv run -m reflectolearn train --config config.yaml
-# override any setting:
-uv run -m reflectolearn train --config config.yaml --set training.lr=1e-3
-# resume from a checkpoint:
-uv run -m reflectolearn train --config config.yaml --resume path/to/last.pt
-```
-
-Training artifacts are written to `save_root / experiment_name` (from the
-config): `best.pt`, `last.pt`, `stats.pt`, and a backup `config.yaml`.
-
-Evaluate a checkpoint (config and stats are auto-discovered next to it):
-
-```bash
-uv run -m reflectolearn evaluate path/to/best.pt --n-samples 2000
-```
-
-This writes `eval_summary.csv`, `eval_metrics_full.csv`, and `eval_*.png`
-reports to the checkpoint's directory.
-
-Add `--refine` to physics-refine each prediction against its measured curve and
-report AI-vs-refined metrics plus the fit FOM (LogMSE) before/after:
-
-```bash
-uv run -m reflectolearn evaluate path/to/best.pt --refine --trust-margin 0.4
-```
+Set `save_root` and `experiment_name` in the config first; the default `save_root` is a local Windows path. Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to `save_root/experiment_name`. `evaluate` simulates fresh test curves and writes `eval_summary.csv`, `eval_metrics_full.csv` and `eval_*.png` (parity, error-vs-value, best/worst fits, learning curves) next to the checkpoint. With `--refine` it also reports AI-vs-refined metrics and the log-MSE before and after fitting.
 
 ## Configuration
 
-All settings live in `config.yaml` (validated by Pydantic, see `config.py`).
-Key sections:
+`config.yaml` is validated by Pydantic (`config.py`). Any field can be overridden with `--set section.key=value`.
 
-| Section        | What it controls                                              |
-| -------------- | ------------------------------------------------------------- |
-| `param_ranges` | Film parameter sampling ranges (prediction targets).          |
-| `substrate`    | Substrate SLD/roughness ranges (simulated, not predicted).    |
-| `simulation`   | Wavelength, q-range, number of q-points, sample count.        |
-| `model`        | CNN width/depth, MLP size, dropout, Fourier features.         |
-| `training`     | Batch size, LR, weight decay, epochs, steps/epoch, patience.  |
-| `augmentation` | Instrument augmentation (noise, resolution, footprint, ...).  |
+| Section        | Controls |
+| -------------- | -------- |
+| `param_ranges` | sampling ranges of the predicted film parameters |
+| `substrate`    | substrate SLD / roughness ranges (simulated, not predicted) |
+| `simulation`   | wavelength, q-range, number of q points |
+| `model`        | CNN width/depth, MLP size, dropout, Fourier features |
+| `training`     | batch size, learning rate, epochs, steps per epoch, patience |
+| `augmentation` | instrument effects |
 
-Any config field can also be overridden from the command line with
-`--set section.key=value`.
-
-## Project layout
+## Structure
 
 ```
 src/reflectolearn/
-├── cli.py             # Typer CLI: train / evaluate / config
-├── config.py          # Pydantic config schema + YAML I/O
-├── model.py           # XRRPhysicsModel (1D CNN + Fourier features)
-├── train.py           # Trainer (train loop, checkpoints, early stopping)
-├── evaluate.py        # Metrics + diagnostic plots (+ optional refinement)
-├── physics/           # Forward-simulation physics
-│   ├── abeles.py      #   differentiable Abeles matrix engine
-│   └── utils.py       #   unit helpers (e.g. 2θ → q conversion)
-├── data/              # Data pipeline
-│   ├── augmentations.py  # instrument augmentations
-│   ├── generator.py      # streaming synthetic-data generator
-│   └── dataset.py        # legacy offline HDF5 dataset (unused)
-└── refine/            # Post-AI physics refinement
-    ├── losses.py      #   curve-fitting losses (log/linear/correlation/...)
-    └── pipeline.py    #   gradient-based multi-stage refiner
+├── cli.py          Typer CLI: config / train / evaluate
+├── config.py       config schema and YAML I/O
+├── model.py        XRRPhysicsModel (1D CNN + optional Fourier features of q)
+├── train.py        Trainer (AdamW, ReduceLROnPlateau, early stopping, checkpoints)
+├── evaluate.py     metrics (MAE/MAPE/RMSE/R²) and plots
+├── physics/        abeles.py (AbelesMatrix), utils.py (2θ → q)
+├── data/           generator.py (streaming dataset), augmentations.py (XRRAugmentor)
+└── refine/         pipeline.py (refine), losses.py (log/linear MSE, correlation, Sobolev)
 ```
 
-Each subpackage re-exports its public API, so imports stay short — e.g.
-`from reflectolearn.physics import AbelesMatrix`,
-`from reflectolearn.data import get_xrr_dataloader`,
-`from reflectolearn.refine import refine`.
+## Citation
 
-## Requirements
+See [CITATION.cff](CITATION.cff).
 
-Python ≥ 3.11. Core dependencies: PyTorch, Typer, Pydantic, PyYAML, loguru,
-NumPy, pandas, SciPy, matplotlib, seaborn, tqdm, tensorboard.
-```
+## License
+
+MIT, see [LICENSE](LICENSE).
