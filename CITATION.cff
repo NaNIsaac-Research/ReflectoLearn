@@ -7,8 +7,10 @@ authors:
     given-names: Isaac
     email: isaacyong@naver.com
     affiliation: "Sogang University"
+license: MIT
 repository-code: "https://github.com/NaNIsaac/ReflectoLearn"
 abstract: "Trains a 1D convolutional neural network to solve the X-ray reflectivity (XRR) inverse problem, predicting thin-film thickness, roughness and scattering length density from R(q). Training data is generated on the fly by a vectorized, differentiable Abeles matrix simulator with instrument augmentations."
+license: MIT
 keywords:
   - "X-ray reflectivity"
   - "XRR"
