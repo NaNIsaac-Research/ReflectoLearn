@@ -29,13 +29,33 @@ uv run reflectolearn evaluate path/to/best.pt --n-samples 2000
 uv run reflectolearn evaluate path/to/best.pt --refine --trust-margin 0.4
 uv run reflectolearn predict measured.txt -k path/to/best.pt       # real curve, 2 columns (2θ or q, intensity)
 uv run reflectolearn tune --config config.yaml --trials 30         # Optuna search -> config_best.yaml
+uv run reflectolearn stitch 237.dat 238.dat 239.dat -o combined.dat  # join attenuator segments
 ```
 
 Set `save_root` and `experiment_name` in the config first; the default `save_root` is a local Windows path. Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to `save_root/experiment_name`. `evaluate` simulates fresh test curves and writes `eval_summary.csv`, `eval_metrics_full.csv` and `eval_*.png` (parity, error-vs-value, best/worst fits, learning curves) next to the checkpoint. With `--refine` it also reports AI-vs-refined metrics and the log-MSE before and after fitting.
 
 `predict` runs one measured file (`--x-axis tth` or `q`) through the same preprocessing as training, refines by default (`--no-refine` to skip; substrate fixed to the middle of the `substrate` range) and writes `<name>_predict.png` and `<name>_predict.txt` next to the input or to `--out-dir`. `tune` runs short proxy trainings per trial, saves the best config to `config_best.yaml`, the trial table to `config_best_trials.csv` and a resumable study to `config_best_study.db`; `-p section.key` restricts the search to given parameters.
 
-`uv run python -m reflectolearn.report.figures` regenerates the slide figures (`domain_randomization.png`, `sim_to_real.png`, `model_architecture.png`, `refine.png`, `refine_process.png`) in the current directory; `refine.png` needs a trained checkpoint and reads a measured curve from a hard-coded local path (`DEFAULT_REFINE_DATA`).
+`stitch` joins scans taken in consecutive 2θ ranges with different attenuators (3 columns `2θ intensity error`, no header, given in increasing 2θ order). The last scan is the intensity reference; each earlier scan is scaled so its last point matches the first point of the next one, and that shared boundary point is dropped. The same function is `reflectolearn.stitch.stitch_scans`.
+
+`uv run python -m reflectolearn.report.figures` regenerates the slide figures ([`domain_randomization.png`](docs/domain_randomization.png), [`sim_to_real.png`](docs/sim_to_real.png), [`model_architecture.png`](docs/model_architecture.png), [`refine.png`](docs/refine.png), [`refine_process.png`](docs/refine_process.png); committed copies are in `docs/`) in the current directory; `refine.png` needs a trained checkpoint and reads a measured curve from a hard-coded local path (`DEFAULT_REFINE_DATA`).
+
+## GenX fit (optional)
+
+A classical fit with [GenX](https://github.com/aglavic/genx) (bumps differential evolution) can be run from a CNN estimate or any other starting guess. It needs the `genx` extra (`genx3`, `bumps`; installs `wxpython` as a GenX dependency):
+
+```bash
+uv sync --extra genx
+```
+
+```python
+from reflectolearn.genx_fit import genx_fit
+
+res = genx_fit(q, intensity, thickness=310.0, roughness=4.2, sld=41.0, wavelength=1.54)
+res["thickness"], res["fom"], res["r_fit"]
+```
+
+The model is film + oxide layer on a fixed substrate (`sub_sld`, `sub_rough`), with I0, background and sample length fitted. Film parameters are bounded to ±10% of the guess (`film_margin`). It runs two stages (oxide + I0, then all parameters) with the logR2 figure of merit; `steps_scale` and `pop_size` trade time for quality.
 
 ## Configuration
 
@@ -54,18 +74,33 @@ Set `save_root` and `experiment_name` in the config first; the default `save_roo
 
 ```
 src/reflectolearn/
-├── cli.py          Typer CLI: config / train / tune / evaluate / predict
+├── cli.py          Typer CLI: config / train / tune / evaluate / predict / stitch
 ├── config.py       config schema and YAML I/O
 ├── model.py        XRRPhysicsModel (1D CNN + optional Fourier features of q)
 ├── train.py        Trainer (AdamW, ReduceLROnPlateau, early stopping, checkpoints)
 ├── evaluate.py     metrics (MAE/MAPE/RMSE/R²) and plots
 ├── predict.py      inference + refinement on measured curves
 ├── tune.py         Optuna hyperparameter search
+├── stitch.py       joining attenuator-segmented scans
+├── genx_fit.py     optional GenX/bumps fit (genx extra)
 ├── physics/        abeles.py (AbelesMatrix), utils.py (2θ → q)
 ├── data/           generator.py (streaming dataset), augmentations.py (XRRAugmentor)
 ├── refine/         pipeline.py (refine), losses.py (log/linear MSE, correlation, Sobolev)
 └── report/         figures.py (slide figures)
 ```
+
+## Tests
+
+```bash
+uv sync --extra genx
+uv run pytest
+```
+
+The GenX test is skipped when the `genx` extra is not installed.
+
+## History
+
+This repository supersedes [Reflecto](https://github.com/NaNIsaac/Reflecto) (GenX fitting, now `genx_fit.py`), [XRefine](https://github.com/NaNIsaac/XRefine) and [xrr_combine](https://github.com/NaNIsaac/xrr_combine) (scan stitching, now `stitch.py`). The earlier experiments are in [ReflectoExp](https://github.com/NaNIsaac/ReflectoExp).
 
 ## Citation
 
