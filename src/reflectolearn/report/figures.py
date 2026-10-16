@@ -11,6 +11,7 @@ Everything is deterministic (fixed film params + fixed seed) for reproducible sl
 """
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -300,10 +301,8 @@ def model_architecture_figure(
     return out
 
 
-DEFAULT_REFINE_DATA = Path(
-    r"C:\WorkSpace\05_Resources\Data\XRR_AI\XRR_data_sorted\Ga2O3\unknown_t"
-    r"\ALD_GPC_XRR__Ga2O3_merged_0.2_8.txt"
-)
+# Measured curve for refine_figure; set REFLECTOLEARN_REFINE_DATA to its path.
+DEFAULT_REFINE_DATA = Path(os.environ.get("REFLECTOLEARN_REFINE_DATA", "refine_data.txt"))
 
 
 def refine_figure(
@@ -427,5 +426,8 @@ if __name__ == "__main__":
     print(f"saved: {domain_randomization_figure(_cfg).resolve()}")
     print(f"saved: {sim_to_real_figure(_cfg).resolve()}")
     print(f"saved: {model_architecture_figure(_cfg).resolve()}")
-    print(f"saved: {refine_figure(_cfg).resolve()}")
+    if DEFAULT_REFINE_DATA.exists():
+        print(f"saved: {refine_figure(_cfg).resolve()}")
+    else:
+        print(f"skipped refine figure: {DEFAULT_REFINE_DATA} not found (set REFLECTOLEARN_REFINE_DATA)")
     print(f"saved: {refine_process_figure().resolve()}")

@@ -102,7 +102,7 @@ class Config(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="ignore")
 
     experiment_name: str = "exp"
-    save_root: Path = Path(r"C:\WorkSpace\05_Resources\Data\XRR_AI\reflectolearn")
+    save_root: Path = Path("runs")
 
     device: torch.device = Field(
         default_factory=lambda: torch.device("cuda" if torch.cuda.is_available() else "cpu")
