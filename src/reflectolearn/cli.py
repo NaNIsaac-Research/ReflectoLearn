@@ -252,6 +252,21 @@ def predict(
     )
 
 
+@app.command()
+def stitch(
+    scans: list[Path] = typer.Argument(..., help="Scan files (x, intensity, error) in increasing 2theta order."),
+    out: Path = typer.Option(..., "--out", "-o", help="Output text file."),
+):
+    """Stitch attenuator-segmented scans into one curve (last scan is the intensity reference)."""
+    import numpy as np
+
+    from reflectolearn.stitch import read_scan, stitch_scans
+
+    combined = stitch_scans([read_scan(p) for p in scans])
+    np.savetxt(out, combined)
+    logger.info(f"Wrote {len(combined)} points to {out}")
+
+
 def main():
     app()
 
