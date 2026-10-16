@@ -1,5 +1,0 @@
-# prediction for ALD_GPC_XRR__Ga2O3_merged_0.2_8.txt
-thickness	215.6457	Å
-roughness	5.7188	Å
-sld	39.7994	×1e-6 Å⁻²
-# FOM(LogMSE)	0.149622

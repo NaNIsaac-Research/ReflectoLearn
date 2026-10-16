@@ -224,3 +224,7 @@ __marimo__/
 # code
 runs/
 .codigest/
+# run outputs
+*_predict.png
+*_predict.txt
+config_best*
