@@ -20,6 +20,12 @@ dependencies = [
     "optuna",
 ]
 
+[project.optional-dependencies]
+genx = [
+    "genx3",
+    "bumps",
+]
+
 [project.urls]
 Homepage = "https://github.com/NaNIsaac/ReflectoLearn"
 Repository = "https://github.com/NaNIsaac/ReflectoLearn"
