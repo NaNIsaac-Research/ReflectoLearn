@@ -14,11 +14,24 @@ from reflectolearn.refine.losses import (
     log_gradient_loss,
     log_mse_loss,
 )
-from reflectolearn.refine.pipeline import PARAM_KEYS, RefineConfig, RefineStage, refine
+from reflectolearn.refine.pipeline import (
+    PARAM_KEYS,
+    RefineConfig,
+    RefineStage,
+    fft_thickness,
+    make_forward,
+    per_curve_log_mse,
+    refine,
+    refine_multistart,
+)
 
 __all__ = [
     # pipeline
     "refine",
+    "refine_multistart",
+    "fft_thickness",
+    "make_forward",
+    "per_curve_log_mse",
     "RefineConfig",
     "RefineStage",
     "PARAM_KEYS",

@@ -219,6 +219,11 @@ def predict(
         True, "--refine/--no-refine", help="Physics-refine AI predictions against the measured curve."),
     trust_margin: float = typer.Option(
         0.4, "--trust-margin", help="Refine trust-region half-width ratio."),
+    alias_check: bool = typer.Option(
+        False, "--alias-check/--no-alias-check",
+        help="Experimental: also refine from d/2, 2d and the FFT thickness; pick by FOM plus FFT prior."),
+    mcmc_steps: int = typer.Option(
+        0, "--mcmc-steps", help="emcee steps for the posterior after refine (0 = off; needs the 'mcmc' extra)."),
     out_dir: Path | None = typer.Option(
         None, "--out-dir", "-o", help="Output folder. Defaults to next to the input file."),
 ):
@@ -248,8 +253,34 @@ def predict(
         stats_path=stats, x_axis=x_axis,
         refine_enabled=refine,
         refine_config=RefineConfig(trust_margin=trust_margin) if refine else None,
+        alias_check=alias_check, mcmc_steps=mcmc_steps,
         device=cfg.device, out_dir=out_dir,
     )
+
+
+@app.command()
+def benchmark(
+    checkpoint: Path = typer.Option(..., "--checkpoint", "-k", help="Checkpoint to benchmark."),
+    config_path: Path | None = typer.Option(
+        None, "--config", "-c", help="Config YAML. Defaults to config.yaml next to the checkpoint."),
+    stats: Path | None = typer.Option(None, "--stats", help="stats.pt. Defaults to next to the checkpoint."),
+    n_synthetic: int = typer.Option(12, "--n", help="Synthetic curves (independent numpy Parratt, known truth)."),
+    seed: int = typer.Option(2026, "--seed", help="Seed of the synthetic set."),
+    alias_check: bool = typer.Option(False, "--alias-check/--no-alias-check", help="Refine from d/2, d, 2d and the FFT thickness (experimental)."),
+    mcmc_steps: int = typer.Option(0, "--mcmc-steps", help="emcee steps per curve (0 = off)."),
+    out_dir: Path = typer.Option(Path("benchmark_out"), "--out-dir", "-o", help="Where benchmark.json/.csv go."),
+):
+    """Score predict on synthetic curves with known truth and on the two bundled measured In2O3 curves."""
+    from reflectolearn.benchmark import run_benchmark
+
+    exp_dir = checkpoint.parent
+    if config_path is None and (exp_dir / "config.yaml").exists():
+        config_path = exp_dir / "config.yaml"
+    if stats is None and (exp_dir / "stats.pt").exists():
+        stats = exp_dir / "stats.pt"
+    cfg = _load_config(config_path, [])
+    run_benchmark(cfg, checkpoint, stats_path=stats, n_synthetic=n_synthetic, seed=seed,
+                  alias_check=alias_check, mcmc_steps=mcmc_steps, out_dir=out_dir, device=cfg.device)
 
 
 @app.command()

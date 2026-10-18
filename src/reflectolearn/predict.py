@@ -30,7 +30,7 @@ from reflectolearn.data import XRRAugmentor, param_stats
 from reflectolearn.data.generator import LOG_FLOOR
 from reflectolearn.model import XRRPhysicsModel
 from reflectolearn.physics import tth2q
-from reflectolearn.refine import RefineConfig, RefineStage, refine
+from reflectolearn.refine import RefineConfig, RefineStage, refine, refine_multistart
 
 PARAM_NAMES = ("thickness", "roughness", "sld")
 UNITS = {"thickness": "Å", "roughness": "Å", "sld": "×1e-6 Å⁻²"}
@@ -144,42 +144,42 @@ def _log_mse(r_pred: torch.Tensor, r_obs: torch.Tensor, mask: torch.Tensor) -> f
     return float(se.sum() / mask.sum().clamp_min(1.0))
 
 
-def predict_file(
-    path: str | Path,
-    cfg: Config,
-    checkpoint: str | Path,
-    *,
-    stats_path: str | Path | None = None,
-    x_axis: str = "tth",
-    refine_enabled: bool = True,
-    refine_config: RefineConfig | None = None,
-    device: torch.device | None = None,
-    out_dir: str | Path | None = None,
-) -> dict:
-    """Infer a single measured file, optionally physics-refine, then save results/plots/summary."""
-    path = Path(path)
-    device = device or cfg.device
-    out_dir = Path(out_dir) if out_dir else path.parent
-
-    # --- Load model / normalization stats ---
+def load_predictor(cfg: Config, checkpoint: str | Path, stats_path: str | Path | None,
+                   device: torch.device) -> tuple[XRRPhysicsModel, torch.Tensor, torch.Tensor]:
+    """Model in eval mode plus the target de-normalisation (mean, std)."""
     model = _build_model(cfg).to(device)
     ckpt = torch.load(checkpoint, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
+    st = torch.load(stats_path, map_location=device) if stats_path and Path(stats_path).exists() else param_stats(cfg)
+    return model, st["mean"].to(device), st["std"].to(device)
 
-    if stats_path and Path(stats_path).exists():
-        st = torch.load(stats_path, map_location=device)
-    else:
-        st = param_stats(cfg)
-    mean, std = st["mean"].to(device), st["std"].to(device)
 
-    # --- Measured curve -> model input ---
-    q_meas, intensity = load_measured_curve(
-        path, x_axis=x_axis, wavelength=cfg.simulation.wavelength)
+def predict_curve(
+    q_meas: np.ndarray,
+    intensity: np.ndarray,
+    cfg: Config,
+    predictor: tuple[XRRPhysicsModel, torch.Tensor, torch.Tensor],
+    *,
+    refine_enabled: bool = True,
+    refine_config: RefineConfig | None = None,
+    alias_check: bool = False,
+    mcmc_steps: int = 0,
+    device: torch.device | None = None,
+    name: str = "curve",
+) -> tuple[dict, dict]:
+    """AI prediction, refinement (from the AI thickness and, with alias_check, from half and double
+    of it) and, with mcmc_steps > 0, posterior sampling for one measured curve.
+
+    Returns (result, curves): result holds the parameters, FOMs and posterior; curves holds the q grid,
+    observed, AI and refined curves and the mask, for plotting.
+    """
+    device = device or cfg.device
+    model, mean, std = predictor
     x, r_obs, mask = preprocess_measured(q_meas, intensity, cfg, device)
     q = cfg.q_grid.to(device)
     coverage = float(mask.mean()) * 100
-    logger.info(f"'{path.name}': {len(q_meas)} pts, q∈[{q_meas.min():.4f}, {q_meas.max():.4f}] "
+    logger.info(f"'{name}': {len(q_meas)} pts, q∈[{q_meas.min():.4f}, {q_meas.max():.4f}] "
                 f"Å⁻¹, grid coverage {coverage:.0f}%")
 
     # --- AI prediction ---
@@ -208,13 +208,29 @@ def predict_file(
 
     # --- Red "Refined": full refine that also fits the film parameters ---
     p_final, info = pred_ai, None
+    rcfg = refine_config or RefineConfig()
     if refine_enabled:
+        fit = refine_multistart if alias_check else refine
         with torch.enable_grad():
-            p_final, info = refine(
+            p_final, info = fit(
                 pred_ai.detach(), sub, q, log_r_obs, mask, cfg.param_ranges,
                 wavelength=cfg.simulation.wavelength,
-                config=refine_config or RefineConfig(), device=device, verbose=True,
+                config=rcfg, device=device, verbose=not alias_check,
             )
+        if alias_check:
+            a = info["alias"]
+            starts = ", ".join(f"{lab}: d={d:.1f} Å FOM={m:.5f}"
+                               for lab, d, m in zip(a["starts"], a["thickness"][0], a["fom"][0]))
+            logger.info(f"  [alias] FFT d={a['fft_thickness'][0]:.0f} Å; starts {starts} -> {a['chosen'][0]}")
+
+    # --- Posterior: emcee around the refined state ---
+    posterior = None
+    if refine_enabled and mcmc_steps > 0:
+        from reflectolearn.refine.mcmc import sample_posterior
+        inside = (q_meas >= float(q[0])) & (q_meas <= float(q[-1]))
+        posterior = sample_posterior(
+            info, sub, q, log_r_obs, mask, wavelength=cfg.simulation.wavelength, config=rcfg,
+            n_independent=int(inside.sum()), steps=mcmc_steps, device=device)
 
     # The refined curve must be refine's final fitted curve (including nuisance terms
     # like footprint/i0/bkg) so it overlays the measurement under identical conditions.
@@ -222,19 +238,49 @@ def predict_file(
     r_final = info["r_fit"] if info else r_ai
     fom_final = info["fom_after"] if info else fom_ai
 
-    # --- Assemble results ---
     ai = pred_ai.squeeze(0).tolist()
     fin = p_final.squeeze(0).tolist()
     result = {
-        "file": path.name,
+        "file": name,
         "ai": dict(zip(PARAM_NAMES, ai)),
         "refined": dict(zip(PARAM_NAMES, fin)) if refine_enabled else None,
         "fom_ai": fom_ai,
         "fom_refined": fom_final if refine_enabled else None,
         "substrate": {"sld": sub[0, 0].item(), "roughness": sub[0, 1].item()},
+        "alias": info["alias"] if info and "alias" in info else None,
+        "posterior": None if posterior is None else {
+            **{k: v for k, v in posterior["params"].items() if k in PARAM_NAMES},
+            "lnsigma": posterior["lnsigma"], "acceptance": posterior["acceptance"]},
     }
+    curves = {"q": q, "r_obs": r_obs, "mask": mask, "r_ai": r_ai, "r_final": r_final}
+    return result, curves
+
+
+def predict_file(
+    path: str | Path,
+    cfg: Config,
+    checkpoint: str | Path,
+    *,
+    stats_path: str | Path | None = None,
+    x_axis: str = "tth",
+    refine_enabled: bool = True,
+    refine_config: RefineConfig | None = None,
+    alias_check: bool = False,
+    mcmc_steps: int = 0,
+    device: torch.device | None = None,
+    out_dir: str | Path | None = None,
+) -> dict:
+    """Infer a single measured file, optionally physics-refine, then save results/plots/summary."""
+    path = Path(path)
+    device = device or cfg.device
+    out_dir = Path(out_dir) if out_dir else path.parent
+    predictor = load_predictor(cfg, checkpoint, stats_path, device)
+    q_meas, intensity = load_measured_curve(path, x_axis=x_axis, wavelength=cfg.simulation.wavelength)
+    result, c = predict_curve(
+        q_meas, intensity, cfg, predictor, refine_enabled=refine_enabled, refine_config=refine_config,
+        alias_check=alias_check, mcmc_steps=mcmc_steps, device=device, name=path.name)
     _report(result)
-    _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
+    _save_outputs(path, out_dir, cfg, c["q"], c["r_obs"], c["mask"], c["r_ai"], c["r_final"],
                   result, refine_enabled)
     return result
 
@@ -254,6 +300,12 @@ def _report(r: dict) -> None:
         logger.info(f"fit FOM(LogMSE): {b:.5f} -> {a:.5f}  ({imp:+.1f}%)  (lower = better measurement match)")
     else:
         logger.info(f"fit FOM(LogMSE, AI): {r['fom_ai']:.5f}")
+    if r.get("posterior"):
+        p = r["posterior"]
+        parts = ", ".join(f"{k} {p[k]['median']:.2f} [{p[k]['lo']:.2f}, {p[k]['hi']:.2f}]"
+                          for k in PARAM_NAMES if k in p)
+        spread = np.exp(p["lnsigma"]["median"])
+        logger.info(f"posterior (median, 68 % interval): {parts}; residual spread {spread:.3f} in log10 R")
 
 
 def _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
@@ -320,8 +372,13 @@ def _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
         v = result["refined"][k] if refine_enabled else result["ai"][k]
         lines.append(f"{k}\t{v:.4f}\t{UNITS[k]}")
     lines.append(f"# FOM(LogMSE)\t{result['fom_refined'] or result['fom_ai']:.6f}")
+    if result.get("posterior"):
+        p = result["posterior"]
+        for k in PARAM_NAMES:
+            if k in p:
+                lines.append(f"# posterior {k}\t{p[k]['median']:.4f}\t[{p[k]['lo']:.4f}, {p[k]['hi']:.4f}]\t{UNITS[k]}")
     txt_path.write_text("\n".join(lines), encoding="utf-8")
     logger.info(f"saved: {png.name}, {txt_path.name}  (in {out_dir})")
 
 
-__all__ = ["load_measured_curve", "preprocess_measured", "predict_file"]
+__all__ = ["load_measured_curve", "load_predictor", "predict_curve", "predict_file", "preprocess_measured"]

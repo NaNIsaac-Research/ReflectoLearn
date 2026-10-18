@@ -25,6 +25,9 @@ genx = [
     "genx3",
     "bumps",
 ]
+mcmc = [
+    "emcee",
+]
 
 [project.urls]
 Homepage = "https://github.com/NaNIsaac/ReflectoLearn"
