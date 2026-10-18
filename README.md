@@ -9,11 +9,9 @@
 A measured ALD Ga₂O₃ curve (grey), the CNN's starting guess (blue, dashed) and the
 gradient-refined fit through the same Abeles engine (red), from `reflectolearn predict`.
 
-A 1D CNN that predicts single-layer thin-film parameters (thickness, roughness, SLD) from X-ray reflectivity (XRR) curves, trained on synthetic data from a differentiable Abeles simulator in PyTorch.
+For anyone who measures single-layer films by X-ray reflectivity (XRR) and wants a fit without hand-building a starting model. A 1D CNN predicts the film's thickness, roughness and scattering-length density (SLD) from the curve; a gradient fit through a differentiable Abeles simulator (PyTorch) then refines that guess against the data, in stages (scale/footprint, film structure, fine tuning) within trust-region bounds around the CNN guess.
 
-Training data is generated on the fly: film and substrate parameters are sampled, `R(q)` is computed by a batched Abeles transfer-matrix engine (Névot-Croce roughness, complex SLD, optional beam footprint), and instrument effects are applied per batch (intensity scale, background, Poisson noise, resolution smearing, footprint, masked angles). The forward model also adds domain-randomized nuisances for sim-to-real robustness, which are not predicted: a q-axis zero offset (`tth_offset`), a native-oxide top layer and the Cu Kα2 doublet; each is set under `augmentation` and off at 0. No dataset files are needed.
-
-An optional refinement step takes the CNN prediction as the starting point and fits it to the curve by gradient descent through the same Abeles engine, in stages (scale/footprint, film structure, fine tuning) within trust-region bounds around the CNN guess.
+The CNN is trained only on simulated curves, generated on the fly, so no dataset files are needed. Film and substrate parameters are sampled, `R(q)` is computed by a batched Abeles transfer-matrix engine (Névot-Croce roughness, complex SLD), and instrument effects (intensity scale, background, Poisson noise, resolution smearing, footprint, masked angles) are applied per batch. For robustness on measured data the simulation also randomizes nuisances that are not predicted: a q-axis zero offset, a native-oxide top layer and the Cu Kα2 doublet (set under `augmentation`).
 
 ## Install
 
@@ -41,13 +39,13 @@ uv run reflectolearn tune --config config.yaml --trials 30         # Optuna sear
 uv run reflectolearn stitch 237.dat 238.dat 239.dat -o combined.dat  # join attenuator segments
 ```
 
-Set `save_root` and `experiment_name` in the config first; the default `save_root` is a local Windows path. Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to `save_root/experiment_name`. `evaluate` simulates fresh test curves and writes `eval_summary.csv`, `eval_metrics_full.csv` and `eval_*.png` (parity, error-vs-value, best/worst fits, learning curves) next to the checkpoint. With `--refine` it also reports AI-vs-refined metrics and the log-MSE before and after fitting.
+Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to `save_root/experiment_name` (set both in the config). `evaluate` simulates fresh test curves and writes `eval_summary.csv`, `eval_metrics_full.csv` and `eval_*.png` (parity, error-vs-value, best/worst fits, learning curves) next to the checkpoint. With `--refine` it also reports AI-vs-refined metrics and the log-MSE before and after fitting.
 
 `predict` runs one measured file (`--x-axis tth` or `q`) through the same preprocessing as training, refines by default (`--no-refine` to skip; substrate fixed to the middle of the `substrate` range) and writes `<name>_predict.png` and `<name>_predict.txt` next to the input or to `--out-dir`. `tune` runs short proxy trainings per trial, saves the best config to `config_best.yaml`, the trial table to `config_best_trials.csv` and a resumable study to `config_best_study.db`; `-p section.key` restricts the search to given parameters.
 
 `stitch` joins scans taken in consecutive 2θ ranges with different attenuators (3 columns `2θ intensity error`, no header, given in increasing 2θ order). The last scan is the intensity reference; each earlier scan is scaled so its last point matches the first point of the next one, and that shared boundary point is dropped. The same function is `reflectolearn.stitch.stitch_scans`.
 
-`uv run python -m reflectolearn.report.figures` regenerates the slide figures ([`domain_randomization.png`](docs/domain_randomization.png), [`sim_to_real.png`](docs/sim_to_real.png), [`model_architecture.png`](docs/model_architecture.png), [`refine.png`](docs/refine.png), [`refine_process.png`](docs/refine_process.png); committed copies are in `docs/`) in the current directory; `refine.png` needs a trained checkpoint and reads a measured curve from a hard-coded local path (`DEFAULT_REFINE_DATA`).
+`uv run python -m reflectolearn.report.figures` regenerates the figures in [`docs/`](docs) in the current directory; `refine.png` also needs a trained checkpoint and a measured curve (path in `REFLECTOLEARN_REFINE_DATA`).
 
 ## GenX fit (optional)
 
