@@ -58,3 +58,21 @@ torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32'" }]
 
 [tool.ruff]
 line-length = 100
+
+# violations present when ruff became mandatory in CI; remove entries as they are fixed
+[tool.ruff.lint.extend-per-file-ignores]
+"src/reflectolearn/cli.py" = ["B008"]
+"src/reflectolearn/data/__init__.py" = ["RUF022"]
+"src/reflectolearn/data/augmentations.py" = ["RUF046"]
+"src/reflectolearn/evaluate.py" = ["B018", "F841", "PLR0402", "RUF059"]
+"src/reflectolearn/model.py" = ["PLR0402"]
+"src/reflectolearn/physics/__init__.py" = ["RUF022"]
+"src/reflectolearn/physics/abeles.py" = ["I001", "PLR0402"]
+"src/reflectolearn/predict.py" = ["C408", "RUF059"]
+"src/reflectolearn/refine/__init__.py" = ["RUF022"]
+"src/reflectolearn/refine/losses.py" = ["RUF022"]
+"src/reflectolearn/refine/pipeline.py" = ["RUF022"]
+"src/reflectolearn/report/__init__.py" = ["RUF022"]
+"src/reflectolearn/train.py" = ["PLR0402", "UP035"]
+"src/reflectolearn/tune.py" = ["RUF022", "UP037"]
+"tests/test_genx_fit.py" = ["RUF100"]
