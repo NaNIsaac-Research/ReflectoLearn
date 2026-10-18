@@ -1,5 +1,14 @@
 # ReflectoLearn
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+**Thin-film thickness, roughness and SLD from one X-ray reflectivity curve: a CNN guess, then a differentiable Abeles fit.**
+
+![A measured Ga2O3 XRR curve, the CNN prediction and the refined fit](https://raw.githubusercontent.com/NaNIsaac/ReflectoLearn/main/docs/refine.png)
+
+A measured ALD Ga₂O₃ curve (grey), the CNN's starting guess (blue, dashed) and the
+gradient-refined fit through the same Abeles engine (red), from `reflectolearn predict`.
+
 A 1D CNN that predicts single-layer thin-film parameters (thickness, roughness, SLD) from X-ray reflectivity (XRR) curves, trained on synthetic data from a differentiable Abeles simulator in PyTorch.
 
 Training data is generated on the fly: film and substrate parameters are sampled, `R(q)` is computed by a batched Abeles transfer-matrix engine (Névot-Croce roughness, complex SLD, optional beam footprint), and instrument effects are applied per batch (intensity scale, background, Poisson noise, resolution smearing, footprint, masked angles). The forward model also adds domain-randomized nuisances for sim-to-real robustness, which are not predicted: a q-axis zero offset (`tth_offset`), a native-oxide top layer and the Cu Kα2 doublet; each is set under `augmentation` and off at 0. No dataset files are needed.
