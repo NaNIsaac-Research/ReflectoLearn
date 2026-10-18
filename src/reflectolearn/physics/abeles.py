@@ -95,10 +95,12 @@ class AbelesMatrix(nn.Module):
         As an nn.Module, its operations are recorded on the autograd graph and are differentiable.
 
         Args:
-            q:         (B, Q) real - scattering vector
-            thickness: (B, N-1)    - interface thickness
-            roughness: (B, N-1)    - interface roughness
-            sld:       (B, N)      - SLD per medium (real or complex)
+            q:         (B, Q) real - scattering vector [1/Angstrom]
+            thickness: (B, N-1)    - thickness of the upper medium at each interface [Angstrom];
+                                     the first entry is the ambient's and has no effect
+            roughness: (B, N-1)    - rms roughness of each interface, top first [Angstrom]
+            sld:       (B, N)      - SLD per medium, ambient first [1e-6/Angstrom^2],
+                                     real or complex; computed in complex64
             sample_length, beam_width: for footprint correction (optional)
             wavelength: X-ray wavelength [Angstrom], defaults to Cu K-alpha
         Returns:
