@@ -1,6 +1,6 @@
 # ReflectoLearn
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Tests](https://github.com/NaNIsaac/ReflectoLearn/actions/workflows/tests.yml/badge.svg)](https://github.com/NaNIsaac/ReflectoLearn/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **Thin-film thickness, roughness and SLD from one X-ray reflectivity curve: a CNN guess, then a differentiable Abeles fit.**
 
