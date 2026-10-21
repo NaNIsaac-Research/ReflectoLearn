@@ -118,13 +118,18 @@ def load_measured_curve(
     return q[order], intensity[order]
 
 
+#: q of an XRR scan spans at most about three decades; a reflectivity curve spans many more.
+MAX_Q_SPAN = 1e4
+
+
 def _checked_curve(
     q_meas: np.ndarray, intensity: np.ndarray, q_grid: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     """Sort the curve by q and refuse what np.interp would silently get wrong.
 
     np.interp needs increasing q and does not check it, so a scan written from high to low angle
-    used to come out empty. Sorting keeps such scans; repeated q values are ambiguous and raise.
+    used to come out empty. Sorting keeps such scans, and points at equal q (overlapping segments
+    of a multi-range scan) are averaged.
     """
     q_meas = np.asarray(q_meas, dtype=float)
     intensity = np.asarray(intensity, dtype=float)
@@ -133,10 +138,24 @@ def _checked_curve(
             f"q and intensity must be 1D arrays of the same length, got {q_meas.shape} and "
             f"{intensity.shape}"
         )
+    if np.all(q_meas > 0) and q_meas.max() / q_meas.min() > MAX_Q_SPAN:
+        raise ValueError(
+            f"q spans {np.log10(q_meas.max() / q_meas.min()):.0f} decades, like a reflectivity "
+            "curve; check the argument order (q first, then intensity)"
+        )
     order = np.argsort(q_meas, kind="stable")
     q_meas, intensity = q_meas[order], intensity[order]
-    if np.any(np.diff(q_meas) == 0):
-        raise ValueError("q has repeated values; merge or drop the duplicate points first")
+    # Multi-range scans repeat q where segments overlap: average the points at equal q.
+    q_unique, index, repeats = np.unique(q_meas, return_inverse=True, return_counts=True)
+    if q_unique.size < q_meas.size:
+        warnings.warn(
+            f"{q_meas.size - q_unique.size} points share a q value with another point and are "
+            "averaged with it",
+            UserWarning,
+            stacklevel=3,
+        )
+        intensity = np.bincount(index, weights=intensity) / repeats
+        q_meas = q_unique
     if q_meas[-1] < q_grid[0] or q_meas[0] > q_grid[-1]:
         raise ValueError(
             f"measured q {q_meas[0]:.4g} to {q_meas[-1]:.4g} does not overlap the model grid "

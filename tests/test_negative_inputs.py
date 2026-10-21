@@ -94,7 +94,18 @@ def test_negative_counts_are_flagged(cfg, curve):
         preprocess_measured(q, counts - 0.5 * counts.max(), cfg, CPU)
 
 
-def test_repeated_q_values_are_rejected(cfg, curve):
+def test_repeated_q_values_are_averaged(cfg, curve):
+    """Overlapping segments of a multi-range scan repeat q; the points are averaged."""
     q, counts = curve
-    with pytest.raises(ValueError, match="repeated"):
-        preprocess_measured(np.r_[q, q[10]], np.r_[counts, counts[10]], cfg, CPU)
+    twice = np.r_[q[:200], q[150:]], np.r_[counts[:200], 3 * counts[150:]]
+    with pytest.warns(UserWarning, match="50 points share a q value"):
+        got = preprocess_measured(*twice, cfg, CPU)
+    merged = np.r_[counts[:150], 2 * counts[150:200], 3 * counts[200:]]
+    assert _same(got, preprocess_measured(q, merged, cfg, CPU))
+
+
+def test_swapped_arguments_with_normalised_reflectivity_are_rejected(cfg, curve):
+    """R already in 0-1 overlaps the q grid, so the range check alone cannot catch the swap."""
+    q, counts = curve
+    with pytest.raises(ValueError, match="argument order"):
+        preprocess_measured(counts / counts.max(), q, cfg, CPU)
