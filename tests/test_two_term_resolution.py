@@ -68,7 +68,7 @@ def test_proportional_term_matches_the_generator(dq_over_q):
     assert np.abs(np.log10(got[inner]) - np.log10(want[inner])).max() < 0.01
 
 
-def _refine(two_term: bool, offset: bool, seed: int = 1) -> tuple[float, float]:
+def _refine(two_term: bool, offset: bool, seed: int = 1) -> tuple[float, float, float]:
     """#14's case: film on Si, dq/q = 2 %, 1e7 counts, bkg 1e-7, refined from the truth."""
     tth = np.arange(0.2, 6.0001, 0.02)
     q = tth2q(tth, WL)
@@ -77,7 +77,7 @@ def _refine(two_term: bool, offset: bool, seed: int = 1) -> tuple[float, float]:
     _, r_obs, mask = preprocess_measured(q, counts.astype(float), CFG, DEV)
     cfg = RefineConfig(fit_dq_rel=two_term, fit_tth_offset=offset)
     with torch.enable_grad():
-        p, _ = refine(
+        p, info = refine(
             torch.tensor([list(FILM)]),
             torch.tensor([[20.0, 3.0]]),
             CFG.q_grid,
@@ -88,18 +88,20 @@ def _refine(two_term: bool, offset: bool, seed: int = 1) -> tuple[float, float]:
             config=cfg,
             device=DEV,
         )
-    return float(p[0, 0]), float(p[0, 2])
+    return float(p[0, 0]), float(p[0, 2]), float(info.get("dq_rel", [float("nan")])[0])
 
 
 def test_two_term_model_recovers_the_film_with_the_offset_fixed():
-    thickness, sld = _refine(two_term=True, offset=False)
+    thickness, sld, dq_rel = _refine(two_term=True, offset=False)
     assert thickness == pytest.approx(FILM[0], rel=0.01)
     assert sld == pytest.approx(FILM[2], rel=0.01)  # the constant-only model gives 44.3 here
+    # the data's dq/q; an Occam prior on the resolution held it at 0.009
+    assert dq_rel == pytest.approx(0.02, rel=0.1)
 
 
 @pytest.mark.xfail(strict=True, reason="ReflectoLearn#14: the offset drifts in the refine path")
 def test_two_term_model_recovers_the_film_with_the_offset_fitted():
-    _, sld = _refine(two_term=True, offset=True)
+    _, sld, _ = _refine(two_term=True, offset=True)
     assert sld == pytest.approx(FILM[2], rel=0.05)  # measured: 34.4, offset -0.068 deg
 
 

@@ -53,8 +53,8 @@ OXIDE_KEYS = ("oxide_thickness", "oxide_sld", "oxide_roughness")
 # value (= effect off) so they only turn on "when truly needed". {key: neutral}.
 #   oxide_thickness=0 -> no oxide layer, dq=0 -> no smearing.
 # tth_offset is excluded: it is well identified by fringe positions, so its
-# degeneracy risk is low.
-_PENALIZE_NEUTRAL = {"oxide_thickness": 0.0, "dq": 0.0, "dq_rel": 0.0}
+# degeneracy risk is low. With the two-term resolution (fit_dq_rel) dq is excluded too, see there.
+_PENALIZE_NEUTRAL = {"oxide_thickness": 0.0, "dq": 0.0}
 
 # Curves per checkpointed chunk in the q-dependent smearing (bounds its (chunk, Q, K) weights).
 _SMEAR_CHUNK = 4
@@ -143,6 +143,8 @@ class RefineConfig:
     fit_dq: bool = True  # resolution (q-smearing)
     # q-proportional resolution, sigma(q) = sqrt(dq² + (dq_rel·q)²): angular divergence gives the
     # constant part, the wavelength spread the proportional one. Off keeps the constant-only model.
+    # On, neither term gets the Occam prior: the q dependence of the smearing tells them apart, and
+    # at dq/q = 2 % the pull, 0.2·(0.02/0.05)², is three times the log-MSE and held dq_rel near 0.009.
     fit_dq_rel: bool = False
     fit_kalpha2: bool = True  # Cu Kα2 doublet (matches generator)
     fit_footprint: bool = True  # low-angle footprint attenuation (beam > sample)
@@ -169,7 +171,7 @@ class RefineConfig:
     # Initial values
     bkg_init: float = -7.0
     dq_init: float = 0.002
-    dq_rel_init: float = 0.01  # mid lab range (Cu + Göbel mirror ~0.5-2 % dq/q); Occam pulls to 0
+    dq_rel_init: float = 0.01  # mid lab range (Cu + Göbel mirror ~0.5-2 % dq/q)
     kalpha2_ratio_init: float = 0.5  # start near the Cu physical value
     footprint_init: float = 2000.0  # start at weak attenuation (data shrinks it if needed)
     oxide_thickness_init: float = 5.0
@@ -418,6 +420,10 @@ def refine(
         flag = _NUISANCE_FLAG.get(key)
         return bool(getattr(config, flag)) if flag else False
 
+    penalized = {
+        k: v for k, v in _PENALIZE_NEUTRAL.items() if not (config.fit_dq_rel and k == "dq")
+    }
+
     def _reg(vals: dict[str, Tensor], keys: list[str]) -> Tensor:
         """Occam prior: L2 penalty pulling risky nuisances under optimization toward
         their neutral (off) value.
@@ -428,7 +434,7 @@ def refine(
         total = q_grid.new_zeros(())
         if config.nuisance_reg <= 0.0:
             return total
-        for k, neutral in _PENALIZE_NEUTRAL.items():
+        for k, neutral in penalized.items():
             if k in keys:
                 lo, hi = bounds[k]
                 total = total + (((vals[k] - neutral) / (hi - lo)) ** 2).mean()
