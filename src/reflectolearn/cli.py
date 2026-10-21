@@ -370,6 +370,9 @@ def export_onnx_command(
     stats: Path | None = typer.Option(
         None, "--stats", help="stats.pt. Defaults to next to the checkpoint."
     ),
+    note: str | None = typer.Option(
+        None, "--note", help="What the model is, stored in the JSON for whoever shows its output."
+    ),
 ):
     """Export the CNN to ONNX (physical outputs) plus a JSON input contract (needs the onnx extra)."""
     from reflectolearn.export import export_onnx
@@ -382,7 +385,7 @@ def export_onnx_command(
         stats = exp_dir / "stats.pt"
     cfg = _load_config(config_path, [])
     model, mean, std = load_predictor(cfg, checkpoint, stats, torch.device("cpu"))
-    meta = export_onnx(model, mean, std, cfg, out)
+    meta = export_onnx(model, mean, std, cfg, out, note=note)
     logger.info(f"Wrote {out} and {meta}")
 
 

@@ -30,7 +30,7 @@ def exported(tmp_path_factory):
     model = XRRPhysicsModel(q_len=CFG.simulation.q_points, n_channels=8, mlp_hidden=32).eval()
     stats = param_stats(CFG)
     out = tmp_path_factory.mktemp("onnx") / "model.onnx"
-    meta = export_onnx(model, stats["mean"], stats["std"], CFG, out)
+    meta = export_onnx(model, stats["mean"], stats["std"], CFG, out, note="untrained test model")
     return model, stats, out, meta
 
 
@@ -66,5 +66,6 @@ def test_contract_describes_the_input(exported):
     assert grid["start"] == pytest.approx(float(q[0]))
     assert grid["stop"] == pytest.approx(float(q[-1]))
     assert contract["output"]["order"] == ["thickness", "roughness", "sld"]
+    assert contract["model"]["note"] == "untrained test model"
     x = measured_input()
     assert float(x[0, 0].min()) == pytest.approx(contract["input"]["log_floor"])

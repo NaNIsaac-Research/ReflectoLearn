@@ -73,8 +73,13 @@ def input_contract(cfg: Config) -> dict:
     }
 
 
-def export_onnx(model: nn.Module, mean: Tensor, std: Tensor, cfg: Config, out: Path) -> Path:
-    """Write ``out`` (ONNX) and ``out`` with suffix .json (input contract). Returns the JSON path."""
+def export_onnx(
+    model: nn.Module, mean: Tensor, std: Tensor, cfg: Config, out: Path, note: str | None = None
+) -> Path:
+    """Write ``out`` (ONNX) and ``out`` with suffix .json (input contract). Returns the JSON path.
+
+    ``note`` says what the model is (training run, status) for whoever shows its output.
+    """
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     wrapped = PhysicalOutput(model.cpu().eval(), mean.cpu(), std.cpu()).eval()
@@ -90,5 +95,8 @@ def export_onnx(model: nn.Module, mean: Tensor, std: Tensor, cfg: Config, out: P
         external_data=False,
     )
     meta = out.with_suffix(".json")
-    meta.write_text(json.dumps(input_contract(cfg), indent=2), encoding="utf-8")
+    contract = input_contract(cfg)
+    if note:
+        contract["model"] = {"note": note}
+    meta.write_text(json.dumps(contract, indent=2), encoding="utf-8")
     return meta
