@@ -101,3 +101,13 @@ def test_two_term_model_recovers_the_film_with_the_offset_fixed():
 def test_two_term_model_recovers_the_film_with_the_offset_fitted():
     _, sld = _refine(two_term=True, offset=True)
     assert sld == pytest.approx(FILM[2], rel=0.05)  # measured: 34.4, offset -0.068 deg
+
+
+def test_kernel_covers_the_top_of_the_refine_grid():
+    """refine's grid runs to 2θ ≈ 15° (q ≈ 1.07); dq_rel·q there is several times dq_bounds[1]."""
+    q = CFG.q_grid.float()
+    got = forward(q, fit_dq_rel=True)(state(dq=0.0, dq_rel=0.04), {"dq"})[0].numpy()
+    layers = [(0j, 0, 0), (FILM[2] + 0j, FILM[0], FILM[1]), (SI.real + 0j, 0, 3.0)]
+    want = smeared(q.numpy().astype(float), layers, 0.04)
+    top = slice(-700, -350)  # q ≈ 0.7-0.9, clear of the padding at the end
+    assert np.abs(np.log10(got[top]) - np.log10(want[top])).max() < 0.01
