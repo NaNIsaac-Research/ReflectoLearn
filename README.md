@@ -18,11 +18,15 @@ The CNN is trained only on simulated curves, generated on the fly, so no dataset
 
 Uses [uv](https://docs.astral.sh/uv/); Python 3.11 or newer.
 
+<!-- test -->
 ```bash
 git clone https://github.com/NaNIsaac/ReflectoLearn.git
 cd ReflectoLearn
 uv sync
+uv run reflectolearn --help
 ```
+
+The last line prints the command list and exits with an error if the install is broken.
 
 On Windows, `torch` is taken from the PyTorch CUDA 12.8 index; other platforms use the default PyPI wheel.
 
