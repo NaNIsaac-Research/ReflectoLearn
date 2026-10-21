@@ -1,4 +1,4 @@
-"""Two-term resolution sigma(q) = sqrt(dq² + (dq_rel·q)²) in refine (ReflectoLearn#14, T2 step iii).
+"""Two-term resolution sigma(q) = sqrt(dq² + (dq_rel·q)²) in refine (ReflectoLearn#14).
 
 The generator (`benchmark.smeared`) smears with sigma = dq/q · q; refine's default fits a constant
 sigma. `fit_dq_rel` adds the proportional term. Units: q and dq in 1/Å, dq_rel dimensionless.
