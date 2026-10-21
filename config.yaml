@@ -1,5 +1,5 @@
-experiment_name: C:\WorkSpace\05_Resources\Data\XRR_AI\reflectolearn\exp3
-save_root: C:\WorkSpace\05_Resources\Data\XRR_AI\reflectolearn
+experiment_name: exp
+save_root: runs
 device: cuda
 param_ranges:
   thickness:
