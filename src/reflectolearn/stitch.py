@@ -4,6 +4,7 @@ The last scan is the intensity reference. Going backwards, each earlier scan is
 scaled so its last point equals the first point of the following scan, and that
 duplicate boundary point is dropped. Adjacent scans must share one x value.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

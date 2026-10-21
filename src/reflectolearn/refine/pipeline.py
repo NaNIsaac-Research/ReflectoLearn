@@ -25,6 +25,7 @@ forward-model mismatch from leaking into the parameters of interest (thickness e
 Bound constraints map a latent variable ``z`` through a sigmoid onto [lo, hi],
 keeping parameters within their physical range throughout gradient descent.
 """
+
 from __future__ import annotations
 
 import math
@@ -72,12 +73,12 @@ class RefineStage:
     """One refinement stage: which parameters to optimize, with which loss, for how many steps."""
 
     name: str
-    optimize: tuple[str, ...]          # subset of PARAM_KEYS + nuisance keys
-    loss: str = "log_mse"              # key into LOSS_PRESETS
+    optimize: tuple[str, ...]  # subset of PARAM_KEYS + nuisance keys
+    loss: str = "log_mse"  # key into LOSS_PRESETS
     steps: int = 200
     lr: float = 0.03
-    q_min: float | None = None         # [Å^-1] lower q bound seen in this stage
-    q_max: float | None = None         # [Å^-1] upper q bound seen in this stage
+    q_min: float | None = None  # [Å^-1] lower q bound seen in this stage
+    q_max: float | None = None  # [Å^-1] upper q bound seen in this stage
 
 
 def _default_stages() -> list[RefineStage]:
@@ -86,32 +87,56 @@ def _default_stages() -> list[RefineStage]:
         # 1) Intensity/background/alignment: fit i0, bkg, tth_offset + footprint
         #    with a linear loss (low-angle amplitude/critical angle; footprint's
         #    low-angle rolloff is captured here too).
-        RefineStage("1.scale", optimize=("i0", "bkg", "tth_offset", "footprint"),
-                    loss="linear_mse", steps=120, lr=0.05),
+        RefineStage(
+            "1.scale",
+            optimize=("i0", "bkg", "tth_offset", "footprint"),
+            loss="linear_mse",
+            steps=120,
+            lr=0.05,
+        ),
         # 2) Film structure (period): fit thickness/SLD + q-zero with a correlation
         #    loss (invariant to scale and attenuation).
-        RefineStage("2.structure", optimize=("thickness", "sld", "tth_offset"),
-                    loss="correlation", steps=200, lr=0.03),
+        RefineStage(
+            "2.structure",
+            optimize=("thickness", "sld", "tth_offset"),
+            loss="correlation",
+            steps=200,
+            lr=0.03,
+        ),
         # 3) Fine tuning: refine everything (roughness/resolution/Kα2/footprint/oxide)
         #    with a log loss.
-        RefineStage("3.fine",
-                    optimize=("thickness", "roughness", "sld", "i0", "bkg",
-                              "tth_offset", "dq", "kalpha2_ratio", "footprint", *OXIDE_KEYS),
-                    loss="log_mse", steps=300, lr=0.01),
+        RefineStage(
+            "3.fine",
+            optimize=(
+                "thickness",
+                "roughness",
+                "sld",
+                "i0",
+                "bkg",
+                "tth_offset",
+                "dq",
+                "kalpha2_ratio",
+                "footprint",
+                *OXIDE_KEYS,
+            ),
+            loss="log_mse",
+            steps=300,
+            lr=0.01,
+        ),
     ]
 
 
 @dataclass
 class RefineConfig:
-    trust_margin: float = 0.4                       # trust-region half-width ratio about the AI estimate
+    trust_margin: float = 0.4  # trust-region half-width ratio about the AI estimate
     # nuisance active flags
-    fit_i0: bool = True                             # intensity scale
-    fit_bkg: bool = True                            # background (log10)
-    fit_tth_offset: bool = True                     # q-axis zero offset
-    fit_dq: bool = True                             # resolution (q-smearing)
-    fit_kalpha2: bool = True                        # Cu Kα2 doublet (matches generator)
-    fit_footprint: bool = True                      # low-angle footprint attenuation (beam > sample)
-    fit_oxide: bool = True                          # native oxide (nuisance layer)
+    fit_i0: bool = True  # intensity scale
+    fit_bkg: bool = True  # background (log10)
+    fit_tth_offset: bool = True  # q-axis zero offset
+    fit_dq: bool = True  # resolution (q-smearing)
+    fit_kalpha2: bool = True  # Cu Kα2 doublet (matches generator)
+    fit_footprint: bool = True  # low-angle footprint attenuation (beam > sample)
+    fit_oxide: bool = True  # native oxide (nuisance layer)
     # Occam prior weight: pulls oxide thickness / dq toward neutral to suppress
     # spurious degeneracy. 0 disables regularization. Applied only to keys in
     # _PENALIZE_NEUTRAL (tuned for the log_mse stage).
@@ -119,22 +144,22 @@ class RefineConfig:
     # Global bounds (nuisances use fixed ranges, no trust-region).
     i0_bounds: tuple[float, float] = (0.5, 2.0)
     bkg_bounds: tuple[float, float] = (-10.0, -4.0)
-    tth_offset_bounds: tuple[float, float] = (-0.08, 0.08)     # [deg]
-    dq_bounds: tuple[float, float] = (0.0, 0.012)              # [Å^-1] resolution sigma
-    kalpha2_ratio_bounds: tuple[float, float] = (0.0, 0.6)     # Kα2/Kα1 intensity ratio
-    kalpha2_wavelength: float = 1.54439                        # [A] Cu Kα2 (same as generator)
+    tth_offset_bounds: tuple[float, float] = (-0.08, 0.08)  # [deg]
+    dq_bounds: tuple[float, float] = (0.0, 0.012)  # [Å^-1] resolution sigma
+    kalpha2_ratio_bounds: tuple[float, float] = (0.0, 0.6)  # Kα2/Kα1 intensity ratio
+    kalpha2_wavelength: float = 1.54439  # [A] Cu Kα2 (same as generator)
     # footprint effective scale s: factor = erf(s·sinθ). Large s -> erf≈1 -> attenuation off.
     # Generously covers the augmentation (beam_width, sample_len) range (s≈300~5300).
     footprint_bounds: tuple[float, float] = (150.0, 8000.0)
     oxide_thickness_bounds: tuple[float, float] = (0.0, 60.0)  # [A]
     # Constrain near native-oxide (e.g. SiO2) SLD -> eases degeneracy with film SLD.
-    oxide_sld_bounds: tuple[float, float] = (15.0, 22.0)       # [x1e-6 A^-2]
+    oxide_sld_bounds: tuple[float, float] = (15.0, 22.0)  # [x1e-6 A^-2]
     oxide_roughness_bounds: tuple[float, float] = (0.0, 12.0)  # [A]
     # Initial values
     bkg_init: float = -7.0
     dq_init: float = 0.002
-    kalpha2_ratio_init: float = 0.5            # start near the Cu physical value
-    footprint_init: float = 2000.0             # start at weak attenuation (data shrinks it if needed)
+    kalpha2_ratio_init: float = 0.5  # start near the Cu physical value
+    footprint_init: float = 2000.0  # start at weak attenuation (data shrinks it if needed)
     oxide_thickness_init: float = 5.0
     oxide_sld_init: float = 18.0
     oxide_roughness_init: float = 3.0
@@ -156,7 +181,7 @@ def _film_bounds(param_ranges, p_init: Tensor, margin: float) -> dict[str, tuple
         half = margin * guess.abs().clamp_min(0.1 * span)
         lo = (guess - half).clamp(g_lo, g_hi)
         hi = (guess + half).clamp(g_lo, g_hi)
-        lo = torch.minimum(lo, hi - 1e-3 * span)     # ensure lo < hi (hi stays <= g_hi)
+        lo = torch.minimum(lo, hi - 1e-3 * span)  # ensure lo < hi (hi stays <= g_hi)
         bounds[key] = (lo, hi)
     return bounds
 
@@ -177,8 +202,14 @@ def _stage_effects(opt_keys: list[str]) -> set[str]:
     return eff
 
 
-def make_forward(q_grid: Tensor, substrate: Tensor, *, wavelength: float, config: RefineConfig,
-                 device: torch.device) -> Callable[[dict[str, Tensor], set[str]], Tensor]:
+def make_forward(
+    q_grid: Tensor,
+    substrate: Tensor,
+    *,
+    wavelength: float,
+    config: RefineConfig,
+    device: torch.device,
+) -> Callable[[dict[str, Tensor], set[str]], Tensor]:
     """Build the forward model refine fits with: film (+oxide) on a fixed substrate, plus the active
     nuisance effects. The returned function takes a dict of (W,) parameter tensors for any batch size W
     (refine's batch, or every MCMC walker at once) and returns (W, Q) reflectivity.
@@ -194,12 +225,12 @@ def make_forward(q_grid: Tensor, substrate: Tensor, *, wavelength: float, config
     def _smear(R: Tensor, dq: Tensor) -> Tensor:
         """Differentiable Gaussian q-smearing. dq(B,) = sigma in q units. Kernel width is fixed."""
         B = R.shape[0]
-        sigma_px = (dq / grid_dq).clamp_min(1e-3).unsqueeze(1)               # (B, 1)
+        sigma_px = (dq / grid_dq).clamp_min(1e-3).unsqueeze(1)  # (B, 1)
         xs = torch.arange(-max_half, max_half + 1, device=device, dtype=R.dtype)
-        kernel = torch.exp(-0.5 * (xs.unsqueeze(0) / sigma_px) ** 2)         # (B, K)
+        kernel = torch.exp(-0.5 * (xs.unsqueeze(0) / sigma_px) ** 2)  # (B, K)
         kernel = kernel / kernel.sum(1, keepdim=True)
         inp = F.pad(R.unsqueeze(0), (max_half, max_half), mode="replicate")  # (1, B, Q+2h)
-        out = F.conv1d(inp, kernel.unsqueeze(1), groups=B)                   # (1, B, Q)
+        out = F.conv1d(inp, kernel.unsqueeze(1), groups=B)  # (1, B, Q)
         return out.squeeze(0)
 
     def simulate(vals: dict[str, Tensor], active: set[str]) -> Tensor:
@@ -221,9 +252,9 @@ def make_forward(q_grid: Tensor, substrate: Tensor, *, wavelength: float, config
             top_rough, mid_rough = vals["roughness"], zeros
             ox_thk, ox_sld = zeros, vals["sld"]
 
-        sld_t = torch.stack([zeros, ox_sld, vals["sld"], sub_sld], dim=1)        # (B, 4)
-        thk_t = torch.stack([zeros, ox_thk, vals["thickness"]], dim=1)           # (B, 3)
-        rgh_t = torch.stack([top_rough, mid_rough, sub_rough], dim=1)            # (B, 3)
+        sld_t = torch.stack([zeros, ox_sld, vals["sld"], sub_sld], dim=1)  # (B, 4)
+        thk_t = torch.stack([zeros, ox_thk, vals["thickness"]], dim=1)  # (B, 3)
+        rgh_t = torch.stack([top_rough, mid_rough, sub_rough], dim=1)  # (B, 3)
 
         def _refl(qq: Tensor) -> Tensor:
             if qq.dim() == 1:
@@ -243,7 +274,7 @@ def make_forward(q_grid: Tensor, substrate: Tensor, *, wavelength: float, config
         if config.fit_footprint and "footprint" in active:
             sin_theta = q_use * (wavelength / (4.0 * math.pi))
             if sin_theta.dim() == 1:
-                sin_theta = sin_theta.unsqueeze(0)                 # (1, Q) -> broadcast
+                sin_theta = sin_theta.unsqueeze(0)  # (1, Q) -> broadcast
             arg = vals["footprint"].unsqueeze(-1) * sin_theta.clamp_min(0.0)
             R = R * torch.erf(arg)
 
@@ -256,12 +287,12 @@ def make_forward(q_grid: Tensor, substrate: Tensor, *, wavelength: float, config
 
 
 def refine(
-    p_init: Tensor,            # (B, 3) physical values [thickness, roughness, sld] (AI initial guess)
-    substrate: Tensor,         # (B, 2) [sub_sld, sub_rough] (fixed)
-    q_grid: Tensor,            # (Q,) [Å^-1]
-    log_r_obs: Tensor,         # (B, Q) measured reflectivity log10
-    mask: Tensor,              # (B, Q) valid-q mask
-    param_ranges,              # config.param_ranges (.thickness etc. as [lo, hi])
+    p_init: Tensor,  # (B, 3) physical values [thickness, roughness, sld] (AI initial guess)
+    substrate: Tensor,  # (B, 2) [sub_sld, sub_rough] (fixed)
+    q_grid: Tensor,  # (Q,) [Å^-1]
+    log_r_obs: Tensor,  # (B, Q) measured reflectivity log10
+    mask: Tensor,  # (B, Q) valid-q mask
+    param_ranges,  # config.param_ranges (.thickness etc. as [lo, hi])
     *,
     wavelength: float,
     config: RefineConfig | None = None,
@@ -299,7 +330,9 @@ def refine(
     def _scalar_bounds(b: tuple[float, float]) -> tuple[Tensor, Tensor]:
         return (torch.tensor(b[0], device=device), torch.tensor(b[1], device=device))
 
-    bounds: dict[str, tuple[Tensor, Tensor]] = _film_bounds(param_ranges, p_init, config.trust_margin)
+    bounds: dict[str, tuple[Tensor, Tensor]] = _film_bounds(
+        param_ranges, p_init, config.trust_margin
+    )
     bounds["i0"] = _scalar_bounds(config.i0_bounds)
     bounds["bkg"] = _scalar_bounds(config.bkg_bounds)
     bounds["tth_offset"] = _scalar_bounds(config.tth_offset_bounds)
@@ -383,7 +416,7 @@ def refine(
                 lo, hi = bounds[k]
                 cur[k] = (lo + (hi - lo) * torch.sigmoid(z[k])).detach()
 
-    active: set[str] = set()         # once enabled, an effect stays on through later stages / final FOM
+    active: set[str] = set()  # once enabled, an effect stays on through later stages / final FOM
 
     # Fair baseline: so that both fom_before/after measure "film-parameter fit
     # quality", before measuring we keep film parameters **fixed** at AI-init and
@@ -394,8 +427,7 @@ def refine(
     # active, we leave active=∅ here.
     base_keys = [k for k in ("i0", "bkg") if _enabled(k)]
     if base_keys:
-        _optimize(base_keys, log_mse_loss, steps=80, lr=0.05,
-                  active_set=active, stage_mask=mask)
+        _optimize(base_keys, log_mse_loss, steps=80, lr=0.05, active_set=active, stage_mask=mask)
     fom_before = fom(active)
 
     for stage in config.stages:
@@ -443,8 +475,14 @@ def per_curve_log_mse(r: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
     return se.sum(1) / mask.sum(1).clamp_min(1.0)
 
 
-def fft_thickness(q_grid: Tensor, log_r_obs: Tensor, mask: Tensor, d_range: tuple[float, float],
-                  sld: Tensor | None = None, d_min: float = 60.0) -> Tensor:
+def fft_thickness(
+    q_grid: Tensor,
+    log_r_obs: Tensor,
+    mask: Tensor,
+    d_range: tuple[float, float],
+    sld: Tensor | None = None,
+    d_min: float = 60.0,
+) -> Tensor:
     """(B,) film thickness from the Kiessig period, independent of the network: the strongest peak of
     the real-space transform of the detrended log R (the Patterson-type peak at z = d).
 
@@ -460,8 +498,11 @@ def fft_thickness(q_grid: Tensor, log_r_obs: Tensor, mask: Tensor, d_range: tupl
     q = q_grid.detach().double().cpu().numpy()
     y_all = log_r_obs.detach().double().cpu().numpy()
     m_all = mask.detach().cpu().numpy() > 0
-    qc2 = (16e-6 * np.pi * sld.detach().double().cpu().numpy().clip(0) if sld is not None
-           else np.zeros(len(y_all)))
+    qc2 = (
+        16e-6 * np.pi * sld.detach().double().cpu().numpy().clip(0)
+        if sld is not None
+        else np.zeros(len(y_all))
+    )
     z = np.arange(max(d_min, d_range[0]) - 1.0, d_range[1] + 2.0, 1.0)
     out = []
     for y, m, c2 in zip(y_all, m_all, qc2, strict=True):
@@ -469,7 +510,7 @@ def fft_thickness(q_grid: Tensor, log_r_obs: Tensor, mask: Tensor, d_range: tupl
         if ok.size < 40:
             out.append(np.nan)
             continue
-        start = ok[0] + int(np.argmax(y[ok]))          # skip the plateau and the critical edge
+        start = ok[0] + int(np.argmax(y[ok]))  # skip the plateau and the critical edge
         idx = ok[(ok > start + 5) & (q[ok] ** 2 > 1.2 * c2)]
         if idx.size < 40:
             out.append(np.nan)
@@ -517,8 +558,9 @@ def refine_multistart(
     device = device or p_init.device
     B = p_init.shape[0]
     g_lo, g_hi = param_ranges.thickness
-    d_fft = fft_thickness(q_grid.to(device), log_r_obs.to(device), mask.to(device), (g_lo, g_hi),
-                          sld=p_init[:, 2])
+    d_fft = fft_thickness(
+        q_grid.to(device), log_r_obs.to(device), mask.to(device), (g_lo, g_hi), sld=p_init[:, 2]
+    )
     labels, starts = [], []
     for f in thickness_factors:
         p = p_init.detach().clone().float().to(device)
@@ -536,8 +578,18 @@ def refine_multistart(
 
     sub = rep(substrate) if substrate.shape[0] == B else substrate
     obs, msk = rep(log_r_obs.to(device)), rep(mask.to(device))
-    p_all, info_all = refine(torch.cat(starts), sub, q_grid, obs, msk,
-                             param_ranges, wavelength=wavelength, config=config, device=device, verbose=verbose)
+    p_all, info_all = refine(
+        torch.cat(starts),
+        sub,
+        q_grid,
+        obs,
+        msk,
+        param_ranges,
+        wavelength=wavelength,
+        config=config,
+        device=device,
+        verbose=verbose,
+    )
     fom = per_curve_log_mse(info_all["r_fit"], obs, msk).view(S, B)
     d_all = p_all[:, 0].view(S, B)
     score = fom.clamp_min(1e-12).log() + fft_weight * (d_all / d_fft.unsqueeze(0)).log().abs()
@@ -545,8 +597,8 @@ def refine_multistart(
     allowed = fom <= fom.min(0).values * (1.0 + fom_tolerance)
     ai_row = list(thickness_factors).index(1.0) if 1.0 in thickness_factors else 0
     fallback = torch.where(allowed[ai_row], torch.full_like(by_fft, ai_row), fom.argmin(0))
-    best = torch.where(torch.isnan(d_fft), fallback, by_fft)             # (B,) winning start per curve
-    pick = best * B + torch.arange(B, device=fom.device)               # rows of the stacked batch
+    best = torch.where(torch.isnan(d_fft), fallback, by_fft)  # (B,) winning start per curve
+    pick = best * B + torch.arange(B, device=fom.device)  # rows of the stacked batch
 
     def select(v):
         if isinstance(v, Tensor) and v.dim() >= 1 and v.shape[0] == S * B:
@@ -570,6 +622,14 @@ def refine_multistart(
     return p_all[pick], info
 
 
-__all__ = ["RefineStage", "RefineConfig", "refine", "refine_multistart", "make_forward", "per_curve_log_mse",
-           "fft_thickness",
-           "PARAM_KEYS", "OXIDE_KEYS"]
+__all__ = [
+    "RefineStage",
+    "RefineConfig",
+    "refine",
+    "refine_multistart",
+    "make_forward",
+    "per_curve_log_mse",
+    "fft_thickness",
+    "PARAM_KEYS",
+    "OXIDE_KEYS",
+]

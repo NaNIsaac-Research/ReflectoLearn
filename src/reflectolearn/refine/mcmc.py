@@ -13,6 +13,7 @@ would shrink by about sqrt(grid points / measured points).
 Priors are flat within the same bounds refine used (trust region for the film, global ranges for
 the nuisances). All walkers are evaluated in one batch on the refine device.
 """
+
 from __future__ import annotations
 
 import math
@@ -28,10 +29,10 @@ LNSIGMA_BOUNDS = (-8.0, 1.0)  # spread of log10 R residuals: e^-8 to e^1
 
 def sample_posterior(
     info: dict,
-    substrate: Tensor,          # (1, 2) the substrate refine used for this curve
+    substrate: Tensor,  # (1, 2) the substrate refine used for this curve
     q_grid: Tensor,
-    log_r_obs: Tensor,          # (1, Q)
-    mask: Tensor,               # (1, Q)
+    log_r_obs: Tensor,  # (1, Q)
+    mask: Tensor,  # (1, Q)
     *,
     wavelength: float,
     config: RefineConfig | None = None,
@@ -60,11 +61,19 @@ def sample_posterior(
     device = device or log_r_obs.device
     state = {k: v.reshape(-1)[:1].to(device) for k, v in info["state"].items()}
     active = set(info["active"])
-    bounds = {k: (torch.as_tensor(lo, device=device).reshape(-1)[0].item(),
-                  torch.as_tensor(hi, device=device).reshape(-1)[0].item())
-              for k, (lo, hi) in info["bounds"].items()}
-    keys = [k for k in info["fitted"] if k in PARAM_KEYS or k in ("i0", "bkg") or _effect_on(k, active)]
-    forward = make_forward(q_grid, substrate[:1], wavelength=wavelength, config=config, device=device)
+    bounds = {
+        k: (
+            torch.as_tensor(lo, device=device).reshape(-1)[0].item(),
+            torch.as_tensor(hi, device=device).reshape(-1)[0].item(),
+        )
+        for k, (lo, hi) in info["bounds"].items()
+    }
+    keys = [
+        k for k in info["fitted"] if k in PARAM_KEYS or k in ("i0", "bkg") or _effect_on(k, active)
+    ]
+    forward = make_forward(
+        q_grid, substrate[:1], wavelength=wavelength, config=config, device=device
+    )
 
     obs = log_r_obs[:1].to(device).float()
     m = mask[:1].to(device).float()
@@ -90,7 +99,7 @@ def sample_posterior(
         ok = np.all((theta > lo) & (theta < hi), axis=1)
         if ok.any():
             s = np.exp(theta[ok, -1])
-            out[ok] = weight * (-0.5 * residual_sq(theta[ok]) / s ** 2 - n_valid * np.log(s))
+            out[ok] = weight * (-0.5 * residual_sq(theta[ok]) / s**2 - n_valid * np.log(s))
         return out
 
     # Start every walker in a small ball around the refined state, inside the bounds.
@@ -101,7 +110,11 @@ def sample_posterior(
     nwalk = max(walkers_per_dim * ndim, 2 * ndim + 2)
     rng = np.random.default_rng(seed)
     width = (hi - lo) * 1e-3
-    p0 = np.clip(x0 + width * rng.standard_normal((nwalk, ndim)), lo + 1e-9 * (hi - lo), hi - 1e-9 * (hi - lo))
+    p0 = np.clip(
+        x0 + width * rng.standard_normal((nwalk, ndim)),
+        lo + 1e-9 * (hi - lo),
+        hi - 1e-9 * (hi - lo),
+    )
 
     sampler = emcee.EnsembleSampler(nwalk, ndim, log_prob, vectorize=True)
     sampler.random_state = np.random.RandomState(seed)
@@ -132,8 +145,15 @@ def sample_posterior(
 
 def _effect_on(key: str, active: set[str]) -> bool:
     """A nuisance key belongs in the posterior only if its effect was switched on in refine."""
-    effect = {"tth_offset": "tth_offset", "dq": "dq", "kalpha2_ratio": "kalpha2", "footprint": "footprint",
-              "oxide_thickness": "oxide", "oxide_sld": "oxide", "oxide_roughness": "oxide"}.get(key)
+    effect = {
+        "tth_offset": "tth_offset",
+        "dq": "dq",
+        "kalpha2_ratio": "kalpha2",
+        "footprint": "footprint",
+        "oxide_thickness": "oxide",
+        "oxide_sld": "oxide",
+        "oxide_roughness": "oxide",
+    }.get(key)
     return effect in active
 
 

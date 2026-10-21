@@ -2,6 +2,7 @@
 
 Run via:  uv run -m reflectolearn   (or)  reflectolearn  (installed script)
 """
+
 from __future__ import annotations
 
 import ast
@@ -75,7 +76,9 @@ def config(
 def train(
     config_path: Path | None = typer.Option(None, "--config", "-c", help="Config YAML."),
     save_dir: Path | None = typer.Option(
-        None, "--save-dir", "-s",
+        None,
+        "--save-dir",
+        "-s",
         help="Output dir. Defaults to config's save_root/experiment_name.",
     ),
     override: list[str] = typer.Option([], "--set", help="Override e.g. training.lr=1e-3"),
@@ -120,23 +123,33 @@ def train(
 @app.command()
 def tune(
     config_path: Path | None = typer.Option(
-        None, "--config", "-c", help="Base config YAML. Defaults to cwd/config.yaml."),
+        None, "--config", "-c", help="Base config YAML. Defaults to cwd/config.yaml."
+    ),
     n_trials: int = typer.Option(30, "--trials", "-n", help="Number of trials to search."),
     epochs: int = typer.Option(12, "--epochs", help="Proxy training epochs per trial (reduced)."),
     steps: int = typer.Option(400, "--steps", help="Steps per epoch per trial (reduced)."),
     val_steps: int = typer.Option(80, "--val-steps", help="Validation steps per trial (reduced)."),
     seed: int = typer.Option(0, "--seed", help="Sampler/data seed (for fair comparison)."),
-    out: Path = typer.Option("config_best.yaml", "--out", "-o", help="Path to save the best config."),
+    out: Path = typer.Option(
+        "config_best.yaml", "--out", "-o", help="Path to save the best config."
+    ),
     storage: str | None = typer.Option(
-        None, "--storage",
+        None,
+        "--storage",
         help="Optuna storage URL. Defaults to auto-created <out>_study.db SQLite (resumable). "
-             "Use ':memory:' to run in-memory."),
+        "Use ':memory:' to run in-memory.",
+    ),
     study_name: str = typer.Option("reflectolearn", "--study-name", help="Optuna study name."),
     param: list[str] = typer.Option(
-        [], "--param", "-p",
+        [],
+        "--param",
+        "-p",
         help="Search only these parameters (repeatable). Defaults to searching all; "
-             "the rest are fixed at base-config values. e.g. -p model.fourier_features"),
-    override: list[str] = typer.Option([], "--set", help="Override fixed base values e.g. simulation.q_points=2000"),
+        "the rest are fixed at base-config values. e.g. -p model.fourier_features",
+    ),
+    override: list[str] = typer.Option(
+        [], "--set", help="Override fixed base values e.g. simulation.q_points=2000"
+    ),
 ):
     """Hyperparameter search (Optuna): find the best config via reduced training and save it as YAML."""
     from reflectolearn.tune import run_search
@@ -147,8 +160,14 @@ def tune(
     base_cfg = _load_config(config_path, override)
     run_search(
         base_cfg,
-        n_trials=n_trials, epochs=epochs, steps=steps, val_steps=val_steps,
-        seed=seed, out=out, storage=storage, study_name=study_name,
+        n_trials=n_trials,
+        epochs=epochs,
+        steps=steps,
+        val_steps=val_steps,
+        seed=seed,
+        out=out,
+        storage=storage,
+        study_name=study_name,
         search_params=param or None,
     )
 
@@ -156,18 +175,31 @@ def tune(
 @app.command()
 def evaluate(
     checkpoint: Path | None = typer.Argument(
-        None, help="Checkpoint path. Defaults to config's save_dir/best.pt."),
+        None, help="Checkpoint path. Defaults to config's save_dir/best.pt."
+    ),
     config_path: Path | None = typer.Option(
-        None, "--config", "-c", help="Config YAML. Defaults to cwd/config.yaml or config.yaml next to the checkpoint."),
+        None,
+        "--config",
+        "-c",
+        help="Config YAML. Defaults to cwd/config.yaml or config.yaml next to the checkpoint.",
+    ),
     stats: Path | None = typer.Option(
-        None, "--stats", help="stats.pt. Defaults to stats.pt next to the checkpoint."),
-    n_samples: int = typer.Option(2000, "--n-samples", help="Number of synthetic samples for evaluation."),
+        None, "--stats", help="stats.pt. Defaults to stats.pt next to the checkpoint."
+    ),
+    n_samples: int = typer.Option(
+        2000, "--n-samples", help="Number of synthetic samples for evaluation."
+    ),
     batch_size: int = typer.Option(200, "--batch-size", help="Inference batch size."),
     refine: bool = typer.Option(
-        False, "--refine/--no-refine",
-        help="Physics-refine AI predictions against the measured curve and compare before/after."),
+        False,
+        "--refine/--no-refine",
+        help="Physics-refine AI predictions against the measured curve and compare before/after.",
+    ),
     trust_margin: float = typer.Option(
-        0.4, "--trust-margin", help="Trust-region half-width ratio about the AI estimate during refine."),
+        0.4,
+        "--trust-margin",
+        help="Trust-region half-width ratio about the AI estimate during refine.",
+    ),
 ):
     """Full checkpoint evaluation: metrics (MAE/MAPE/RMSE/R2) + CSV + visualization report."""
     from reflectolearn.evaluate import XRREvaluator
@@ -207,25 +239,45 @@ def evaluate(
 
 @app.command()
 def predict(
-    data: Path = typer.Argument(..., help="Measured curve file (2 columns: 2theta[deg] or q, intensity)."),
+    data: Path = typer.Argument(
+        ..., help="Measured curve file (2 columns: 2theta[deg] or q, intensity)."
+    ),
     checkpoint: Path | None = typer.Option(
-        None, "--checkpoint", "-k", help="Checkpoint. Defaults to config's save_dir/best.pt."),
+        None, "--checkpoint", "-k", help="Checkpoint. Defaults to config's save_dir/best.pt."
+    ),
     config_path: Path | None = typer.Option(
-        None, "--config", "-c", help="Config YAML. Defaults to cwd or config.yaml next to the checkpoint."),
+        None,
+        "--config",
+        "-c",
+        help="Config YAML. Defaults to cwd or config.yaml next to the checkpoint.",
+    ),
     stats: Path | None = typer.Option(
-        None, "--stats", help="stats.pt. Defaults to stats.pt next to the checkpoint."),
-    x_axis: str = typer.Option("tth", "--x-axis", help="Input x-axis: 'tth' (2theta deg) or 'q' (Å⁻¹)."),
+        None, "--stats", help="stats.pt. Defaults to stats.pt next to the checkpoint."
+    ),
+    x_axis: str = typer.Option(
+        "tth", "--x-axis", help="Input x-axis: 'tth' (2theta deg) or 'q' (Å⁻¹)."
+    ),
     refine: bool = typer.Option(
-        True, "--refine/--no-refine", help="Physics-refine AI predictions against the measured curve."),
+        True,
+        "--refine/--no-refine",
+        help="Physics-refine AI predictions against the measured curve.",
+    ),
     trust_margin: float = typer.Option(
-        0.4, "--trust-margin", help="Refine trust-region half-width ratio."),
+        0.4, "--trust-margin", help="Refine trust-region half-width ratio."
+    ),
     alias_check: bool = typer.Option(
-        False, "--alias-check/--no-alias-check",
-        help="Experimental: also refine from d/2, 2d and the FFT thickness; pick by FOM plus FFT prior."),
+        False,
+        "--alias-check/--no-alias-check",
+        help="Experimental: also refine from d/2, 2d and the FFT thickness; pick by FOM plus FFT prior.",
+    ),
     mcmc_steps: int = typer.Option(
-        0, "--mcmc-steps", help="emcee steps for the posterior after refine (0 = off; needs the 'mcmc' extra)."),
+        0,
+        "--mcmc-steps",
+        help="emcee steps for the posterior after refine (0 = off; needs the 'mcmc' extra).",
+    ),
     out_dir: Path | None = typer.Option(
-        None, "--out-dir", "-o", help="Output folder. Defaults to next to the input file."),
+        None, "--out-dir", "-o", help="Output folder. Defaults to next to the input file."
+    ),
 ):
     """Infer one measured XRR curve, optionally refine the physics, and save the prediction + overlay plot."""
     from reflectolearn.predict import predict_file
@@ -249,12 +301,17 @@ def predict(
 
     cfg = _load_config(config_path, [])
     predict_file(
-        data, cfg, checkpoint,
-        stats_path=stats, x_axis=x_axis,
+        data,
+        cfg,
+        checkpoint,
+        stats_path=stats,
+        x_axis=x_axis,
         refine_enabled=refine,
         refine_config=RefineConfig(trust_margin=trust_margin) if refine else None,
-        alias_check=alias_check, mcmc_steps=mcmc_steps,
-        device=cfg.device, out_dir=out_dir,
+        alias_check=alias_check,
+        mcmc_steps=mcmc_steps,
+        device=cfg.device,
+        out_dir=out_dir,
     )
 
 
@@ -262,13 +319,24 @@ def predict(
 def benchmark(
     checkpoint: Path = typer.Option(..., "--checkpoint", "-k", help="Checkpoint to benchmark."),
     config_path: Path | None = typer.Option(
-        None, "--config", "-c", help="Config YAML. Defaults to config.yaml next to the checkpoint."),
-    stats: Path | None = typer.Option(None, "--stats", help="stats.pt. Defaults to next to the checkpoint."),
-    n_synthetic: int = typer.Option(12, "--n", help="Synthetic curves (independent numpy Parratt, known truth)."),
+        None, "--config", "-c", help="Config YAML. Defaults to config.yaml next to the checkpoint."
+    ),
+    stats: Path | None = typer.Option(
+        None, "--stats", help="stats.pt. Defaults to next to the checkpoint."
+    ),
+    n_synthetic: int = typer.Option(
+        12, "--n", help="Synthetic curves (independent numpy Parratt, known truth)."
+    ),
     seed: int = typer.Option(2026, "--seed", help="Seed of the synthetic sets."),
-    alias_check: bool = typer.Option(False, "--alias-check/--no-alias-check", help="Refine from d/2, d, 2d and the FFT thickness (experimental)."),
+    alias_check: bool = typer.Option(
+        False,
+        "--alias-check/--no-alias-check",
+        help="Refine from d/2, d, 2d and the FFT thickness (experimental).",
+    ),
     mcmc_steps: int = typer.Option(0, "--mcmc-steps", help="emcee steps per curve (0 = off)."),
-    out_dir: Path = typer.Option(Path("benchmark_out"), "--out-dir", "-o", help="Where benchmark.json/.csv go."),
+    out_dir: Path = typer.Option(
+        Path("benchmark_out"), "--out-dir", "-o", help="Where benchmark.json/.csv go."
+    ),
 ):
     """Score predict on synthetic curves with known truth: random films and a few fixed example films."""
     from reflectolearn.benchmark import run_benchmark
@@ -279,13 +347,24 @@ def benchmark(
     if stats is None and (exp_dir / "stats.pt").exists():
         stats = exp_dir / "stats.pt"
     cfg = _load_config(config_path, [])
-    run_benchmark(cfg, checkpoint, stats_path=stats, n_synthetic=n_synthetic, seed=seed,
-                  alias_check=alias_check, mcmc_steps=mcmc_steps, out_dir=out_dir, device=cfg.device)
+    run_benchmark(
+        cfg,
+        checkpoint,
+        stats_path=stats,
+        n_synthetic=n_synthetic,
+        seed=seed,
+        alias_check=alias_check,
+        mcmc_steps=mcmc_steps,
+        out_dir=out_dir,
+        device=cfg.device,
+    )
 
 
 @app.command()
 def stitch(
-    scans: list[Path] = typer.Argument(..., help="Scan files (x, intensity, error) in increasing 2theta order."),
+    scans: list[Path] = typer.Argument(
+        ..., help="Scan files (x, intensity, error) in increasing 2theta order."
+    ),
     out: Path = typer.Option(..., "--out", "-o", help="Output text file."),
 ):
     """Stitch attenuator-segmented scans into one curve (last scan is the intensity reference)."""

@@ -49,8 +49,9 @@ class XRRAugmentor:
     def _u(lo: float, hi: float) -> float:
         return torch.empty(1).uniform_(lo, hi).item()
 
-    def _footprint(self, q: torch.Tensor, R: torch.Tensor,
-                   beam_width: float, sample_len: float) -> torch.Tensor:
+    def _footprint(
+        self, q: torch.Tensor, R: torch.Tensor, beam_width: float, sample_len: float
+    ) -> torch.Tensor:
         """Multiply R by an erf footprint factor in [0, 1] (low-angle cutoff)."""
         sin_theta = (q * self.wavelength / (4.0 * math.pi)).clamp(-1.0, 1.0)
         sigma_beam = beam_width / 2.3548  # FWHM -> sigma

@@ -10,17 +10,19 @@ from tqdm import tqdm
 
 
 class Trainer:
-    def __init__(self,
-        model: nn.Module, train_loader: DataLoader,
+    def __init__(
+        self,
+        model: nn.Module,
+        train_loader: DataLoader,
         val_loader: DataLoader,
         save_dir: str | Path,
         lr: float = 2e-4,  # Fourier-feature models are more stable with a slightly lower LR
         weight_decay: float = 1e-4,
         patience: int = 20,
-        verbose: bool = True,   # set False to silence per-trial logs (e.g. during HPO)
+        verbose: bool = True,  # set False to silence per-trial logs (e.g. during HPO)
     ):
         self.verbose = verbose
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = model.to(self.device)
 
         self.train_loader = train_loader
@@ -34,11 +36,9 @@ class Trainer:
 
         self.criterion = nn.MSELoss()
 
-        self.scheduler = ReduceLROnPlateau(
-            self.optimizer, mode='min', patience=7, factor=0.5
-        )
+        self.scheduler = ReduceLROnPlateau(self.optimizer, mode="min", patience=7, factor=0.5)
 
-        self.best_val_loss = float('inf')
+        self.best_val_loss = float("inf")
         self.patience_counter = 0
         self.early_stop_patience = patience
 
@@ -48,7 +48,9 @@ class Trainer:
         self.scaler = None
         if self.verbose:
             print(f"🚀 Trainer initialized on {self.device}")
-            print(f"   - Augmentation: {'Enabled' if getattr(train_loader.dataset, 'augment', False) else 'Disabled'}")
+            print(
+                f"   - Augmentation: {'Enabled' if getattr(train_loader.dataset, 'augment', False) else 'Disabled'}"
+            )
 
     def _train_epoch(self, epoch: int, total_epochs: int) -> float:
         self.model.train()
@@ -62,7 +64,7 @@ class Trainer:
             self.optimizer.zero_grad(set_to_none=True)
 
             if self.scaler:
-                with torch.amp.autocast('cuda'):
+                with torch.amp.autocast("cuda"):
                     preds = self.model(inputs)
                     loss = self.criterion(preds, targets)
 
@@ -79,7 +81,7 @@ class Trainer:
                 self.optimizer.step()
 
             running_loss += loss.item()
-            pbar.set_postfix({'loss': f'{loss.item():.6f}'})
+            pbar.set_postfix({"loss": f"{loss.item():.6f}"})
 
         return running_loss / len(self.train_loader)
 
@@ -120,15 +122,17 @@ class Trainer:
                 train_loss = self._train_epoch(epoch, epochs)
                 val_loss = self._validate()
 
-                self.history['train'].append(train_loss)
-                self.history['val'].append(val_loss)
-                self.history['lr'].append(self.optimizer.param_groups[0]['lr'])
+                self.history["train"].append(train_loss)
+                self.history["val"].append(val_loss)
+                self.history["lr"].append(self.optimizer.param_groups[0]["lr"])
 
                 self.scheduler.step(val_loss)
-                current_lr = self.optimizer.param_groups[0]['lr']
+                current_lr = self.optimizer.param_groups[0]["lr"]
 
                 if self.verbose:
-                    print(f"E{epoch:03d} | Train: {train_loss:.6f} | Val: {val_loss:.6f} | LR: {current_lr:.1e}")
+                    print(
+                        f"E{epoch:03d} | Train: {train_loss:.6f} | Val: {val_loss:.6f} | LR: {current_lr:.1e}"
+                    )
 
                 if val_loss < self.best_val_loss:
                     self.best_val_loss = val_loss
@@ -159,37 +163,44 @@ class Trainer:
 
     def _save_checkpoint(self, filename: str, epoch: int, val_loss: float):
         path = self.checkpoint_dir / filename
-        model_config = getattr(self.model, 'config', {})
+        model_config = getattr(self.model, "config", {})
 
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'scheduler_state_dict': self.scheduler.state_dict(),
-            'val_loss': val_loss,
-            'best_val_loss': self.best_val_loss,
-            'patience_counter': self.patience_counter,
-            'history': self.history,
-            'config': {'model_args': model_config}
-        }, path)
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": self.model.state_dict(),
+                "optimizer_state_dict": self.optimizer.state_dict(),
+                "scheduler_state_dict": self.scheduler.state_dict(),
+                "val_loss": val_loss,
+                "best_val_loss": self.best_val_loss,
+                "patience_counter": self.patience_counter,
+                "history": self.history,
+                "config": {"model_args": model_config},
+            },
+            path,
+        )
 
     def _load_checkpoint(self, filepath: str | Path) -> int:
         filepath = Path(filepath)
         if not filepath.exists():
             return 1
         checkpoint = torch.load(filepath, map_location=self.device, weights_only=False)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.model.load_state_dict(checkpoint["model_state_dict"])
 
-        if 'optimizer_state_dict' in checkpoint:
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        if 'scheduler_state_dict' in checkpoint:
-            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        if "optimizer_state_dict" in checkpoint:
+            self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        if "scheduler_state_dict" in checkpoint:
+            self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
 
-        self.history = checkpoint.get('history', self.history)
+        self.history = checkpoint.get("history", self.history)
         # Restore best_val_loss from its own key (val_loss is that epoch's loss, not the best).
-        self.best_val_loss = checkpoint.get('best_val_loss', checkpoint.get('val_loss', float('inf')))
-        self.patience_counter = checkpoint.get('patience_counter', 0)
+        self.best_val_loss = checkpoint.get(
+            "best_val_loss", checkpoint.get("val_loss", float("inf"))
+        )
+        self.patience_counter = checkpoint.get("patience_counter", 0)
 
-        print(f"🔄 Resuming from Epoch {checkpoint['epoch'] + 1} "
-              f"| best_val_loss={self.best_val_loss:.6f} | patience={self.patience_counter}")
-        return checkpoint['epoch'] + 1
+        print(
+            f"🔄 Resuming from Epoch {checkpoint['epoch'] + 1} "
+            f"| best_val_loss={self.best_val_loss:.6f} | patience={self.patience_counter}"
+        )
+        return checkpoint["epoch"] + 1

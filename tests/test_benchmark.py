@@ -43,10 +43,15 @@ def test_fixed_cases_lie_in_the_training_ranges():
 
 
 def test_score_reports_errors_and_interval():
-    res = {"ai": {"thickness": 90.0, "roughness": 4.0, "sld": 30.0},
-           "refined": {"thickness": 110.0, "roughness": 5.0, "sld": 31.0}, "fom_refined": 0.01,
-           "posterior": {"thickness": {"lo": 105.0, "hi": 115.0}}}
-    row = score("synthetic_fixed", "x", res, {"thickness": 100.0, "roughness": 5.0, "sld": 30.0}, 1.0)
+    res = {
+        "ai": {"thickness": 90.0, "roughness": 4.0, "sld": 30.0},
+        "refined": {"thickness": 110.0, "roughness": 5.0, "sld": 31.0},
+        "fom_refined": 0.01,
+        "posterior": {"thickness": {"lo": 105.0, "hi": 115.0}},
+    }
+    row = score(
+        "synthetic_fixed", "x", res, {"thickness": 100.0, "roughness": 5.0, "sld": 30.0}, 1.0
+    )
     assert row["thickness_err_pct"] == pytest.approx(10.0)
     assert row["thickness_lo"] == 105.0
     assert row["thickness_in_68"] is False
@@ -63,7 +68,10 @@ def test_run_benchmark_end_to_end(tmp_path, monkeypatch):
     monkeypatch.setattr(predict, "predict_curve", fake_predict)
     out = run_benchmark(CFG, "unused.pt", n_synthetic=2, seed=5, out_dir=tmp_path, device="cpu")
 
-    assert {k: v["n"] for k, v in out["summary"].items()} == {"synthetic": 2, "synthetic_fixed": len(FIXED_CASES)}
+    assert {k: v["n"] for k, v in out["summary"].items()} == {
+        "synthetic": 2,
+        "synthetic_fixed": len(FIXED_CASES),
+    }
     fixed = {r["case"]: r for r in out["rows"] if r["set"] == "synthetic_fixed"}
     for c in FIXED_CASES:
         assert fixed[c.name]["thickness_true"] == c.thickness

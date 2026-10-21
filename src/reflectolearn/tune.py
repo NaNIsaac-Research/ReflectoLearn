@@ -20,6 +20,7 @@ so they do not clutter the disk. Finally the best hyperparameters are applied to
 the base config and saved as YAML, and the full trial history is saved as CSV —
 just run ``reflectolearn train`` with the saved YAML.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -56,20 +57,28 @@ def _build_model(cfg: Config) -> XRRPhysicsModel:
 def _search_space(trial: optuna.Trial) -> dict[str, "callable"]:
     return {
         "training.lr": lambda: trial.suggest_float("training.lr", 1e-5, 3e-3, log=True),
-        "training.weight_decay": lambda: trial.suggest_float("training.weight_decay", 1e-7, 1e-2, log=True),
-        "training.batch_size": lambda: trial.suggest_categorical("training.batch_size", [32, 64, 128, 256]),
-        "model.n_channels": lambda: trial.suggest_categorical("model.n_channels", [32, 48, 64, 96, 128]),
+        "training.weight_decay": lambda: trial.suggest_float(
+            "training.weight_decay", 1e-7, 1e-2, log=True
+        ),
+        "training.batch_size": lambda: trial.suggest_categorical(
+            "training.batch_size", [32, 64, 128, 256]
+        ),
+        "model.n_channels": lambda: trial.suggest_categorical(
+            "model.n_channels", [32, 48, 64, 96, 128]
+        ),
         "model.depth": lambda: trial.suggest_int("model.depth", 4, 7),
-        "model.mlp_hidden": lambda: trial.suggest_categorical("model.mlp_hidden", [256, 384, 512, 768]),
+        "model.mlp_hidden": lambda: trial.suggest_categorical(
+            "model.mlp_hidden", [256, 384, 512, 768]
+        ),
         "model.dropout": lambda: trial.suggest_float("model.dropout", 0.0, 0.3),
         "model.fourier_scale": lambda: trial.suggest_float("model.fourier_scale", 5.0, 30.0),
-        "model.fourier_features": lambda: trial.suggest_categorical("model.fourier_features", [16, 32, 64, 128]),
+        "model.fourier_features": lambda: trial.suggest_categorical(
+            "model.fourier_features", [16, 32, 64, 128]
+        ),
     }
 
 
-def suggest_overrides(
-    trial: optuna.Trial, cfg: Config, only: list[str] | None = None
-) -> None:
+def suggest_overrides(trial: optuna.Trial, cfg: Config, only: list[str] | None = None) -> None:
     """Apply the search space directly to cfg (in-place). Key names match dotted paths.
 
     only: list of dotted-keys to search. None searches everything. If given, only
@@ -118,7 +127,10 @@ def objective(
     try:
         # Disable built-in early-stop (patience=epochs) and let the pruner handle early stopping.
         trainer = Trainer(
-            model, train_loader, val_loader, tmp,
+            model,
+            train_loader,
+            val_loader,
+            tmp,
             lr=cfg.training.lr,
             weight_decay=cfg.training.weight_decay,
             patience=epochs,
@@ -135,8 +147,10 @@ def objective(
 
     except torch.cuda.OutOfMemoryError:
         # Large batch x channel combinations can OOM -> prune as a failed trial.
-        logger.warning(f"trial {trial.number}: CUDA OOM (batch={cfg.training.batch_size}, "
-                       f"ch={cfg.model.n_channels}) -> pruned")
+        logger.warning(
+            f"trial {trial.number}: CUDA OOM (batch={cfg.training.batch_size}, "
+            f"ch={cfg.model.n_channels}) -> pruned"
+        )
         raise optuna.TrialPruned() from None
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -176,16 +190,25 @@ def run_search(
         sampler=sampler,
         pruner=pruner,
         study_name=study_name,
-        storage=storage,          # interrupt/resume supported when set, e.g. sqlite:///tune.db
+        storage=storage,  # interrupt/resume supported when set, e.g. sqlite:///tune.db
         load_if_exists=True,
     )
 
-    logger.info(f"HPO start: n_trials={n_trials}, epochs={epochs}, steps={steps}/val {val_steps}"
-                f"{f', params={search_params}' if search_params else ' (search all)'}"
-                f"{f', storage={storage}' if storage else ''}")
+    logger.info(
+        f"HPO start: n_trials={n_trials}, epochs={epochs}, steps={steps}/val {val_steps}"
+        f"{f', params={search_params}' if search_params else ' (search all)'}"
+        f"{f', storage={storage}' if storage else ''}"
+    )
     study.optimize(
-        lambda t: objective(t, base_cfg, epochs=epochs, steps=steps,
-                            val_steps=val_steps, seed=seed, search_params=search_params),
+        lambda t: objective(
+            t,
+            base_cfg,
+            epochs=epochs,
+            steps=steps,
+            val_steps=val_steps,
+            seed=seed,
+            search_params=search_params,
+        ),
         n_trials=n_trials,
         gc_after_trial=True,
     )

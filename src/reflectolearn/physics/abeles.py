@@ -4,6 +4,7 @@ Abeles matrix method.
 Physics engine for X-ray reflectivity calculation, optimized for batch
 processing and gradient descent.
 """
+
 import math
 import torch
 import torch.nn as nn
@@ -28,7 +29,7 @@ def abeles_core(q: Tensor, thickness: Tensor, roughness: Tensor, sld: Tensor) ->
         (B, Q) real - reflectivity R(q) = |M_10 / M_00|^2
     """
     # k_z (both q and sld are complex)
-    k_n = torch.sqrt((q / 2.0)**2 - 4.0 * math.pi * sld)
+    k_n = torch.sqrt((q / 2.0) ** 2 - 4.0 * math.pi * sld)
 
     # Per-interface wavevectors (length N-1)
     k_curr, k_next = k_n[..., :-1], k_n[..., 1:]
@@ -39,7 +40,7 @@ def abeles_core(q: Tensor, thickness: Tensor, roughness: Tensor, sld: Tensor) ->
     exp_m_beta = torch.exp(-beta)
 
     # Fresnel coefficient with roughness (Nevot-Croce)
-    sig2 = roughness ** 2
+    sig2 = roughness**2
     denom = k_curr + k_next
     r_n = ((k_curr - k_next) / denom) * torch.exp(-2.0 * k_curr * k_next * sig2)
 
@@ -77,14 +78,16 @@ class AbelesMatrix(nn.Module):
         super().__init__()
         self.device = device
 
-    def forward(self,
-                q: Tensor,
-                thickness: Tensor,
-                roughness: Tensor,
-                sld: Tensor,
-                sample_length: Tensor | None = None,
-                beam_width: Tensor | None = None,
-                wavelength: float = 1.5406) -> Tensor:
+    def forward(
+        self,
+        q: Tensor,
+        thickness: Tensor,
+        roughness: Tensor,
+        sld: Tensor,
+        sample_length: Tensor | None = None,
+        beam_width: Tensor | None = None,
+        wavelength: float = 1.5406,
+    ) -> Tensor:
         """
         Pre/post-processing layer wrapping the physics kernel (abeles_core).
 
@@ -106,7 +109,8 @@ class AbelesMatrix(nn.Module):
         Returns:
             (B, Q) real - reflectivity
         """
-        if self.device is None: self.device = q.device
+        if self.device is None:
+            self.device = q.device
 
         # [Optimization] Avoid CPU sync stalls by converting wavelength from a
         # Python scalar into a 0-d tensor so it participates on-device.
@@ -130,9 +134,9 @@ class AbelesMatrix(nn.Module):
 
         # Expand dimensions for broadcasting
         q_in = q_f.unsqueeze(-1).to(dtype=torch.complex64)  # (B, Q, 1)
-        sld_in = sld_comp.unsqueeze(1)                       # (B, 1, N)
-        t_in = thickness.float().unsqueeze(1)                # (B, 1, N-1)
-        r_in = roughness.float().unsqueeze(1)                # (B, 1, N-1)
+        sld_in = sld_comp.unsqueeze(1)  # (B, 1, N)
+        t_in = thickness.float().unsqueeze(1)  # (B, 1, N-1)
+        r_in = roughness.float().unsqueeze(1)  # (B, 1, N-1)
 
         # 2. Physics Core
         reflectivity = abeles_core(q_in, t_in, r_in, sld_in)

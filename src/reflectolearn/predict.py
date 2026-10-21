@@ -13,6 +13,7 @@ FOM (LogMSE): how well the measured curve is reproduced when the AI prediction
 is used as the initial guess for physics fitting. The substrate is unknown for
 real measurements, so it is fixed to the midpoint of the config.substrate range.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -57,11 +58,19 @@ def _ai_align_config() -> RefineConfig:
     smeared separately with a fixed sigma (AI_RES_SIGMA).
     """
     return RefineConfig(
-        fit_i0=True, fit_bkg=True, fit_footprint=True,
-        fit_tth_offset=False, fit_dq=False, fit_kalpha2=False, fit_oxide=False,
+        fit_i0=True,
+        fit_bkg=True,
+        fit_footprint=True,
+        fit_tth_offset=False,
+        fit_dq=False,
+        fit_kalpha2=False,
+        fit_oxide=False,
         nuisance_reg=0.0,
-        stages=[RefineStage("ai.align", optimize=("i0", "bkg", "footprint"),
-                            loss="log_mse", steps=200, lr=0.03)],
+        stages=[
+            RefineStage(
+                "ai.align", optimize=("i0", "bkg", "footprint"), loss="log_mse", steps=200, lr=0.03
+            )
+        ],
     )
 
 
@@ -70,10 +79,13 @@ def _build_model(cfg: Config) -> XRRPhysicsModel:
     m = cfg.model
     return XRRPhysicsModel(
         q_len=cfg.simulation.q_points,
-        use_fourier=m.use_fourier, fourier_scale=m.fourier_scale,
+        use_fourier=m.use_fourier,
+        fourier_scale=m.fourier_scale,
         fourier_features=m.fourier_features,
-        n_channels=m.n_channels, depth=m.depth,
-        mlp_hidden=m.mlp_hidden, dropout=m.dropout,
+        n_channels=m.n_channels,
+        depth=m.depth,
+        mlp_hidden=m.mlp_hidden,
+        dropout=m.dropout,
     )
 
 
@@ -101,7 +113,7 @@ def load_measured_curve(
     arr = np.asarray(rows, dtype=np.float64)
     x, intensity = arr[:, 0], arr[:, 1]
     q = tth2q(x, wavelength) if x_axis == "tth" else x
-    order = np.argsort(q)                          # ensure ascending q
+    order = np.argsort(q)  # ensure ascending q
     return q[order], intensity[order]
 
 
@@ -128,7 +140,7 @@ def preprocess_measured(
     # Same input preprocessing as the training generator.
     r_log = np.clip(np.log10(r_norm), None, 0.0)
     r_log = np.where(mask, r_log, LOG_FLOOR)
-    x = np.stack([r_log, mask.astype(np.float32)])[None]   # (1, 2, Q)
+    x = np.stack([r_log, mask.astype(np.float32)])[None]  # (1, 2, Q)
 
     def to(a: np.ndarray) -> torch.Tensor:
         return torch.tensor(a, dtype=torch.float32, device=device)
@@ -144,14 +156,19 @@ def _log_mse(r_pred: torch.Tensor, r_obs: torch.Tensor, mask: torch.Tensor) -> f
     return float(se.sum() / mask.sum().clamp_min(1.0))
 
 
-def load_predictor(cfg: Config, checkpoint: str | Path, stats_path: str | Path | None,
-                   device: torch.device) -> tuple[XRRPhysicsModel, torch.Tensor, torch.Tensor]:
+def load_predictor(
+    cfg: Config, checkpoint: str | Path, stats_path: str | Path | None, device: torch.device
+) -> tuple[XRRPhysicsModel, torch.Tensor, torch.Tensor]:
     """Model in eval mode plus the target de-normalisation (mean, std)."""
     model = _build_model(cfg).to(device)
     ckpt = torch.load(checkpoint, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
-    st = torch.load(stats_path, map_location=device) if stats_path and Path(stats_path).exists() else param_stats(cfg)
+    st = (
+        torch.load(stats_path, map_location=device)
+        if stats_path and Path(stats_path).exists()
+        else param_stats(cfg)
+    )
     return model, st["mean"].to(device), st["std"].to(device)
 
 
@@ -179,16 +196,21 @@ def predict_curve(
     x, r_obs, mask = preprocess_measured(q_meas, intensity, cfg, device)
     q = cfg.q_grid.to(device)
     coverage = float(mask.mean()) * 100
-    logger.info(f"'{name}': {len(q_meas)} pts, q∈[{q_meas.min():.4f}, {q_meas.max():.4f}] "
-                f"Å⁻¹, grid coverage {coverage:.0f}%")
+    logger.info(
+        f"'{name}': {len(q_meas)} pts, q∈[{q_meas.min():.4f}, {q_meas.max():.4f}] "
+        f"Å⁻¹, grid coverage {coverage:.0f}%"
+    )
 
     # --- AI prediction ---
     with torch.no_grad():
-        pred_ai = model(x) * std + mean            # (1, 3) physical values
+        pred_ai = model(x) * std + mean  # (1, 3) physical values
 
     # Substrate: unknown for real measurements -> fix to config range midpoint.
-    sub = torch.tensor([[sum(cfg.substrate.sld) / 2, sum(cfg.substrate.roughness) / 2]],
-                       device=device, dtype=torch.float32)
+    sub = torch.tensor(
+        [[sum(cfg.substrate.sld) / 2, sum(cfg.substrate.roughness) / 2]],
+        device=device,
+        dtype=torch.float32,
+    )
 
     log_r_obs = torch.log10(r_obs.clamp_min(1e-15))
 
@@ -197,9 +219,16 @@ def predict_curve(
     #     (Light refine that leaves the film parameters untouched.) ---
     with torch.enable_grad():
         _, info_ai = refine(
-            pred_ai.detach(), sub, q, log_r_obs, mask, cfg.param_ranges,
+            pred_ai.detach(),
+            sub,
+            q,
+            log_r_obs,
+            mask,
+            cfg.param_ranges,
             wavelength=cfg.simulation.wavelength,
-            config=_ai_align_config(), device=device, verbose=False,
+            config=_ai_align_config(),
+            device=device,
+            verbose=False,
         )
     # dq is not fit; resolution is smeared with a fixed sigma instead (avoids the
     # film-frozen dq-absorption distortion). Reuse the augmentor's resolution smear.
@@ -213,24 +242,45 @@ def predict_curve(
         fit = refine_multistart if alias_check else refine
         with torch.enable_grad():
             p_final, info = fit(
-                pred_ai.detach(), sub, q, log_r_obs, mask, cfg.param_ranges,
+                pred_ai.detach(),
+                sub,
+                q,
+                log_r_obs,
+                mask,
+                cfg.param_ranges,
                 wavelength=cfg.simulation.wavelength,
-                config=rcfg, device=device, verbose=not alias_check,
+                config=rcfg,
+                device=device,
+                verbose=not alias_check,
             )
         if alias_check:
             a = info["alias"]
-            starts = ", ".join(f"{lab}: d={d:.1f} Å FOM={m:.5f}"
-                               for lab, d, m in zip(a["starts"], a["thickness"][0], a["fom"][0]))
-            logger.info(f"  [alias] FFT d={a['fft_thickness'][0]:.0f} Å; starts {starts} -> {a['chosen'][0]}")
+            starts = ", ".join(
+                f"{lab}: d={d:.1f} Å FOM={m:.5f}"
+                for lab, d, m in zip(a["starts"], a["thickness"][0], a["fom"][0])
+            )
+            logger.info(
+                f"  [alias] FFT d={a['fft_thickness'][0]:.0f} Å; starts {starts} -> {a['chosen'][0]}"
+            )
 
     # --- Posterior: emcee around the refined state ---
     posterior = None
     if refine_enabled and mcmc_steps > 0:
         from reflectolearn.refine.mcmc import sample_posterior
+
         inside = (q_meas >= float(q[0])) & (q_meas <= float(q[-1]))
         posterior = sample_posterior(
-            info, sub, q, log_r_obs, mask, wavelength=cfg.simulation.wavelength, config=rcfg,
-            n_independent=int(inside.sum()), steps=mcmc_steps, device=device)
+            info,
+            sub,
+            q,
+            log_r_obs,
+            mask,
+            wavelength=cfg.simulation.wavelength,
+            config=rcfg,
+            n_independent=int(inside.sum()),
+            steps=mcmc_steps,
+            device=device,
+        )
 
     # The refined curve must be refine's final fitted curve (including nuisance terms
     # like footprint/i0/bkg) so it overlays the measurement under identical conditions.
@@ -248,9 +298,13 @@ def predict_curve(
         "fom_refined": fom_final if refine_enabled else None,
         "substrate": {"sld": sub[0, 0].item(), "roughness": sub[0, 1].item()},
         "alias": info["alias"] if info and "alias" in info else None,
-        "posterior": None if posterior is None else {
+        "posterior": None
+        if posterior is None
+        else {
             **{k: v for k, v in posterior["params"].items() if k in PARAM_NAMES},
-            "lnsigma": posterior["lnsigma"], "acceptance": posterior["acceptance"]},
+            "lnsigma": posterior["lnsigma"],
+            "acceptance": posterior["acceptance"],
+        },
     }
     curves = {"q": q, "r_obs": r_obs, "mask": mask, "r_ai": r_ai, "r_final": r_final}
     return result, curves
@@ -275,13 +329,34 @@ def predict_file(
     device = device or cfg.device
     out_dir = Path(out_dir) if out_dir else path.parent
     predictor = load_predictor(cfg, checkpoint, stats_path, device)
-    q_meas, intensity = load_measured_curve(path, x_axis=x_axis, wavelength=cfg.simulation.wavelength)
+    q_meas, intensity = load_measured_curve(
+        path, x_axis=x_axis, wavelength=cfg.simulation.wavelength
+    )
     result, c = predict_curve(
-        q_meas, intensity, cfg, predictor, refine_enabled=refine_enabled, refine_config=refine_config,
-        alias_check=alias_check, mcmc_steps=mcmc_steps, device=device, name=path.name)
+        q_meas,
+        intensity,
+        cfg,
+        predictor,
+        refine_enabled=refine_enabled,
+        refine_config=refine_config,
+        alias_check=alias_check,
+        mcmc_steps=mcmc_steps,
+        device=device,
+        name=path.name,
+    )
     _report(result)
-    _save_outputs(path, out_dir, cfg, c["q"], c["r_obs"], c["mask"], c["r_ai"], c["r_final"],
-                  result, refine_enabled)
+    _save_outputs(
+        path,
+        out_dir,
+        cfg,
+        c["q"],
+        c["r_obs"],
+        c["mask"],
+        c["r_ai"],
+        c["r_final"],
+        result,
+        refine_enabled,
+    )
     return result
 
 
@@ -297,19 +372,27 @@ def _report(r: dict) -> None:
     if r["fom_refined"] is not None:
         b, a = r["fom_ai"], r["fom_refined"]
         imp = (b - a) / b * 100 if b else 0.0
-        logger.info(f"fit FOM(LogMSE): {b:.5f} -> {a:.5f}  ({imp:+.1f}%)  (lower = better measurement match)")
+        logger.info(
+            f"fit FOM(LogMSE): {b:.5f} -> {a:.5f}  ({imp:+.1f}%)  (lower = better measurement match)"
+        )
     else:
         logger.info(f"fit FOM(LogMSE, AI): {r['fom_ai']:.5f}")
     if r.get("posterior"):
         p = r["posterior"]
-        parts = ", ".join(f"{k} {p[k]['median']:.2f} [{p[k]['lo']:.2f}, {p[k]['hi']:.2f}]"
-                          for k in PARAM_NAMES if k in p)
+        parts = ", ".join(
+            f"{k} {p[k]['median']:.2f} [{p[k]['lo']:.2f}, {p[k]['hi']:.2f}]"
+            for k in PARAM_NAMES
+            if k in p
+        )
         spread = np.exp(p["lnsigma"]["median"])
-        logger.info(f"posterior (median, 68 % interval): {parts}; residual spread {spread:.3f} in log10 R")
+        logger.info(
+            f"posterior (median, 68 % interval): {parts}; residual spread {spread:.3f} in log10 R"
+        )
 
 
-def _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
-                  result, refine_enabled) -> None:
+def _save_outputs(
+    path, out_dir, cfg, q, r_obs, mask, r_ai, r_final, result, refine_enabled
+) -> None:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     qn = q.cpu().numpy()
@@ -325,11 +408,21 @@ def _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
     if refine_enabled:
         ax.semilogy(qn, np.clip(fin, 1e-15, None), "r-", lw=1.3, alpha=0.9, label="Refined")
     txt = "\n".join(
-        f"{k}: {result['refined'][k]:.2f} {UNITS[k]}" if refine_enabled
+        f"{k}: {result['refined'][k]:.2f} {UNITS[k]}"
+        if refine_enabled
         else f"{k}: {result['ai'][k]:.2f} {UNITS[k]}"
-        for k in PARAM_NAMES)
-    ax.text(0.98, 0.95, txt, transform=ax.transAxes, ha="right", va="top",
-            fontsize=9, bbox=dict(boxstyle="round", fc="white", alpha=0.8))
+        for k in PARAM_NAMES
+    )
+    ax.text(
+        0.98,
+        0.95,
+        txt,
+        transform=ax.transAxes,
+        ha="right",
+        va="top",
+        fontsize=9,
+        bbox=dict(boxstyle="round", fc="white", alpha=0.8),
+    )
     # Crop the x-axis to the measured q range (hide the empty no-data tail at high q).
     if m.any():
         ax.set_xlim(qn[m].min(), qn[m].max() * 1.02)
@@ -344,7 +437,7 @@ def _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
     # low-angle attenuation of measured vs refined. (Toggle off temporarily.)
     if SHOW_LOWQ_INSET and m.any():
         q_lo = qn[m][0]
-        q_peak = qn[m][np.argmax(obs[m])]          # plateau max ~ critical-angle position
+        q_peak = qn[m][np.argmax(obs[m])]  # plateau max ~ critical-angle position
         q_hi = min(q_peak * 3.0, qn[m][-1])
         win = (qn >= q_lo * 0.9) & (qn <= q_hi)
         win_m = win & m
@@ -376,9 +469,17 @@ def _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
         p = result["posterior"]
         for k in PARAM_NAMES:
             if k in p:
-                lines.append(f"# posterior {k}\t{p[k]['median']:.4f}\t[{p[k]['lo']:.4f}, {p[k]['hi']:.4f}]\t{UNITS[k]}")
+                lines.append(
+                    f"# posterior {k}\t{p[k]['median']:.4f}\t[{p[k]['lo']:.4f}, {p[k]['hi']:.4f}]\t{UNITS[k]}"
+                )
     txt_path.write_text("\n".join(lines), encoding="utf-8")
     logger.info(f"saved: {png.name}, {txt_path.name}  (in {out_dir})")
 
 
-__all__ = ["load_measured_curve", "load_predictor", "predict_curve", "predict_file", "preprocess_measured"]
+__all__ = [
+    "load_measured_curve",
+    "load_predictor",
+    "predict_curve",
+    "predict_file",
+    "preprocess_measured",
+]

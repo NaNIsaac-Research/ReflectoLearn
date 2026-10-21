@@ -8,6 +8,7 @@ All losses follow the same signature over the (B, Q) tensor convention:
 
 Returns a scalar loss over the batch (per-sample masked mean -> batch mean).
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -35,7 +36,7 @@ def log_mse_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
 
 def linear_mse_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
     """MSE in linear space. Sensitive to absolute intensity (scale) near the critical angle."""
-    r_obs = 10.0 ** log_r_obs
+    r_obs = 10.0**log_r_obs
     return _masked_mean((r_sim - r_obs) ** 2, mask)
 
 
@@ -49,7 +50,7 @@ def correlation_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
     vx = (log_r_sim - sim_mean.unsqueeze(-1)) * m
     vy = (log_r_obs - obs_mean.unsqueeze(-1)) * m
     num = (vx * vy).sum(-1)
-    den = torch.sqrt((vx ** 2).sum(-1)) * torch.sqrt((vy ** 2).sum(-1)) + 1e-9
+    den = torch.sqrt((vx**2).sum(-1)) * torch.sqrt((vy**2).sum(-1)) + 1e-9
     return (1.0 - num / den).mean()
 
 

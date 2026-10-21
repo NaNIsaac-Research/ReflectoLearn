@@ -27,7 +27,7 @@ def param_stats(config: Config) -> dict[str, torch.Tensor]:
     lo = torch.tensor([r[0] for r in ranges], dtype=torch.float32)
     hi = torch.tensor([r[1] for r in ranges], dtype=torch.float32)
     mean = (lo + hi) / 2
-    std = ((hi - lo) / (12.0 ** 0.5)).clamp_min(1e-8)
+    std = ((hi - lo) / (12.0**0.5)).clamp_min(1e-8)
     return {"mean": mean, "std": std}
 
 
@@ -69,19 +69,21 @@ def simulate_reflectivity(
     ox_sld = torch.where(has_ox > 0, _sample_uniform(*aug.oxide_sld, B, device), sld)
     ox_rough = _sample_uniform(*aug.oxide_roughness, B, device)
     # top = ambient/top-layer interface, mid = top-layer/film interface.
-    top_rough = torch.where(has_ox > 0, ox_rough, roughness)   # oxide surface or film surface
-    mid_rough = torch.where(has_ox > 0, roughness, zeros)      # oxide/film interface (predicted roughness)
+    top_rough = torch.where(has_ox > 0, ox_rough, roughness)  # oxide surface or film surface
+    mid_rough = torch.where(
+        has_ox > 0, roughness, zeros
+    )  # oxide/film interface (predicted roughness)
 
     # Media: [ambient, oxide(top), film, substrate]  (N=4)
-    sld_tensor = torch.stack([zeros, ox_sld, sld, sub_sld], dim=1)            # (B, 4)
-    thickness_tensor = torch.stack([zeros, ox_thk, thickness], dim=1)         # (B, 3)
+    sld_tensor = torch.stack([zeros, ox_sld, sld, sub_sld], dim=1)  # (B, 4)
+    thickness_tensor = torch.stack([zeros, ox_thk, thickness], dim=1)  # (B, 3)
     roughness_tensor = torch.stack([top_rough, mid_rough, sub_rough], dim=1)  # (B, 3)
 
     # q-axis zero-point error
     wl1 = config.simulation.wavelength
     if aug.tth_offset[0] != 0.0 or aug.tth_offset[1] != 0.0:
-        offset = _sample_uniform(*aug.tth_offset, B, device).unsqueeze(1)     # (B, 1)
-        q_eff = apply_tth_offset(q, offset, wl1)                              # (B, Q)
+        offset = _sample_uniform(*aug.tth_offset, B, device).unsqueeze(1)  # (B, 1)
+        q_eff = apply_tth_offset(q, offset, wl1)  # (B, Q)
     else:
         q_eff = q
 

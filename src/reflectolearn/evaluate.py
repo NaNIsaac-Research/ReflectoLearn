@@ -19,6 +19,7 @@ Outputs (all saved in the checkpoint's parent directory):
   - eval_3_error_vs_value.png   error (bias) vs physical value scatter
   - eval_4_parity.png           true vs pred parity (R2)
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -88,9 +89,7 @@ class XRREvaluator:
         self.stats_path = Path(stats_path) if stats_path else None
         self.n_samples = n_samples
         self.batch_size = batch_size
-        self.device = device or torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # Physics refinement: whether to refine the AI prediction against the measured curve.
         self.refine_enabled = refine_enabled
         self.refine_config = refine_config or RefineConfig()
@@ -104,17 +103,23 @@ class XRREvaluator:
 
         # raw storage
         self.q_grid: np.ndarray | None = None
-        self.p_true: np.ndarray | None = None   # (N, 3) physical values
-        self.p_pred: np.ndarray | None = None   # (N, 3) physical values (final refined values when refining)
-        self.p_pred_ai: np.ndarray | None = None  # (N, 3) AI prediction before refine (only when refining)
-        self.r_meas: np.ndarray | None = None   # (N, Q) measured curve (augmented, linear)
-        self.r_pred: np.ndarray | None = None   # (N, Q) re-simulated curve from predicted params (linear)
+        self.p_true: np.ndarray | None = None  # (N, 3) physical values
+        self.p_pred: np.ndarray | None = (
+            None  # (N, 3) physical values (final refined values when refining)
+        )
+        self.p_pred_ai: np.ndarray | None = (
+            None  # (N, 3) AI prediction before refine (only when refining)
+        )
+        self.r_meas: np.ndarray | None = None  # (N, Q) measured curve (augmented, linear)
+        self.r_pred: np.ndarray | None = (
+            None  # (N, Q) re-simulated curve from predicted params (linear)
+        )
         self.curve_logmse: np.ndarray | None = None
 
         self.results_df: pd.DataFrame | None = None
         self.summary: dict = {}
-        self.summary_ai: dict = {}               # pre-refine AI prediction metrics (for comparison)
-        self.refine_fom: dict | None = None      # {"before", "after"} mean LogMSE
+        self.summary_ai: dict = {}  # pre-refine AI prediction metrics (for comparison)
+        self.refine_fom: dict | None = None  # {"before", "after"} mean LogMSE
 
     # ------------------------------------------------------------------ setup
     def setup(self):
@@ -170,7 +175,7 @@ class XRREvaluator:
         x = torch.stack([R_log, mask], dim=1)
 
         p_phys = torch.stack([thickness, roughness, sld], dim=1)  # (B,3)
-        sub_phys = torch.stack([sub_sld, sub_rough], dim=1)        # (B,2)
+        sub_phys = torch.stack([sub_sld, sub_rough], dim=1)  # (B,2)
         return x, p_phys, sub_phys, R_meas
 
     @torch.no_grad()
@@ -181,24 +186,32 @@ class XRREvaluator:
 
         pt, pp, pp_ai, rm, rp = [], [], [], [], []
         fom_before_sum = fom_after_sum = 0.0
-        logger.info(f"Inference on ~{self.n_samples} synthetic samples"
-                    f"{' (+refine)' if self.refine_enabled else ''}...")
+        logger.info(
+            f"Inference on ~{self.n_samples} synthetic samples"
+            f"{' (+refine)' if self.refine_enabled else ''}..."
+        )
         for _ in tqdm(range(n_iters), desc="eval"):
             x, p_phys, sub_phys, R_meas = self._gen_eval_batch(self.batch_size)
 
-            pred_norm = self.model(x.to(dev))             # (B,3) normalized
-            pred_phys = pred_norm * self.std + self.mean   # denormalize (initial AI estimate)
+            pred_norm = self.model(x.to(dev))  # (B,3) normalized
+            pred_phys = pred_norm * self.std + self.mean  # denormalize (initial AI estimate)
 
             # [refine] Physics-refine the AI estimate against the measured curve (XRefine principle).
             if self.refine_enabled:
                 pred_ai = pred_phys
-                mask = x[:, 1].to(dev)                      # input channel 2 = valid-q mask
+                mask = x[:, 1].to(dev)  # input channel 2 = valid-q mask
                 log_r_obs = torch.log10(R_meas.to(dev).clamp_min(1e-15))
                 with torch.enable_grad():
                     pred_phys, rinfo = refine(
-                        pred_ai.detach(), sub_phys, q, log_r_obs, mask,
-                        cfg.param_ranges, wavelength=cfg.simulation.wavelength,
-                        config=self.refine_config, device=dev,
+                        pred_ai.detach(),
+                        sub_phys,
+                        q,
+                        log_r_obs,
+                        mask,
+                        cfg.param_ranges,
+                        wavelength=cfg.simulation.wavelength,
+                        config=self.refine_config,
+                        device=dev,
                     )
                 fom_before_sum += rinfo["fom_before"]
                 fom_after_sum += rinfo["fom_after"]
@@ -247,8 +260,8 @@ class XRREvaluator:
             out[name] = {
                 "MAE": float(np.mean(np.abs(err))),
                 "MAPE": float(np.mean(np.abs(err) / (np.abs(vt) + 1e-9)) * 100),
-                "RMSE": float(np.sqrt(np.mean(err ** 2))),
-                "R2": float(1 - np.sum(err ** 2) / (np.sum((vt - vt.mean()) ** 2) + 1e-9)),
+                "RMSE": float(np.sqrt(np.mean(err**2))),
+                "R2": float(1 - np.sum(err**2) / (np.sum((vt - vt.mean()) ** 2) + 1e-9)),
             }
         return out
 
@@ -264,15 +277,19 @@ class XRREvaluator:
             i = PARAM_NAMES.index(name)
             vt, vp = self.p_true[:, i], self.p_pred[:, i]
             err = vp - vt
-            rows.append(pd.DataFrame({
-                "Sample_ID": np.arange(len(vt)),
-                "Parameter": name,
-                "True": vt,
-                "Pred": vp,
-                "Error": err,
-                "AbsError": np.abs(err),
-                "CurveLogMSE": self.curve_logmse,
-            }))
+            rows.append(
+                pd.DataFrame(
+                    {
+                        "Sample_ID": np.arange(len(vt)),
+                        "Parameter": name,
+                        "True": vt,
+                        "Pred": vp,
+                        "Error": err,
+                        "AbsError": np.abs(err),
+                        "CurveLogMSE": self.curve_logmse,
+                    }
+                )
+            )
         self.results_df = pd.concat(rows, ignore_index=True)
         self.results_df.to_csv(self.exp_dir / "eval_metrics_full.csv", index=False)
         pd.DataFrame(self.summary).T.to_csv(self.exp_dir / "eval_summary.csv")
@@ -281,35 +298,50 @@ class XRREvaluator:
     def plot_best_worst(self, n: int = 3):
         order = np.argsort(self.curve_logmse)
         idxs = np.concatenate([order[:n], order[-n:][::-1]])
-        titles = [f"Best #{i+1}" for i in range(n)] + [f"Worst #{i+1}" for i in range(n)]
+        titles = [f"Best #{i + 1}" for i in range(n)] + [f"Worst #{i + 1}" for i in range(n)]
         q = self.q_grid
 
         fig = plt.figure(figsize=(16, 3.2 * len(idxs)))
         gs = gridspec.GridSpec(len(idxs), 2, width_ratios=[2, 1])
         for row, (idx, title) in enumerate(zip(idxs, titles)):
             ax = plt.subplot(gs[row, 0])
-            ax.semilogy(q, np.clip(self.r_meas[idx], 1e-15, None), "k-", alpha=0.4, lw=2, label="Measured")
-            ax.semilogy(q, np.clip(self.r_pred[idx], 1e-15, None), "r--", alpha=0.9, lw=1.5, label="Predicted (resim)")
+            ax.semilogy(
+                q, np.clip(self.r_meas[idx], 1e-15, None), "k-", alpha=0.4, lw=2, label="Measured"
+            )
+            ax.semilogy(
+                q,
+                np.clip(self.r_pred[idx], 1e-15, None),
+                "r--",
+                alpha=0.9,
+                lw=1.5,
+                label="Predicted (resim)",
+            )
             ax.set_title(f"{title}  (LogMSE: {self.curve_logmse[idx]:.4f})", fontweight="bold")
             ax.set_xlabel("q (1/Å)")
             ax.legend(loc="upper right")
             ax.grid(True, alpha=0.3)
 
-            ax_t = plt.subplot(gs[row, 1]); ax_t.axis("off")
+            ax_t = plt.subplot(gs[row, 1])
+            ax_t.axis("off")
             cells = [["Param", "True", "Pred", "Err%"]]
             for i, name in enumerate(PARAM_NAMES):
                 t, p = self.p_true[idx, i], self.p_pred[idx, i]
                 errp = abs(p - t) / (abs(t) + 1e-9) * 100
                 cells.append([SHORT[name], f"{t:.2f}", f"{p:.2f}", f"{errp:.1f}%"])
             tbl = ax_t.table(cellText=cells, loc="center", cellLoc="center")
-            tbl.auto_set_font_size(False); tbl.set_fontsize(10); tbl.scale(1, 1.6)
+            tbl.auto_set_font_size(False)
+            tbl.set_fontsize(10)
+            tbl.scale(1, 1.6)
             for (r, c), cell in tbl.get_celld().items():
                 if r == 0:
-                    cell.set_text_props(fontweight="bold"); cell.set_facecolor("#eeeeee")
+                    cell.set_text_props(fontweight="bold")
+                    cell.set_facecolor("#eeeeee")
                 elif c == 3:
                     v = float(cells[r][3].strip("%"))
-                    if v > 20: cell.set_facecolor("#ffcccc")
-                    elif v < 5: cell.set_facecolor("#ccffcc")
+                    if v > 20:
+                        cell.set_facecolor("#ffcccc")
+                    elif v < 5:
+                        cell.set_facecolor("#ccffcc")
         plt.tight_layout()
         plt.savefig(self.exp_dir / "eval_1_best_worst.png", dpi=100)
         plt.close()
@@ -322,12 +354,17 @@ class XRREvaluator:
         lr = self.history.get("lr", [])
         fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
         if tr or va:
-            if tr: axes[0].plot(tr, label="train")
-            if va: axes[0].plot(va, label="val")
-            axes[0].set_yscale("log"); axes[0].set_title("Loss"); axes[0].legend()
+            if tr:
+                axes[0].plot(tr, label="train")
+            if va:
+                axes[0].plot(va, label="val")
+            axes[0].set_yscale("log")
+            axes[0].set_title("Loss")
+            axes[0].legend()
             axes[0].grid(True, alpha=0.3)
         if lr:
-            axes[1].plot(lr, color="g"); axes[1].set_title("Learning Rate")
+            axes[1].plot(lr, color="g")
+            axes[1].set_title("Learning Rate")
             axes[1].grid(True, alpha=0.3)
         plt.tight_layout()
         plt.savefig(self.exp_dir / "eval_2_learning_curves.png", dpi=100)
@@ -338,10 +375,18 @@ class XRREvaluator:
         for i, name in enumerate(PARAM_NAMES):
             sub = self.results_df[self.results_df["Parameter"] == name]
             ax = axes[i]
-            ax.scatter(sub["True"], sub["AbsError"], alpha=0.2, s=8,
-                       c=sub["CurveLogMSE"], cmap="viridis")
-            sns.regplot(x="True", y="AbsError", data=sub, ax=ax,
-                        scatter=False, color="red", line_kws={"alpha": 0.6})
+            ax.scatter(
+                sub["True"], sub["AbsError"], alpha=0.2, s=8, c=sub["CurveLogMSE"], cmap="viridis"
+            )
+            sns.regplot(
+                x="True",
+                y="AbsError",
+                data=sub,
+                ax=ax,
+                scatter=False,
+                color="red",
+                line_kws={"alpha": 0.6},
+            )
             ax.set_title(f"{name}: |Err| vs True")
             ax.grid(True, alpha=0.3)
         plt.tight_layout()
@@ -357,7 +402,8 @@ class XRREvaluator:
             lo, hi = min(vt.min(), vp.min()), max(vt.max(), vp.max())
             ax.plot([lo, hi], [lo, hi], "r--", lw=1.5)
             ax.set_title(f"{name}\nR²={self.summary[name]['R2']:.3f}")
-            ax.set_xlabel("True"); ax.set_ylabel("Pred")
+            ax.set_xlabel("True")
+            ax.set_ylabel("Pred")
             ax.grid(True, alpha=0.3)
         plt.tight_layout()
         plt.savefig(self.exp_dir / "eval_4_parity.png", dpi=100)
@@ -368,10 +414,14 @@ class XRREvaluator:
         logger.info("\n" + header + "\n" + "-" * len(header))
         for name in PARAM_NAMES:
             v = self.summary[name]
-            logger.info(f"{name:<12} | {v['MAE']:>10.4f} | {v['MAPE']:>10.2f} | "
-                        f"{v['RMSE']:>10.4f} | {v['R2']:>8.4f}")
-        logger.info(f"curve LogMSE: mean={self.curve_logmse.mean():.4f} "
-                    f"median={np.median(self.curve_logmse):.4f}")
+            logger.info(
+                f"{name:<12} | {v['MAE']:>10.4f} | {v['MAPE']:>10.2f} | "
+                f"{v['RMSE']:>10.4f} | {v['R2']:>8.4f}"
+            )
+        logger.info(
+            f"curve LogMSE: mean={self.curve_logmse.mean():.4f} "
+            f"median={np.median(self.curve_logmse):.4f}"
+        )
 
         # Before/after refine comparison report
         if self.summary_ai:

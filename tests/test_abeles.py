@@ -104,8 +104,8 @@ def test_a_batch_equals_its_stacks_computed_one_by_one():
     assert batch.shape == (3, 64)
     assert batch.dtype == torch.float32 and batch.device.type == "cpu"
     for i in range(3):
-        single = model(q[i:i + 1], thickness[i:i + 1], roughness[i:i + 1], sld[i:i + 1])
-        torch.testing.assert_close(batch[i:i + 1], single)
+        single = model(q[i : i + 1], thickness[i : i + 1], roughness[i : i + 1], sld[i : i + 1])
+        torch.testing.assert_close(batch[i : i + 1], single)
     torch.testing.assert_close(model(q, thickness, roughness, sld), batch)  # a second call
 
 
@@ -114,8 +114,10 @@ def _core64(q, thickness, roughness, sld_real):
     """abeles_core in double precision, laid out as AbelesMatrix does."""
     sld = (sld_real.to(torch.complex128) - sld_real[:, :1]) * 1e-6 + 1e-9j
     return abeles_core(
-        q.to(torch.complex128).unsqueeze(-1), thickness.unsqueeze(1),
-        roughness.unsqueeze(1), sld.unsqueeze(1),
+        q.to(torch.complex128).unsqueeze(-1),
+        thickness.unsqueeze(1),
+        roughness.unsqueeze(1),
+        sld.unsqueeze(1),
     )
 
 
@@ -124,7 +126,9 @@ def test_gradients_match_finite_differences():
     thickness = torch.tensor([[0.0, 150.0, 40.0]], dtype=torch.float64, requires_grad=True)
     roughness = torch.tensor([[3.0, 2.5, 4.0]], dtype=torch.float64, requires_grad=True)
     sld = torch.tensor([[0.0, 35.0, 15.0, SI]], dtype=torch.float64, requires_grad=True)
-    assert torch.autograd.gradcheck(lambda t, r, s: _core64(q, t, r, s), (thickness, roughness, sld))
+    assert torch.autograd.gradcheck(
+        lambda t, r, s: _core64(q, t, r, s), (thickness, roughness, sld)
+    )
 
 
 def test_float32_module_gradients_agree_with_double_precision():
@@ -157,8 +161,16 @@ def test_matches_genx_on_random_stacks():
         Stack,
     )
 
-    inst = Instrument(probe=Probe.xray, wavelength=1.54, coords=Coords.q, I0=1.0, Ibkg=0.0,
-                      res=0.0, restype=ResType.none, footype=FootType.none)
+    inst = Instrument(
+        probe=Probe.xray,
+        wavelength=1.54,
+        coords=Coords.q,
+        I0=1.0,
+        Ibkg=0.0,
+        res=0.0,
+        restype=ResType.none,
+        footype=FootType.none,
+    )
     rng = np.random.default_rng(0)
     q = np.linspace(0.02, 0.4, 300)
     for _ in range(5):
@@ -166,11 +178,16 @@ def test_matches_genx_on_random_stacks():
         d = rng.uniform(20, 300, n)
         sigma = rng.uniform(0, 8, n + 1)  # top interface of each layer, then the substrate's
         rho = rng.uniform(5, 60, n)
-        layers = [Layer(d=d[i], sigma=sigma[i], f=complex(rho[i] * 1e-6 / r_e, 0), dens=1)
-                  for i in range(n)]
+        layers = [
+            Layer(d=d[i], sigma=sigma[i], f=complex(rho[i] * 1e-6 / r_e, 0), dens=1)
+            for i in range(n)
+        ]
         # GenX lists a stack's layers from the substrate up; ours go from the ambient down.
-        sample = Sample(Stacks=[Stack(Layers=layers[::-1])], Ambient=Layer(d=0, f=0, dens=0),
-                        Substrate=Layer(d=0, f=complex(SI * 1e-6 / r_e, 0), dens=1, sigma=sigma[n]))
+        sample = Sample(
+            Stacks=[Stack(Layers=layers[::-1])],
+            Ambient=Layer(d=0, f=0, dens=0),
+            Substrate=Layer(d=0, f=complex(SI * 1e-6 / r_e, 0), dens=1, sigma=sigma[n]),
+        )
         ours = reflectivity(q, [0.0, *d], list(sigma), [0.0, *rho, SI])
         theirs = Specular(q, sample, inst)
         np.testing.assert_allclose(np.log10(ours), np.log10(theirs), atol=1e-2)

@@ -9,6 +9,7 @@ All effects reuse the production code paths (AbelesMatrix, apply_tth_offset,
 XRRAugmentor) so the figure stays faithful to what the generator actually does.
 Everything is deterministic (fixed film params + fixed seed) for reproducible slides.
 """
+
 from __future__ import annotations
 
 import os
@@ -31,11 +32,11 @@ from reflectolearn.physics import AbelesMatrix, apply_tth_offset
 class FilmCase:
     """Representative single film on a substrate (units match config)."""
 
-    thickness: float = 150.0   # [Å] (kept modest so fringes stay visually distinct)
-    roughness: float = 5.0     # [Å]
-    sld: float = 40.0          # [x1e-6 Å^-2]
-    sub_sld: float = 20.0      # [x1e-6 Å^-2]
-    sub_rough: float = 3.0     # [Å]
+    thickness: float = 150.0  # [Å] (kept modest so fringes stay visually distinct)
+    roughness: float = 5.0  # [Å]
+    sld: float = 40.0  # [x1e-6 Å^-2]
+    sub_sld: float = 20.0  # [x1e-6 Å^-2]
+    sub_rough: float = 3.0  # [Å]
     # Oxide (nuisance) layer used in the oxide / combined panels.
     oxide_thickness: float = 30.0
     oxide_sld: float = 18.0
@@ -62,19 +63,22 @@ def _abeles(q: Tensor, film: FilmCase, wl: float, *, with_oxide: bool = False) -
 
 # --- individual effects: each takes the clean curve / q and returns a modified R (Q,) ---
 
+
 def _eff_tth_offset(q: Tensor, film: FilmCase, wl: float, offset_deg: float = 0.02) -> Tensor:
     q_eff = apply_tth_offset(q, torch.tensor([[offset_deg]]), wl).squeeze(0)
     return _abeles(q_eff, film, wl)
 
 
-def _eff_kalpha2(q: Tensor, R: Tensor, film: FilmCase, wl: float,
-                 ratio: float = 0.5, wl2: float = 1.54439) -> Tensor:
+def _eff_kalpha2(
+    q: Tensor, R: Tensor, film: FilmCase, wl: float, ratio: float = 0.5, wl2: float = 1.54439
+) -> Tensor:
     R2 = _abeles(q * (wl / wl2), film, wl)
     return (R + ratio * R2) / (1.0 + ratio)
 
 
-def _eff_footprint(aug: XRRAugmentor, q: Tensor, R: Tensor,
-                   beam_width: float = 0.01, sample_len: float = 10.0) -> Tensor:
+def _eff_footprint(
+    aug: XRRAugmentor, q: Tensor, R: Tensor, beam_width: float = 0.01, sample_len: float = 10.0
+) -> Tensor:
     return aug._footprint(q, R.unsqueeze(0), beam_width, sample_len).squeeze(0)
 
 
@@ -84,7 +88,7 @@ def _eff_resolution(q: Tensor, R: Tensor, sigma_q: float = 0.004) -> Tensor:
 
 def _eff_poisson(R: Tensor, log_scale: float = 7.0, seed: int = 0) -> Tensor:
     g = torch.Generator(device=R.device).manual_seed(seed)
-    s = 10.0 ** log_scale
+    s = 10.0**log_scale
     lam = (R * s).clamp_min(0.0)
     return torch.poisson(lam, generator=g) / s
 
@@ -129,7 +133,7 @@ def domain_randomization_figure(
     combined = _eff_poisson(combined, seed=seed)
     Q = q.shape[0]
     keep = torch.zeros(Q, dtype=torch.bool)
-    keep[int(0.05 * Q):int(0.95 * Q)] = True
+    keep[int(0.05 * Q) : int(0.95 * Q)] = True
     combined_masked = combined.clone()
     combined_masked[~keep] = float("nan")
     panels.append(("All combined + masking", combined_masked, "black"))
@@ -140,8 +144,13 @@ def domain_randomization_figure(
     fig, axes = plt.subplots(3, 3, figsize=(13, 9), sharex=True)
     for ax, (title, R, color) in zip(axes.ravel(), panels):
         ax.semilogy(qn, cl, color="0.7", lw=1.0, ls="--", label="clean")
-        ax.semilogy(qn, R.clamp_min(1e-15).numpy() if torch.is_tensor(R) else R,
-                    color=color, lw=1.3, label="randomized")
+        ax.semilogy(
+            qn,
+            R.clamp_min(1e-15).numpy() if torch.is_tensor(R) else R,
+            color=color,
+            lw=1.3,
+            label="randomized",
+        )
         ax.set_title(title, fontsize=11)
         ax.set_xlim(qn[0], 0.6)
         ax.grid(True, alpha=0.3)
@@ -150,8 +159,7 @@ def domain_randomization_figure(
         ax.set_xlabel("q (Å⁻¹)")
     for ax in axes[:, 0]:
         ax.set_ylabel("Reflectivity")
-    fig.suptitle("Domain Randomization: clean simulation vs each injected effect",
-                 fontsize=14)
+    fig.suptitle("Domain Randomization: clean simulation vs each injected effect", fontsize=14)
     fig.tight_layout(rect=(0, 0, 1, 0.97))
 
     out = Path(out)
@@ -201,7 +209,7 @@ def sim_to_real_figure(
     # Mask the q-axis ends (unmeasured region) on the systematic / realistic curves.
     Q = q.shape[0]
     keep = torch.zeros(Q, dtype=torch.bool)
-    keep[int(0.05 * Q):int(0.95 * Q)] = True
+    keep[int(0.05 * Q) : int(0.95 * Q)] = True
 
     def _mask(R: Tensor):
         out_r = R.clamp_min(1e-15).clone()
@@ -210,12 +218,23 @@ def sim_to_real_figure(
 
     qn = q.numpy()
     fig, ax = plt.subplots(figsize=(8, 5.5))
-    ax.semilogy(qn, clean.clamp_min(1e-15).numpy(), color="0.6", lw=1.4, ls="--",
-                label="Clean simulation (ideal)")
-    ax.semilogy(qn, _mask(systematic), color="tab:blue", lw=1.6,
-                label="+ Systematic distortions")
-    ax.semilogy(qn, _mask(realistic), color="black", lw=0.9, alpha=0.85,
-                label="+ Stochastic noise (realistic)")
+    ax.semilogy(
+        qn,
+        clean.clamp_min(1e-15).numpy(),
+        color="0.6",
+        lw=1.4,
+        ls="--",
+        label="Clean simulation (ideal)",
+    )
+    ax.semilogy(qn, _mask(systematic), color="tab:blue", lw=1.6, label="+ Systematic distortions")
+    ax.semilogy(
+        qn,
+        _mask(realistic),
+        color="black",
+        lw=0.9,
+        alpha=0.85,
+        label="+ Stochastic noise (realistic)",
+    )
     ax.set_xlim(qn[0], 0.6)
     ax.set_xlabel("q (Å⁻¹)")
     ax.set_ylabel("Reflectivity")
@@ -252,14 +271,32 @@ def model_architecture_figure(
 
     stages = [
         ("Input", [f"(2, {Q})", "[log10 R, mask]"], "#bcd9b0"),
-        ("Fourier\nfeatures", [f"q -> {fch} freq", f"sin/cos -> {2 * fch} ch",
-                               f"concat -> {2 + 2 * fch} ch"], "#aac8e6"),
-        (f"Conv block x{depth}", ["Conv1d(k=7) / BN", "LeakyReLU / Dropout", "MaxPool(2)",
-                                  f"ch {chans[0]}->{chans[-1]}", f"len {Q}->{lengths[-1]}"],
-         "#f3c79a"),
+        (
+            "Fourier\nfeatures",
+            [f"q -> {fch} freq", f"sin/cos -> {2 * fch} ch", f"concat -> {2 + 2 * fch} ch"],
+            "#aac8e6",
+        ),
+        (
+            f"Conv block x{depth}",
+            [
+                "Conv1d(k=7) / BN",
+                "LeakyReLU / Dropout",
+                "MaxPool(2)",
+                f"ch {chans[0]}->{chans[-1]}",
+                f"len {Q}->{lengths[-1]}",
+            ],
+            "#f3c79a",
+        ),
         ("Global\nAvg Pool", [f"-> ({chans[-1]},)"], "#cdb6e0"),
-        ("MLP", [f"{chans[-1]} -> {m.mlp_hidden}", f"{m.mlp_hidden} -> {m.mlp_hidden // 2}",
-                 f"{m.mlp_hidden // 2} -> 3"], "#e8a9a9"),
+        (
+            "MLP",
+            [
+                f"{chans[-1]} -> {m.mlp_hidden}",
+                f"{m.mlp_hidden} -> {m.mlp_hidden // 2}",
+                f"{m.mlp_hidden // 2} -> 3",
+            ],
+            "#e8a9a9",
+        ),
         ("Output", ["(3,)", "thickness", "roughness", "SLD"], "#bcd9b0"),
     ]
 
@@ -273,26 +310,54 @@ def model_architecture_figure(
     x = 0.3
     for title, lines, color in stages:
         cy = 2.0
-        box = FancyBboxPatch((x, cy - box_h / 2), box_w, box_h,
-                             boxstyle="round,pad=0.05,rounding_size=0.12",
-                             linewidth=1.4, edgecolor="#444", facecolor=color)
+        box = FancyBboxPatch(
+            (x, cy - box_h / 2),
+            box_w,
+            box_h,
+            boxstyle="round,pad=0.05,rounding_size=0.12",
+            linewidth=1.4,
+            edgecolor="#444",
+            facecolor=color,
+        )
         ax.add_patch(box)
-        ax.text(x + box_w / 2, cy + box_h / 2 - 0.32, title, ha="center", va="center",
-                fontsize=12, fontweight="bold")
-        ax.text(x + box_w / 2, cy - 0.25, "\n".join(lines), ha="center", va="center",
-                fontsize=9, family="monospace")
+        ax.text(
+            x + box_w / 2,
+            cy + box_h / 2 - 0.32,
+            title,
+            ha="center",
+            va="center",
+            fontsize=12,
+            fontweight="bold",
+        )
+        ax.text(
+            x + box_w / 2,
+            cy - 0.25,
+            "\n".join(lines),
+            ha="center",
+            va="center",
+            fontsize=9,
+            family="monospace",
+        )
         centers.append((x + box_w, cy, x))
         x += box_w + gap
 
     for i in range(len(stages) - 1):
         x_end = centers[i][0]
         x_start = centers[i + 1][2]
-        ax.add_patch(FancyArrowPatch((x_end, 2.0), (x_start, 2.0),
-                                     arrowstyle="-|>", mutation_scale=16,
-                                     linewidth=1.6, color="#333"))
+        ax.add_patch(
+            FancyArrowPatch(
+                (x_end, 2.0),
+                (x_start, 2.0),
+                arrowstyle="-|>",
+                mutation_scale=16,
+                linewidth=1.6,
+                color="#333",
+            )
+        )
 
-    ax.set_title("XRRPhysicsModel: measured curve -> film parameters",
-                 fontsize=14, fontweight="bold", pad=12)
+    ax.set_title(
+        "XRRPhysicsModel: measured curve -> film parameters", fontsize=14, fontweight="bold", pad=12
+    )
     fig.tight_layout()
 
     out = Path(out)
@@ -302,8 +367,11 @@ def model_architecture_figure(
 
 
 # Curve for refine_figure; without REFLECTOLEARN_REFINE_DATA a synthetic one is written.
-DEFAULT_REFINE_DATA = Path(os.environ["REFLECTOLEARN_REFINE_DATA"]) if os.environ.get(
-    "REFLECTOLEARN_REFINE_DATA") else None
+DEFAULT_REFINE_DATA = (
+    Path(os.environ["REFLECTOLEARN_REFINE_DATA"])
+    if os.environ.get("REFLECTOLEARN_REFINE_DATA")
+    else None
+)
 
 
 def write_synthetic_curve(cfg: Config, path: str | Path, case: str = "fixed_mid") -> Path:
@@ -314,8 +382,11 @@ def write_synthetic_curve(cfg: Config, path: str | Path, case: str = "fixed_mid"
 
     c, q, intensity = make_fixed(cfg, cases=[c for c in FIXED_CASES if c.name == case])[0]
     path = Path(path)
-    np.savetxt(path, np.column_stack([q, intensity]),
-               header=f"synthetic: thickness {c.thickness} A, roughness {c.roughness} A, sld {c.sld}")
+    np.savetxt(
+        path,
+        np.column_stack([q, intensity]),
+        header=f"synthetic: thickness {c.thickness} A, roughness {c.roughness} A, sld {c.sld}",
+    )
     return path
 
 
@@ -340,8 +411,9 @@ def refine_figure(
 
     from reflectolearn.predict import predict_file
 
-    cfg = cfg or (Config.load_yaml(Path("config.yaml")) if Path("config.yaml").exists()
-                  else Config())
+    cfg = cfg or (
+        Config.load_yaml(Path("config.yaml")) if Path("config.yaml").exists() else Config()
+    )
     out = Path(out)
 
     # Resolve checkpoint, then auto-discover config/stats next to it (as the CLI does).
@@ -355,9 +427,14 @@ def refine_figure(
     data_path = Path(data_path)
 
     predict_file(
-        data_path, cfg, ckpt,
-        stats_path=stats, x_axis=x_axis, refine_enabled=True,
-        device=cfg.device, out_dir=out.parent,
+        data_path,
+        cfg,
+        ckpt,
+        stats_path=stats,
+        x_axis=x_axis,
+        refine_enabled=True,
+        device=cfg.device,
+        out_dir=out.parent,
     )
 
     produced = out.parent / f"{data_path.stem}_predict.png"
@@ -382,31 +459,61 @@ def refine_process_figure(out: str | Path = "refine_process.png") -> Path:
     bw, bh = 3.0, 1.5
     # (key, x, y, title, lines, color) — 4 nodes of the loop placed at rectangle corners.
     nodes = {
-        "theta": (1.2, 5.2, "Parameters  θ",
-                  ["film + nuisance", "sigmoid z -> [lo, hi]"], "#aac8e6"),
-        "fwd":   (7.8, 5.2, "Abeles forward",
-                  ["differentiable", "R_sim(θ)"], "#f3c79a"),
-        "loss":  (7.8, 1.3, "Loss  (LogMSE)",
-                  ["compare to R_obs", "masked, valid-q"], "#e8a9a9"),
-        "upd":   (1.2, 1.3, "Adam update",
-                  ["θ ← θ − lr·∇θ", "trust-region bound"], "#cdb6e0"),
+        "theta": (
+            1.2,
+            5.2,
+            "Parameters  θ",
+            ["film + nuisance", "sigmoid z -> [lo, hi]"],
+            "#aac8e6",
+        ),
+        "fwd": (7.8, 5.2, "Abeles forward", ["differentiable", "R_sim(θ)"], "#f3c79a"),
+        "loss": (7.8, 1.3, "Loss  (LogMSE)", ["compare to R_obs", "masked, valid-q"], "#e8a9a9"),
+        "upd": (1.2, 1.3, "Adam update", ["θ ← θ − lr·∇θ", "trust-region bound"], "#cdb6e0"),
     }
     cx = {}
     for key, (x, y, title, lines, color) in nodes.items():
-        box = FancyBboxPatch((x, y), bw, bh,
-                             boxstyle="round,pad=0.05,rounding_size=0.12",
-                             linewidth=1.5, edgecolor="#444", facecolor=color)
+        box = FancyBboxPatch(
+            (x, y),
+            bw,
+            bh,
+            boxstyle="round,pad=0.05,rounding_size=0.12",
+            linewidth=1.5,
+            edgecolor="#444",
+            facecolor=color,
+        )
         ax.add_patch(box)
-        ax.text(x + bw / 2, y + bh - 0.42, title, ha="center", va="center",
-                fontsize=12, fontweight="bold")
-        ax.text(x + bw / 2, y + 0.42, "\n".join(lines), ha="center", va="center",
-                fontsize=9, family="monospace")
+        ax.text(
+            x + bw / 2,
+            y + bh - 0.42,
+            title,
+            ha="center",
+            va="center",
+            fontsize=12,
+            fontweight="bold",
+        )
+        ax.text(
+            x + bw / 2,
+            y + 0.42,
+            "\n".join(lines),
+            ha="center",
+            va="center",
+            fontsize=9,
+            family="monospace",
+        )
         cx[key] = (x, y, x + bw / 2, y + bh / 2, x + bw, y + bh)
 
     def arrow(p0, p1, label="", lx=0.0, ly=0.0, rad=0.0):
-        ax.add_patch(FancyArrowPatch(p0, p1, arrowstyle="-|>", mutation_scale=18,
-                                     linewidth=1.8, color="#333",
-                                     connectionstyle=f"arc3,rad={rad}"))
+        ax.add_patch(
+            FancyArrowPatch(
+                p0,
+                p1,
+                arrowstyle="-|>",
+                mutation_scale=18,
+                linewidth=1.8,
+                color="#333",
+                connectionstyle=f"arc3,rad={rad}",
+            )
+        )
         if label:
             mx, my = (p0[0] + p1[0]) / 2 + lx, (p0[1] + p1[1]) / 2 + ly
             ax.text(mx, my, label, ha="center", va="center", fontsize=9, color="#222")
@@ -419,17 +526,42 @@ def refine_process_figure(out: str | Path = "refine_process.png") -> Path:
 
     # External: AI init in, measured in, refined out.
     arrow((0.1, 5.95), (cx["theta"][0], 5.95))
-    ax.text(0.1, 6.45, "AI init  θ₀", ha="left", va="center", fontsize=10,
-            fontweight="bold", color="tab:blue")
+    ax.text(
+        0.1,
+        6.45,
+        "AI init  θ₀",
+        ha="left",
+        va="center",
+        fontsize=10,
+        fontweight="bold",
+        color="tab:blue",
+    )
     arrow((11.9, 2.05), (cx["loss"][4], 2.05))
-    ax.text(11.9, 2.55, "R_obs\n(measured)", ha="right", va="center", fontsize=10,
-            fontweight="bold", color="0.3")
+    ax.text(
+        11.9,
+        2.55,
+        "R_obs\n(measured)",
+        ha="right",
+        va="center",
+        fontsize=10,
+        fontweight="bold",
+        color="0.3",
+    )
     arrow((cx["upd"][2], cx["upd"][1]), (cx["upd"][2], 0.2))
-    ax.text(cx["upd"][2] + 0.2, 0.35, "θ*  (refined)  — repeat N steps per stage",
-            ha="left", va="center", fontsize=10, fontweight="bold", color="tab:red")
+    ax.text(
+        cx["upd"][2] + 0.2,
+        0.35,
+        "θ*  (refined)  — repeat N steps per stage",
+        ha="left",
+        va="center",
+        fontsize=10,
+        fontweight="bold",
+        color="tab:red",
+    )
 
-    ax.set_title("Refinement loop: differentiable physics fit (AI init → θ*)",
-                 fontsize=14, fontweight="bold")
+    ax.set_title(
+        "Refinement loop: differentiable physics fit (AI init → θ*)", fontsize=14, fontweight="bold"
+    )
     fig.tight_layout()
     out = Path(out)
     fig.savefig(out, dpi=140)

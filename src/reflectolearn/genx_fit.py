@@ -4,6 +4,7 @@ Optional: needs the ``genx`` extra (``uv sync --extra genx``). Model: film + oxi
 layer on a fixed substrate, with I0, background and footprint (sample length) fitted
 in two stages (oxide + I0, then everything).
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -18,8 +19,20 @@ _OXIDE_INSTRUMENT = {
 }
 _STAGES = (
     ("oxide", ("oxide_thickness", "oxide_roughness", "i0"), 400),
-    ("final", ("thickness", "roughness", "sld", "oxide_thickness", "oxide_sld",
-               "i0", "bkg", "sample_len"), 600),
+    (
+        "final",
+        (
+            "thickness",
+            "roughness",
+            "sld",
+            "oxide_thickness",
+            "oxide_sld",
+            "i0",
+            "bkg",
+            "sample_len",
+        ),
+        600,
+    ),
 )
 
 _SCRIPT = """
@@ -105,10 +118,15 @@ def genx_fit(
 
     model = Model()
     model.data = DataList([ds])
-    model.set_script(_SCRIPT.format(
-        init={k: float(v[0]) for k, v in ranges.items()},
-        sub_sld=sub_sld, sub_rough=sub_rough, wavelength=wavelength, beam_width=beam_width,
-    ))
+    model.set_script(
+        _SCRIPT.format(
+            init={k: float(v[0]) for k, v in ranges.items()},
+            sub_sld=sub_sld,
+            sub_rough=sub_rough,
+            wavelength=wavelength,
+            beam_width=beam_width,
+        )
+    )
     model.compile_script()
 
     pars = Parameters()
@@ -124,7 +142,8 @@ def genx_fit(
         for name, p in by_name.items():
             p.fit = name in active
         model.bumps_update_parameters(
-            model.bumps_fit(method="de", steps=max(1, int(steps * steps_scale)), pop=pop_size))
+            model.bumps_fit(method="de", steps=max(1, int(steps * steps_scale)), pop=pop_size)
+        )
 
     model.evaluate_sim_func()
     return {
