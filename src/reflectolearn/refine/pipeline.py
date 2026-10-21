@@ -38,6 +38,7 @@ import torch
 import torch.nn.functional as F
 from loguru import logger
 from torch import Tensor
+from torch.utils.checkpoint import checkpoint
 
 from reflectolearn.physics import AbelesMatrix, apply_tth_offset
 from reflectolearn.refine.losses import LOSS_PRESETS, log_mse_loss
@@ -54,6 +55,9 @@ OXIDE_KEYS = ("oxide_thickness", "oxide_sld", "oxide_roughness")
 # tth_offset is excluded: it is well identified by fringe positions, so its
 # degeneracy risk is low.
 _PENALIZE_NEUTRAL = {"oxide_thickness": 0.0, "dq": 0.0, "dq_rel": 0.0}
+
+# Curves per checkpointed chunk in the q-dependent smearing (bounds its (chunk, Q, K) weights).
+_SMEAR_CHUNK = 4
 
 # nuisance key -> RefineConfig active-flag name
 _NUISANCE_FLAG = {
@@ -165,7 +169,7 @@ class RefineConfig:
     # Initial values
     bkg_init: float = -7.0
     dq_init: float = 0.002
-    dq_rel_init: float = 0.01
+    dq_rel_init: float = 0.01  # mid lab range (Cu + Göbel mirror ~0.5-2 % dq/q); Occam pulls to 0
     kalpha2_ratio_init: float = 0.5  # start near the Cu physical value
     footprint_init: float = 2000.0  # start at weak attenuation (data shrinks it if needed)
     oxide_thickness_init: float = 5.0
@@ -246,13 +250,32 @@ def make_forward(
 
     def _smear_varying(R: Tensor, sigma: Tensor) -> Tensor:
         """Gaussian q-smearing with a sigma(B, Q) [Å^-1] that varies along q, evaluated at each
-        output q like ``benchmark.smeared``. With a constant sigma it equals ``_smear``."""
-        sigma_px = (sigma / grid_dq).clamp_min(1e-3).unsqueeze(-1)  # (B, Q, 1)
-        xs = torch.arange(-max_half, max_half + 1, device=device, dtype=R.dtype)
-        weights = torch.exp(-0.5 * (xs / sigma_px) ** 2)  # (B, Q, K)
-        weights = weights / weights.sum(-1, keepdim=True)
-        padded = F.pad(R.unsqueeze(0), (max_half, max_half), mode="replicate").squeeze(0)
-        return (padded.unfold(-1, 2 * max_half + 1, 1) * weights).sum(-1)
+        output q like ``benchmark.smeared``. With a constant sigma it equals ``_smear``.
+
+        The weights are (B, Q, K), so the kernel reaches only 5 sigma of the current largest sigma
+        (the tail beyond is below 1e-6) and chunks of curves are checkpointed: their weights are
+        recomputed in backward instead of being kept for the whole batch.
+        """
+        half = max(1, min(max_half, math.ceil(5.0 * float(sigma.detach().max()) / grid_dq.item())))
+        xs = torch.arange(-half, half + 1, device=device, dtype=R.dtype)
+
+        def smear_chunk(r: Tensor, s: Tensor) -> Tensor:
+            sigma_px = (s / grid_dq).clamp_min(1e-3).unsqueeze(-1)  # (b, Q, 1)
+            weights = torch.exp(-0.5 * (xs / sigma_px) ** 2)  # (b, Q, K)
+            weights = weights / weights.sum(-1, keepdim=True)
+            padded = F.pad(r.unsqueeze(0), (half, half), mode="replicate").squeeze(0)
+            return torch.einsum("bqk,bqk->bq", padded.unfold(-1, 2 * half + 1, 1), weights)
+
+        chunks = [
+            checkpoint(
+                smear_chunk,
+                R[i : i + _SMEAR_CHUNK],
+                sigma[i : i + _SMEAR_CHUNK],
+                use_reentrant=False,
+            )
+            for i in range(0, R.shape[0], _SMEAR_CHUNK)
+        ]
+        return torch.cat(chunks)
 
     def simulate(vals: dict[str, Tensor], active: set[str]) -> Tensor:
         """Film+substrate(+oxide) parameters -> reflectivity. Applies only nuisance effects in `active`."""
