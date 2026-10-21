@@ -61,7 +61,8 @@ def test_thickness_matches_the_truth(result):
 
 
 @pytest.mark.xfail(
-    strict=True, reason="ReflectoLearn#14: refine drifts along the tth_offset-SLD valley, SLD ~30% low"
+    strict=True,
+    reason="ReflectoLearn#14: refine drifts along the tth_offset-SLD valley, SLD ~30% low",
 )
 @pytest.mark.parametrize("key", ["sld", "roughness"])
 def test_sld_and_roughness_match_the_truth(result, key):
