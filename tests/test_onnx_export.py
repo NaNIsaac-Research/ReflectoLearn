@@ -52,6 +52,11 @@ def test_onnx_matches_torch(exported):
     np.testing.assert_allclose(got, want, rtol=1e-4, atol=1e-4 * np.abs(want).max())
 
 
+def test_weights_are_inside_the_file(exported):
+    *_, out, _ = exported
+    assert [p.name for p in out.parent.iterdir() if p.suffix != ".json"] == [out.name]
+
+
 def test_contract_describes_the_input(exported):
     *_, meta = exported
     contract = json.loads(meta.read_text(encoding="utf-8"))

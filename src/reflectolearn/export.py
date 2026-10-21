@@ -79,7 +79,16 @@ def export_onnx(model: nn.Module, mean: Tensor, std: Tensor, cfg: Config, out: P
     out.parent.mkdir(parents=True, exist_ok=True)
     wrapped = PhysicalOutput(model.cpu().eval(), mean.cpu(), std.cpu()).eval()
     x = torch.zeros(1, 2, cfg.simulation.q_points)
-    torch.onnx.export(wrapped, (x,), out, input_names=["x"], output_names=["params"], dynamo=True)
+    # weights inside the file: browsers and other runtimes then need one file, not .onnx + .onnx.data
+    torch.onnx.export(
+        wrapped,
+        (x,),
+        out,
+        input_names=["x"],
+        output_names=["params"],
+        dynamo=True,
+        external_data=False,
+    )
     meta = out.with_suffix(".json")
     meta.write_text(json.dumps(input_contract(cfg), indent=2), encoding="utf-8")
     return meta
