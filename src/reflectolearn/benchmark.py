@@ -1,13 +1,16 @@
-"""Benchmark: the full predict pipeline on synthetic curves with known truth and on two measured curves.
+"""Benchmark: the full predict pipeline on two sets of synthetic curves with known truth.
 
-Synthetic curves are made by an independent float64 Parratt recursion written here in numpy, not by
-the package's torch engine, so the benchmark does not grade the pipeline with its own forward model
-(the "inverse crime"). Each is measured like the lab curves: 2θ 0.2–6° in 0.02° steps, a Gaussian
-beam footprint, Gaussian resolution with constant dq/q, a background and Poisson counts. The stack is
-a film on a thin SiO2 layer on Si, so the native oxide the pipeline treats as a nuisance is present.
+"synthetic": random films made by an independent float64 Parratt recursion written here in numpy,
+not by the package's torch engine, so the benchmark does not grade the pipeline with its own forward
+model (the "inverse crime"). Each curve mimics a lab scan: 2θ 0.2–6° in 0.02° steps, a Gaussian beam
+footprint, Gaussian resolution with constant dq/q, a background and Poisson counts. The stack is a
+film on a thin SiO2 layer on Si, so the native oxide the pipeline treats as a nuisance is present.
 
-Measured curves: two In2O3 films on Si (benchmark_data/In2O3_1.dat, In2O3_2.dat; 2θ in degrees,
-counts) with reference values from expert GenX one-layer fits. These are fits, not ground truth.
+"synthetic_fixed": a few films with the arbitrary parameters in FIXED_CASES, simulated by the
+training forward model (AbelesMatrix, same stack layout as the generator) with the training
+augmentor's footprint, resolution smearing, background and Poisson noise at stated values. These
+curves come from the model's own simulator, so they check the pipeline in its training domain, not
+its transfer to independent physics.
 """
 from __future__ import annotations
 
@@ -20,15 +23,6 @@ from pathlib import Path
 import numpy as np
 from loguru import logger
 from scipy.special import erf
-
-DATA_DIR = Path(__file__).parent / "benchmark_data"
-
-# GenX one-layer fits of the two measured films (In2O3 / SiO2 / Si). SLD from the fitted density and
-# 122 electrons per In2O3 formula unit, without anomalous corrections: approximate to about ±1.
-MEASURED_REFERENCE = {
-    "In2O3_1.dat": {"thickness": 319.9, "roughness": 10.7, "sld": 53.7},
-    "In2O3_2.dat": {"thickness": 364.0, "roughness": 10.4, "sld": 53.1},
-}
 
 SIO2 = 18.9 + 0.24j   # 1e-6 / Å^2
 SI = 20.07 + 0.46j
@@ -81,7 +75,7 @@ class SyntheticCase:
 
 def make_synthetic(n: int, seed: int = 2026, wavelength: float = 1.5406,
                    tth: np.ndarray | None = None) -> list[tuple[SyntheticCase, np.ndarray, np.ndarray]]:
-    """n synthetic measured curves: list of (case, 2θ [deg], counts)."""
+    """n synthetic curves: list of (case, 2θ [deg], counts)."""
     rng = np.random.default_rng(seed)
     tth = np.arange(0.2, 6.0001, 0.02) if tth is None else tth
     q = 4 * np.pi / wavelength * np.sin(np.radians(tth / 2))
@@ -104,49 +98,101 @@ def make_synthetic(n: int, seed: int = 2026, wavelength: float = 1.5406,
     return out
 
 
-def run_benchmark(cfg, checkpoint, *, stats_path=None, n_synthetic: int = 12, seed: int = 2026,
-                  alias_check: bool = False, mcmc_steps: int = 0, out_dir: str | Path = "benchmark_out",
-                  device=None) -> dict:
-    """Run predict on the synthetic and the measured curves and score them; writes JSON and CSV."""
-    from reflectolearn.physics import tth2q
-    from reflectolearn.predict import load_measured_curve, load_predictor, predict_curve
+@dataclass
+class FixedCase:
+    """A film with stated parameters plus the instrument effects applied to its curve.
 
-    device = device or cfg.device
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    Units as in the config: Å, 1e-6 Å^-2; beam_width and sample_length as in
+    augmentation.beam_width_range / sample_len_range; res_sigma in Å^-1; bkg and poisson_scale
+    as log10 values (augmentation.bkg / poisson_log_scale). oxide_thickness 0 means no oxide.
+    """
+
+    name: str
+    thickness: float
+    roughness: float
+    sld: float
+    oxide_thickness: float
+    oxide_sld: float
+    oxide_roughness: float
+    sub_sld: float
+    sub_roughness: float
+    beam_width: float
+    sample_length: float
+    res_sigma: float
+    bkg: float
+    poisson_scale: float
+
+
+# Arbitrary values inside the default training ranges; not fitted to any sample.
+FIXED_CASES = (
+    FixedCase("fixed_thin", thickness=90.0, roughness=3.0, sld=28.0,
+              oxide_thickness=0.0, oxide_sld=0.0, oxide_roughness=0.0, sub_sld=20.0, sub_roughness=3.0,
+              beam_width=0.01, sample_length=12.0, res_sigma=0.001, bkg=-7.0, poisson_scale=7.5),
+    FixedCase("fixed_mid", thickness=240.0, roughness=6.0, sld=45.0,
+              oxide_thickness=12.0, oxide_sld=18.0, oxide_roughness=3.0, sub_sld=20.0, sub_roughness=2.5,
+              beam_width=0.01, sample_length=20.0, res_sigma=0.002, bkg=-6.5, poisson_scale=8.0),
+    FixedCase("fixed_thick", thickness=600.0, roughness=4.5, sld=78.0,
+              oxide_thickness=20.0, oxide_sld=15.0, oxide_roughness=4.0, sub_sld=21.0, sub_roughness=4.0,
+              beam_width=0.012, sample_length=25.0, res_sigma=0.0015, bkg=-7.5, poisson_scale=7.5),
+)
+
+
+def make_fixed(cfg, seed: int = 2026, cases=FIXED_CASES,
+               tth_range: tuple[float, float] = (0.2, 8.0)) -> list[tuple[FixedCase, np.ndarray, np.ndarray]]:
+    """Synthetic curves of `cases` from the training forward model: list of (case, q [Å^-1], intensity).
+
+    Same media layout as data.generator.simulate_reflectivity, then the XRRAugmentor footprint and
+    smearing, background and Poisson noise at the case's values, cropped to `tth_range` [deg].
+    The seed only drives the Poisson draw.
+    """
+    import torch
+
+    from reflectolearn.data.augmentations import XRRAugmentor
+    from reflectolearn.physics import AbelesMatrix, tth2q
+
     wl = cfg.simulation.wavelength
-    predictor = load_predictor(cfg, checkpoint, stats_path, device)
-    rows = []
+    q = cfg.q_grid.cpu().float()
+    keep = ((q >= tth2q(tth_range[0], wl)) & (q <= tth2q(tth_range[1], wl))).numpy()
+    aug = XRRAugmentor(cfg, q)
+    gen = torch.Generator().manual_seed(seed)
+    out = []
+    for c in cases:
+        ox = c.oxide_thickness > 0
+        sld = torch.tensor([[0.0, c.oxide_sld if ox else c.sld, c.sld, c.sub_sld]])
+        thk = torch.tensor([[0.0, c.oxide_thickness, c.thickness]])
+        rgh = torch.tensor([[c.oxide_roughness if ox else c.roughness, c.roughness if ox else 0.0,
+                             c.sub_roughness]])
+        r = AbelesMatrix()(q[None], thk, rgh, sld, wavelength=wl)
+        r = aug._footprint(q, r, c.beam_width, c.sample_length)
+        r = XRRAugmentor._smear(q, r, c.res_sigma) + 10.0 ** c.bkg
+        s = 10.0 ** c.poisson_scale
+        r = torch.poisson((r * s).clamp_min(0.0), generator=gen) / s
+        out.append((c, q.numpy()[keep].astype(np.float64), r[0].numpy()[keep].astype(np.float64)))
+    return out
 
-    def run(name, q, counts, truth, kind):
-        t0 = time.time()
-        res, _ = predict_curve(q, counts, cfg, predictor, alias_check=alias_check, mcmc_steps=mcmc_steps,
-                               device=device, name=name)
-        got = res["refined"]
-        row = {"set": kind, "case": name, "seconds": round(time.time() - t0, 1), "fom": res["fom_refined"]}
-        for k in ("thickness", "roughness", "sld"):
-            row[f"{k}_true"], row[f"{k}_ai"], row[f"{k}"] = truth[k], res["ai"][k], got[k]
-        row["thickness_err_pct"] = 100 * (got["thickness"] - truth["thickness"]) / truth["thickness"]
-        if res.get("alias"):
-            row["alias_start"] = res["alias"]["chosen"][0]
-            row["fft_thickness"] = res["alias"]["fft_thickness"][0]
-        if res.get("posterior"):
-            p = res["posterior"]["thickness"]
-            row["thickness_lo"], row["thickness_hi"] = p["lo"], p["hi"]
-            row["thickness_in_68"] = p["lo"] <= truth["thickness"] <= p["hi"]
-        rows.append(row)
 
-    for case, tth, counts in make_synthetic(n_synthetic, seed=seed, wavelength=wl):
-        run(case.name, tth2q(tth, wl), counts, asdict(case), "synthetic")
-    for fname, ref in MEASURED_REFERENCE.items():
-        q, counts = load_measured_curve(DATA_DIR / fname, x_axis="tth", wavelength=wl)
-        run(fname, q, counts, ref, "measured")
+def score(kind: str, name: str, res: dict, truth: dict, seconds: float) -> dict:
+    """One benchmark row from a predict_curve result and the known truth."""
+    got = res["refined"]
+    row = {"set": kind, "case": name, "seconds": round(seconds, 1), "fom": res["fom_refined"]}
+    for k in ("thickness", "roughness", "sld"):
+        row[f"{k}_true"], row[f"{k}_ai"], row[f"{k}"] = truth[k], res["ai"][k], got[k]
+    row["thickness_err_pct"] = 100 * (got["thickness"] - truth["thickness"]) / truth["thickness"]
+    if res.get("alias"):
+        row["alias_start"] = res["alias"]["chosen"][0]
+        row["fft_thickness"] = res["alias"]["fft_thickness"][0]
+    if res.get("posterior"):
+        p = res["posterior"]["thickness"]
+        row["thickness_lo"], row["thickness_hi"] = p["lo"], p["hi"]
+        row["thickness_in_68"] = p["lo"] <= truth["thickness"] <= p["hi"]
+    return row
 
+
+def summarize(rows: list[dict]) -> dict:
+    """Per-set error statistics of the rows from `score`."""
     summary = {}
-    for kind in ("synthetic", "measured"):
+    for kind in dict.fromkeys(r["set"] for r in rows):
         rs = [r for r in rows if r["set"] == kind]
-        if not rs:
-            continue
         err = np.array([abs(r["thickness_err_pct"]) for r in rs])
         summary[kind] = {
             "n": len(rs),
@@ -158,6 +204,35 @@ def run_benchmark(cfg, checkpoint, *, stats_path=None, n_synthetic: int = 12, se
         }
         if any("thickness_in_68" in r for r in rs):
             summary[kind]["thickness_in_68pct_interval"] = float(np.mean([r.get("thickness_in_68", False) for r in rs]))
+    return summary
+
+
+def run_benchmark(cfg, checkpoint, *, stats_path=None, n_synthetic: int = 12, seed: int = 2026,
+                  alias_check: bool = False, mcmc_steps: int = 0, out_dir: str | Path = "benchmark_out",
+                  device=None) -> dict:
+    """Run predict on both synthetic sets and score them; writes JSON and CSV."""
+    from reflectolearn.physics import tth2q
+    from reflectolearn.predict import load_predictor, predict_curve
+
+    device = device or cfg.device
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    wl = cfg.simulation.wavelength
+    predictor = load_predictor(cfg, checkpoint, stats_path, device)
+    rows = []
+
+    def run(kind, name, q, counts, truth):
+        t0 = time.time()
+        res, _ = predict_curve(q, counts, cfg, predictor, alias_check=alias_check, mcmc_steps=mcmc_steps,
+                               device=device, name=name)
+        rows.append(score(kind, name, res, truth, time.time() - t0))
+
+    for case, tth, counts in make_synthetic(n_synthetic, seed=seed, wavelength=wl):
+        run("synthetic", case.name, tth2q(tth, wl), counts, asdict(case))
+    for case, q, intensity in make_fixed(cfg, seed=seed):
+        run("synthetic_fixed", case.name, q, intensity, asdict(case))
+
+    summary = summarize(rows)
     (out_dir / "benchmark.json").write_text(json.dumps({"summary": summary, "rows": rows}, indent=1), encoding="utf-8")
     keys = sorted({k for r in rows for k in r}, key=lambda k: (k not in ("set", "case"), k))
     with open(out_dir / "benchmark.csv", "w", newline="", encoding="utf-8") as fh:
@@ -172,4 +247,5 @@ def run_benchmark(cfg, checkpoint, *, stats_path=None, n_synthetic: int = 12, se
     return {"summary": summary, "rows": rows}
 
 
-__all__ = ["MEASURED_REFERENCE", "SyntheticCase", "make_synthetic", "parratt", "run_benchmark", "smeared"]
+__all__ = ["FIXED_CASES", "FixedCase", "SyntheticCase", "make_fixed", "make_synthetic", "parratt",
+           "run_benchmark", "score", "smeared", "summarize"]

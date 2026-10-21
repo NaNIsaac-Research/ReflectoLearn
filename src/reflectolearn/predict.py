@@ -320,7 +320,7 @@ def _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
 
     # Overlay plot (measured vs predicted re-simulation)
     fig, ax = plt.subplots(figsize=(9, 5.5))
-    ax.semilogy(qn[m], np.clip(obs[m], 1e-15, None), "k-", lw=2, alpha=0.5, label="Measured")
+    ax.semilogy(qn[m], np.clip(obs[m], 1e-15, None), "k-", lw=2, alpha=0.5, label="Data")
     ax.semilogy(qn, np.clip(ai, 1e-15, None), "b--", lw=1.2, alpha=0.7, label="AI predict")
     if refine_enabled:
         ax.semilogy(qn, np.clip(fin, 1e-15, None), "r-", lw=1.3, alpha=0.9, label="Refined")
@@ -350,7 +350,7 @@ def _save_outputs(path, out_dir, cfg, q, r_obs, mask, r_ai, r_final,
         win_m = win & m
         if win_m.sum() > 3:
             axin = ax.inset_axes([0.40, 0.62, 0.34, 0.33])
-            axin.plot(qn[win_m], obs[win_m], "k-", lw=2, alpha=0.5, label="Measured")
+            axin.plot(qn[win_m], obs[win_m], "k-", lw=2, alpha=0.5, label="Data")
             axin.plot(qn[win], ai[win], "b--", lw=1.2, alpha=0.7)
             if refine_enabled:
                 axin.plot(qn[win], fin[win], "r-", lw=1.3, alpha=0.9)

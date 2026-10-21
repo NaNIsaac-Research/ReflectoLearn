@@ -301,24 +301,40 @@ def model_architecture_figure(
     return out
 
 
-# Measured curve for refine_figure; set REFLECTOLEARN_REFINE_DATA to its path.
-DEFAULT_REFINE_DATA = Path(os.environ.get("REFLECTOLEARN_REFINE_DATA", "refine_data.txt"))
+# Curve for refine_figure; without REFLECTOLEARN_REFINE_DATA a synthetic one is written.
+DEFAULT_REFINE_DATA = Path(os.environ["REFLECTOLEARN_REFINE_DATA"]) if os.environ.get(
+    "REFLECTOLEARN_REFINE_DATA") else None
+
+
+def write_synthetic_curve(cfg: Config, path: str | Path, case: str = "fixed_mid") -> Path:
+    """Write the benchmark's synthetic `case` as a 2-column (q, intensity) text file."""
+    import numpy as np
+
+    from reflectolearn.benchmark import FIXED_CASES, make_fixed
+
+    c, q, intensity = make_fixed(cfg, cases=[c for c in FIXED_CASES if c.name == case])[0]
+    path = Path(path)
+    np.savetxt(path, np.column_stack([q, intensity]),
+               header=f"synthetic: thickness {c.thickness} A, roughness {c.roughness} A, sld {c.sld}")
+    return path
 
 
 def refine_figure(
     cfg: Config | None = None,
-    data_path: str | Path = DEFAULT_REFINE_DATA,
+    data_path: str | Path | None = DEFAULT_REFINE_DATA,
     out: str | Path = "refine.png",
     *,
     checkpoint: str | Path | None = None,
     x_axis: str = "tth",
 ) -> Path:
-    """Real-data physics-refinement figure: run the full inference + refine pipeline on a
-    measured curve and produce the measured / AI-predict / refined overlay (with FOM).
+    """Physics-refinement figure: run the full inference + refine pipeline on one curve and
+    produce the data / AI-predict / refined overlay (with FOM).
 
-    Mirrors the CLI 'predict' resolution: checkpoint defaults to config's save_dir/best.pt,
-    and config/stats next to that checkpoint are auto-discovered. The plot is rendered by
-    predict_file; this wrapper just resolves paths and copies the PNG to `out`.
+    Without `data_path` the curve is the benchmark's synthetic "fixed_mid" film, written to
+    synthetic_fixed_mid.txt next to `out`. Mirrors the CLI 'predict' resolution: checkpoint
+    defaults to config's save_dir/best.pt, and config/stats next to that checkpoint are
+    auto-discovered. The plot is rendered by predict_file; this wrapper just resolves paths and
+    copies the PNG to `out`.
     """
     import shutil
 
@@ -326,7 +342,6 @@ def refine_figure(
 
     cfg = cfg or (Config.load_yaml(Path("config.yaml")) if Path("config.yaml").exists()
                   else Config())
-    data_path = Path(data_path)
     out = Path(out)
 
     # Resolve checkpoint, then auto-discover config/stats next to it (as the CLI does).
@@ -335,6 +350,9 @@ def refine_figure(
     if (exp_dir / "config.yaml").exists():
         cfg = Config.load_yaml(exp_dir / "config.yaml")
     stats = exp_dir / "stats.pt" if (exp_dir / "stats.pt").exists() else None
+    if data_path is None:
+        data_path, x_axis = write_synthetic_curve(cfg, out.parent / "synthetic_fixed_mid.txt"), "q"
+    data_path = Path(data_path)
 
     predict_file(
         data_path, cfg, ckpt,
@@ -426,8 +444,8 @@ if __name__ == "__main__":
     print(f"saved: {domain_randomization_figure(_cfg).resolve()}")
     print(f"saved: {sim_to_real_figure(_cfg).resolve()}")
     print(f"saved: {model_architecture_figure(_cfg).resolve()}")
-    if DEFAULT_REFINE_DATA.exists():
+    if (_cfg.save_dir / "best.pt").exists():
         print(f"saved: {refine_figure(_cfg).resolve()}")
     else:
-        print(f"skipped refine figure: {DEFAULT_REFINE_DATA} not found (set REFLECTOLEARN_REFINE_DATA)")
+        print(f"skipped refine figure: {_cfg.save_dir / 'best.pt'} not found")
     print(f"saved: {refine_process_figure().resolve()}")

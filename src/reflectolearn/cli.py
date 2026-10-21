@@ -265,12 +265,12 @@ def benchmark(
         None, "--config", "-c", help="Config YAML. Defaults to config.yaml next to the checkpoint."),
     stats: Path | None = typer.Option(None, "--stats", help="stats.pt. Defaults to next to the checkpoint."),
     n_synthetic: int = typer.Option(12, "--n", help="Synthetic curves (independent numpy Parratt, known truth)."),
-    seed: int = typer.Option(2026, "--seed", help="Seed of the synthetic set."),
+    seed: int = typer.Option(2026, "--seed", help="Seed of the synthetic sets."),
     alias_check: bool = typer.Option(False, "--alias-check/--no-alias-check", help="Refine from d/2, d, 2d and the FFT thickness (experimental)."),
     mcmc_steps: int = typer.Option(0, "--mcmc-steps", help="emcee steps per curve (0 = off)."),
     out_dir: Path = typer.Option(Path("benchmark_out"), "--out-dir", "-o", help="Where benchmark.json/.csv go."),
 ):
-    """Score predict on synthetic curves with known truth and on the two bundled measured In2O3 curves."""
+    """Score predict on synthetic curves with known truth: random films and a few fixed example films."""
     from reflectolearn.benchmark import run_benchmark
 
     exp_dir = checkpoint.parent
