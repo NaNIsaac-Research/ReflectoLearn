@@ -48,7 +48,7 @@ Simulation is noise-free; noise is applied at training time in the order of a re
 | 3c | counting statistics (Poisson) | s = 10^U(5, 8) |
 | 4 | q-axis misalignment | N(0, 0.004) A^-1 |
 
-Hidden nuisance variables (surface SiO2 thickness, density and roughness; substrate roughness) are
+Hidden nuisance variables (three surface SiO2 parameters and the substrate roughness) are
 randomized but not regressed. Inputs are normalized by the maximum, log10, resampled to a target
 q-grid, with a valid-mask channel for q values that were not measured, so a measured `.dat` with any
 angular step can be fed in [section 5].
