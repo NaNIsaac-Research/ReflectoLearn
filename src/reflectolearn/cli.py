@@ -360,6 +360,32 @@ def benchmark(
     )
 
 
+@app.command("export-onnx")
+def export_onnx_command(
+    checkpoint: Path = typer.Argument(..., help="Checkpoint to export."),
+    out: Path = typer.Option(Path("model.onnx"), "--out", "-o", help="ONNX file to write."),
+    config_path: Path | None = typer.Option(
+        None, "--config", "-c", help="Config YAML. Defaults to config.yaml next to the checkpoint."
+    ),
+    stats: Path | None = typer.Option(
+        None, "--stats", help="stats.pt. Defaults to next to the checkpoint."
+    ),
+):
+    """Export the CNN to ONNX (physical outputs) plus a JSON input contract (needs the onnx extra)."""
+    from reflectolearn.export import export_onnx
+    from reflectolearn.predict import load_predictor
+
+    exp_dir = checkpoint.parent
+    if config_path is None and (exp_dir / "config.yaml").exists():
+        config_path = exp_dir / "config.yaml"
+    if stats is None and (exp_dir / "stats.pt").exists():
+        stats = exp_dir / "stats.pt"
+    cfg = _load_config(config_path, [])
+    model, mean, std = load_predictor(cfg, checkpoint, stats, torch.device("cpu"))
+    meta = export_onnx(model, mean, std, cfg, out)
+    logger.info(f"Wrote {out} and {meta}")
+
+
 @app.command()
 def stitch(
     scans: list[Path] = typer.Argument(
