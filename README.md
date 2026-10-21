@@ -4,9 +4,10 @@
 
 **Thin-film thickness, roughness and SLD from one X-ray reflectivity curve: a CNN guess, then a differentiable Abeles fit.**
 
-![A measured Ga2O3 XRR curve, the CNN prediction and the refined fit](https://raw.githubusercontent.com/NaNIsaac/ReflectoLearn/main/docs/refine.png)
+![A synthetic XRR curve, the CNN prediction and the refined fit](https://raw.githubusercontent.com/NaNIsaac/ReflectoLearn/main/docs/refine.png)
 
-A measured ALD Ga₂O₃ curve (grey), the CNN's starting guess (blue, dashed) and the
+A synthetic curve (grey; 240 Å film, roughness 6 Å, SLD 45×10⁻⁶ Å⁻², on a 12 Å oxide over Si, with footprint,
+resolution, background and Poisson noise), the CNN's starting guess (blue, dashed) and the
 gradient-refined fit through the same Abeles engine (red), from `reflectolearn predict`.
 
 For anyone who measures single-layer films by X-ray reflectivity (XRR) and wants a fit without hand-building a starting model. A 1D CNN predicts the film's thickness, roughness and scattering-length density (SLD) from the curve; a gradient fit through a differentiable Abeles simulator (PyTorch) then refines that guess against the data, in stages (scale/footprint, film structure, fine tuning) within trust-region bounds around the CNN guess.
@@ -36,17 +37,19 @@ uv run reflectolearn evaluate path/to/best.pt --n-samples 2000
 uv run reflectolearn evaluate path/to/best.pt --refine --trust-margin 0.4
 uv run reflectolearn predict measured.txt -k path/to/best.pt       # real curve, 2 columns (2θ or q, intensity)
 uv run reflectolearn tune --config config.yaml --trials 30         # Optuna search -> config_best.yaml
-uv run reflectolearn stitch 237.dat 238.dat 239.dat -o combined.dat  # join attenuator segments
-uv run reflectolearn benchmark -k path/to/best.pt                # synthetic curves + the two bundled In2O3 curves
+uv run reflectolearn stitch scan1.dat scan2.dat scan3.dat -o combined.dat  # join attenuator segments
+uv run reflectolearn benchmark -k path/to/best.pt                # scores predict on synthetic curves with known truth
 ```
 
 Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to `save_root/experiment_name` (set both in the config). `evaluate` simulates fresh test curves and writes `eval_summary.csv`, `eval_metrics_full.csv` and `eval_*.png` (parity, error-vs-value, best/worst fits, learning curves) next to the checkpoint. With `--refine` it also reports AI-vs-refined metrics and the log-MSE before and after fitting.
 
 `predict` runs one measured file (`--x-axis tth` or `q`) through the same preprocessing as training, refines by default (`--no-refine` to skip; substrate fixed to the middle of the `substrate` range) and writes `<name>_predict.png` and `<name>_predict.txt` next to the input or to `--out-dir`. `tune` runs short proxy trainings per trial, saves the best config to `config_best.yaml`, the trial table to `config_best_trials.csv` and a resumable study to `config_best_study.db`; `-p section.key` restricts the search to given parameters.
 
+`benchmark` runs `predict` on synthetic curves with known parameters and writes `benchmark.json` and `benchmark.csv` to `--out-dir`: random films from an independent numpy Parratt code (`--n`, `--seed`) and three fixed example films from the training forward model (`FIXED_CASES` in `benchmark.py`). No measured data is bundled.
+
 `stitch` joins scans taken in consecutive 2θ ranges with different attenuators (3 columns `2θ intensity error`, no header, given in increasing 2θ order). The last scan is the intensity reference; each earlier scan is scaled so its last point matches the first point of the next one, and that shared boundary point is dropped. The same function is `reflectolearn.stitch.stitch_scans`.
 
-`uv run python -m reflectolearn.report.figures` regenerates the figures in [`docs/`](docs) in the current directory; `refine.png` also needs a trained checkpoint and a measured curve (path in `REFLECTOLEARN_REFINE_DATA`).
+`uv run python -m reflectolearn.report.figures` regenerates the figures in [`docs/`](docs) in the current directory; `refine.png` also needs a trained checkpoint (`save_dir/best.pt`) and uses the synthetic `fixed_mid` curve of the benchmark unless `REFLECTOLEARN_REFINE_DATA` points to a 2θ/intensity file.
 
 ## GenX fit (optional)
 
@@ -82,7 +85,7 @@ The model is film + oxide layer on a fixed substrate (`sub_sld`, `sub_rough`), w
 
 ```
 src/reflectolearn/
-├── cli.py          Typer CLI: config / train / tune / evaluate / predict / stitch
+├── cli.py          Typer CLI: config / train / tune / evaluate / predict / stitch / benchmark
 ├── config.py       config schema and YAML I/O
 ├── model.py        XRRPhysicsModel (1D CNN + optional Fourier features of q)
 ├── train.py        Trainer (AdamW, ReduceLROnPlateau, early stopping, checkpoints)
@@ -90,6 +93,7 @@ src/reflectolearn/
 ├── predict.py      inference + refinement on measured curves
 ├── tune.py         Optuna hyperparameter search
 ├── stitch.py       joining attenuator-segmented scans
+├── benchmark.py    synthetic benchmark of predict
 ├── genx_fit.py     optional GenX/bumps fit (genx extra)
 ├── physics/        abeles.py (AbelesMatrix), utils.py (2θ → q)
 ├── data/           generator.py (streaming dataset), augmentations.py (XRRAugmentor)
