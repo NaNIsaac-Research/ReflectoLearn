@@ -46,7 +46,7 @@ def input_contract(cfg: Config) -> dict:
                 "start": float(q[0]),
                 "stop": float(q[-1]),
                 "points": int(q.numel()),
-                "spacing": "linear",
+                "spacing": "linear, float32 as torch.linspace builds it",
                 "unit": "1/Angstrom",
             },
             "preprocess": [
