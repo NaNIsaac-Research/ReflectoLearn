@@ -37,6 +37,7 @@ uv run reflectolearn evaluate path/to/best.pt --refine --trust-margin 0.4
 uv run reflectolearn predict measured.txt -k path/to/best.pt       # real curve, 2 columns (2θ or q, intensity)
 uv run reflectolearn tune --config config.yaml --trials 30         # Optuna search -> config_best.yaml
 uv run reflectolearn stitch 237.dat 238.dat 239.dat -o combined.dat  # join attenuator segments
+uv run reflectolearn benchmark -k path/to/best.pt                # synthetic curves + the two bundled In2O3 curves
 ```
 
 Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to `save_root/experiment_name` (set both in the config). `evaluate` simulates fresh test curves and writes `eval_summary.csv`, `eval_metrics_full.csv` and `eval_*.png` (parity, error-vs-value, best/worst fits, learning curves) next to the checkpoint. With `--refine` it also reports AI-vs-refined metrics and the log-MSE before and after fitting.
@@ -99,11 +100,11 @@ src/reflectolearn/
 ## Tests
 
 ```bash
-uv sync --extra genx
+uv sync --extra genx --extra mcmc
 uv run pytest
 ```
 
-The GenX test is skipped when the `genx` extra is not installed.
+The two GenX tests are skipped without the `genx` extra and the emcee test without the `mcmc` extra.
 
 ## History
 
