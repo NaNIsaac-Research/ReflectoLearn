@@ -65,14 +65,28 @@ The "supersedes" / "superseded by ReflectoLearn" sentences in the READMEs were a
 | | ReflectoExp exp02-exp07 | Reflecto | XRefine | ReflectoLearn `main` |
 |---|---|---|---|---|
 | Forward model for training data | refnx (exp01-03), GenX (exp04-07) | (uses exp07 weights) | own torch Abeles + footprint, resolution, offset (`instrument_reflectivity`, since c1bc382; before it, bare Abeles curves) | own torch Abeles (`physics/abeles.py`, from XRefine), Névot-Croce, complex SLD |
-| Structure | film (+ SiO2 from exp06; SiO2 randomized in exp07) on Si | film + SiO2 on Si | substrate + top layer + target film, complex SLD | film + optional nuisance oxide on top, substrate fixed range |
+| Structure | film (+ SiO2 from exp06; SiO2 randomized in exp07) on Si; SiO2 under the film in the training simulator, on top of the film in the GenX fitters (see below) | film + SiO2 on Si; the GenX fitter puts SiO2 on top of the film, the bundled exp07 weights were trained with it under the film | substrate + top layer + target film, complex SLD | film + optional nuisance oxide on top, substrate fixed range |
 | Network output | exp06: 6 (film + SiO2); exp07: 3 (d, σ, SLD) | 3 | layer parameters incl. imaginary SLD + 6 instrument parameters | 3 (d, σ, SLD), normalized |
 | Architecture | 1D CNN; exp05 mask channel; exp07 Fourier features of q | exp07 CNN | `fourier_conv` (Fourier features of normalized intensity), ViT, Transformer-VAE; enhanced variant | exp07-style CNN, optional Fourier features of q |
 | Training loss | MSE on normalized parameters | | curve reconstruction (linear, gradient, log) + supervised parameter loss decaying 10000 → 100 + σ < d/2 penalty | MSE on normalized parameters |
 | Augmentation / randomization | exp07: footprint, resolution, I0, background, Poisson, q shift | | resampling, scale and background, Poisson, low/high-q masks | footprint, smearing, I0, background, Poisson, end masks; offset, oxide, Kα2 (55ddcc8) |
 | Refinement | GenX DE, two stages (exp04-07) | GenX DE: oxide + I0, then all (logR2) | `pipeline`: I0 pre-fit (Adam) then DE stages with a thickness grid search; `pipeline_next`: DE early, Adam/L-BFGS late | three Adam stages (linear, correlation, log); optional FFT alias multistart; optional Poisson preset; emcee MCMC; GenX fit port |
 
-Known model inconsistencies found in this audit (issues open, nothing changed): the GenX fitters in ReflectoExp, Reflecto and ReflectoLearn put the SiO2/oxide layer above the film while the ReflectoExp training simulator puts it under the film (ReflectoExp#9, Reflecto#3, ReflectoLearn#32); the background parameter of the Reflecto and exp07 GenX fit is not applied (Reflecto#2, ReflectoExp#9); Si/SiO2 GenX constants differ in sign of contrast from ReflectoLearn's (ReflectoLearn#8).
+Known model inconsistencies found in this audit (issues open, nothing changed):
+- Oxide position (ReflectoExp#9, Reflecto#3, ReflectoLearn#32; a decision for Isaac). GenX stacks layers from the substrate up, so `Stack(Layers=[A, B])` is Si / A / B / ambient (genx 3.8.0 `models/lib/refl_base.py`, `resolveLayerParameters`).
+  - Oxide on top of the film:
+    - ReflectoLearn training generator, `data/generator.py:77-80`: media `[ambient, oxide(top), film, substrate]`;
+    - ReflectoLearn refine, `refine/pipeline.py:23`;
+    - ReflectoLearn `genx_fit.py:59-60`, `Stack(Layers=[Film, Oxide])`;
+    - the GenX fitters of ReflectoExp exp05–exp07 and of Reflecto.
+  - Oxide under the film:
+    - ReflectoExp training simulator, `simulate/simul_genx.py:73-79`: `layers = [sio2, film...]`; its docstring states the opposite;
+    - ReflectoLearn `benchmark.make_synthetic`, `benchmark.py:102-107`: layers `[ambient, film, SIO2, SI]`.
+
+    So inside ReflectoLearn the synthetic benchmark's truth and the generator and refine that fit it differ. Reflecto ships exp07 weights trained on data with the oxide under the film, together with a GenX fitter that puts it on top.
+  - The two orders are different structures, not a small nuisance: for a 240 Å / σ 6 Å / SLD 45 film with 10 Å SiO₂, R(q) differs by a median of 60 % over 2θ 0.2–6° (physics review on #32).
+- The background parameter of the Reflecto and exp07 GenX fit is not applied (Reflecto#2, ReflectoExp#9).
+- Si/SiO2 GenX constants differ in sign of contrast from ReflectoLearn's (ReflectoLearn#8).
 
 ## Code relations
 
@@ -143,7 +157,7 @@ Documents: [README](https://github.com/NaNIsaac/ReflectoLearn/blob/research/iden
 | Result | Status |
 |---|---|
 | R1b Fisher information / Cramér-Rao: with all nuisances known, d and SLD to 0.01-0.04 %, σ to 0.3-1 %; freeing the 2θ offset correlates SLD and offset (0.995); freeing the oxide correlates d and oxide SLD (-0.998) | cross-checked (FIM reproduced by the physics lane); the oxide conclusion was later called overstated because of the bounds (R1c) |
-| R1c: within refine's bounds all three cases are identifiable (Δχ² ≤ 1 widths ±0.04-1.4 %); 48 of 48 refine end points stopped away from the optimum, 43 of them optimizer failures | cross-checked with objections (profile is an upper bound of the profile likelihood; the deciding amendment was not pre-registered) |
+| R1c: within refine's bounds all three cases are identifiable (Δχ² ≤ 1 widths ±0.04-1.4 %; the lower end, mid_no_oxide, is an extrapolation below the 0.25 % profile grid with the Kα2 ratio hitting its bounds in the first step, so the true width lies between about 0.03 % and the unbounded CRLB of 0.28 %); 48 of 48 refine end points stopped away from the optimum: 43 are optimizer failures (worse than the ML fit on refine's own objective), 5 are preferred over the ML structure by refine's objective (an objective or model error, which a better optimizer alone does not fix) | cross-checked with objections (profile is an upper bound of the profile likelihood; the deciding amendment was not pre-registered) |
 | R1c MCMC widths | withdrawn (chains not converged) |
 | R2b causes of the refine failure: no single factor suffices; budget, removing stage 2, Poisson objective and step decay together reach 46 of 48 | in-sample, single author plus one new-seed point |
 | R2f out-of-sample confirmation of the Poisson preset: 42 of 48 against the pre-registered 43 | not confirmed |
@@ -158,7 +172,7 @@ Each item says where it is stated. None has a recorded answer.
 1. **Sim-to-real.** Does domain randomization (ReflectoLearn) or strong augmentation (exp07) transfer to measured curves? exp07's clean-to-augmented gap (4.75 → 38.4 Å) is on simulated data only; there is no measured benchmark with reference values in any repository (ReflectoLearn issue #2, README).
 2. **Which refinement works.** GenX DE (Reflecto, ReflectoExp), DE + grid (XRefine `pipeline`), DE + gradient hybrid (XRefine `pipeline_next`), staged Adam (ReflectoLearn), Poisson-objective preset (#31): never compared on the same cases. Experiment 001 shows the default ReflectoLearn refinement stops short of the optimum (#25) and the Poisson preset is not confirmed out of sample.
 3. **Physics-informed vs supervised training.** XRefine's reconstruction loss against ReflectoLearn's and exp07's parameter MSE: not compared; no XRefine metrics exist, and XRefine was never retrained after its forward model was unified (c1bc382).
-4. **Model structure.** Oxide above or below the film (ReflectoExp#9, Reflecto#3, ReflectoLearn#32); Si/SiO2 constants (ReflectoLearn#8); model-misspecification bias `F⁻¹JᵀWδ` (Experiment 001 README, not run).
+4. **Model structure.** Oxide above or below the film (ReflectoExp#9, Reflecto#3, ReflectoLearn#32). It is mismatched within ReflectoLearn as well: `benchmark.make_synthetic` buries the oxide, while the generator and refine put it on top. The R(q) difference is not small (median 60 % for one film; see "Known model inconsistencies"); Si/SiO2 constants (ReflectoLearn#8); model-misspecification bias `F⁻¹JᵀWδ` (Experiment 001 README, not run).
 5. **Identifiability beyond one film.** Multimodality map (R2a), bilayers (not run), the t2_low Kα2 basin (undecided), offset-SLD valley (#14; fixes #20, #21 opt-in pending a decision).
 6. **Uncertainty.** MCMC convergence and calibration (#29); FIM/CRB vs posterior widths, started in R1b/R2c.
 7. **Information in the curve.** How much information the log-MSE objective discards against a Poisson likelihood (generative_go_nogo, candidate question 2).
