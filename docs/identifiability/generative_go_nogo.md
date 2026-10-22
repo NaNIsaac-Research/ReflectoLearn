@@ -141,8 +141,9 @@ mode is within Δχ² ≤ 1; this is reported as an addition, not used in the re
    2.2 × 10⁻⁵ relative and by a deviance of 0.0004 on the noise-free curve, far below the Δχ²
    thresholds of 1 and 4. The bilayer stack agrees with `benchmark.parratt` to 3.1 × 10⁻¹⁵ (no
    absorption, 2θ 0.2–6°).
-3. *Cost.* The registered estimate (1–5 s per fit) was wrong. Measured with two other runs on the
+3. *Cost estimate correction (2026-10-23).* The registered estimate (1–5 s per fit) was wrong. Measured with two other runs on the
    machine and 2 threads: about 14 s per fit for a single film at 2θ ≤ 6° and about 60 s for the
    bilayer before the quadrature change, with many fits from Latin-hypercube starts stopping at the
    200-evaluation cap far from any minimum. 2304 fits are therefore several hours of CPU, not 1–3.
-   The method is unchanged; the scan runs in the two registered halves, as [HEAVY] slots allow.
+   The method and the decision rules are unchanged; the scan runs in the two registered halves
+   (single film first), each split over three processes.
