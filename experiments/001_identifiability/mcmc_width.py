@@ -25,7 +25,7 @@ import torch
 from nonunique import REFINE_INIT
 from refine_causes import ALL_EFFECTS, BOUNDS, CASES, OUT, S_COUNTS, Q, curve, lsq_fit, model
 
-from reflectolearn.refine.mcmc import sample_posterior
+from reflectolearn.refine.mcmc import LNSIGMA_BOUNDS, sample_posterior
 from reflectolearn.refine.pipeline import OXIDE_KEYS, RefineConfig
 
 RESULTS = OUT / "mcmc_width.json"
@@ -95,6 +95,7 @@ def run_profile(case: str, ml_start: dict | None = None, rounds: int = 0) -> dic
         "ml_rounds": rounds,
         "ml_thickness": d_hat,
         "ml_deviance": d_ml,
+        "ml_params": p_ml,
         "crossings": crossings,
         "half_width": float(np.mean(crossings)),
         "points": points,
@@ -191,9 +192,100 @@ def run_poisson(case: str, steps: int, seed: int = 0) -> dict:
     }
 
 
-def until_converged(run, case: str) -> dict:
+# ------------------------------------------------------------------ amendment 3: whitened DE chains
+DE_LENGTHS = (5000, 15000)
+DE_WALKERS = 64
+
+
+def fisher_cholesky(p_ml: dict, keys: list[str], oxide: bool) -> np.ndarray:
+    """Cholesky factor of F^-1, F the Poisson Fisher information at p_ml under refine's model,
+    from a central-difference Jacobian of ln λ (one batched forward call)."""
+    fwd = model(oxide)
+    h = 3e-4 * np.array([BOUNDS[k][1] - BOUNDS[k][0] for k in keys])
+    x0 = np.array([p_ml[k] for k in keys])
+    rows = np.r_[x0 + np.diag(h), x0 - np.diag(h), x0[None]]
+    vals = {k: torch.full((len(rows),), v) for k, v in p_ml.items()}
+    vals |= {k: torch.as_tensor(rows[:, i], dtype=torch.float32) for i, k in enumerate(keys)}
+    with torch.no_grad():
+        lam = S_COUNTS * fwd(vals, ALL_EFFECTS).double().numpy()
+    n = len(keys)
+    J = ((np.log(lam[:n]) - np.log(lam[n : 2 * n])) / (2 * h[:, None])).T
+    F = J.T @ (lam[-1][:, None] * J)
+    return np.linalg.cholesky(np.linalg.inv(F))
+
+
+def run_de(case: str, likelihood: str, steps: int, seed: int = 0) -> dict:
+    """Amendment 3: emcee DE moves in coordinates whitened by the Poisson Fisher information."""
+    _, _, y, oxide, free = ml(case)
+    p_ml = load()[case]["profile"]["ml_params"]
+    keys = [k for k in free if oxide or k not in OXIDE_KEYS]
+    fwd = model(oxide)
+    lo = np.array([BOUNDS[k][0] for k in keys])
+    hi = np.array([BOUNDS[k][1] for k in keys])
+    x_ml = np.array([p_ml[k] for k in keys])
+    L = fisher_cholesky(p_ml, keys, oxide)
+    mask = y > 0
+    obs = np.log10(np.where(mask, y, 1.0) / S_COUNTS)
+    n_valid = float(mask.sum())
+    gauss = likelihood == "gaussian"
+
+    @torch.no_grad()
+    def r_of(theta: np.ndarray) -> np.ndarray:
+        vals = {k: torch.full((len(theta),), v) for k, v in p_ml.items()}
+        vals |= {k: torch.as_tensor(theta[:, i], dtype=torch.float32) for i, k in enumerate(keys)}
+        return fwd(vals, ALL_EFFECTS).double().numpy()
+
+    def log_prob(z: np.ndarray) -> np.ndarray:
+        theta = x_ml + z[:, : len(keys)] @ L.T
+        out = np.full(len(z), -np.inf)
+        ok = np.all((theta > lo) & (theta < hi), axis=1)
+        if gauss:
+            ok &= (z[:, -1] > LNSIGMA_BOUNDS[0]) & (z[:, -1] < LNSIGMA_BOUNDS[1])
+        if ok.any():
+            r = r_of(theta[ok])
+            if gauss:
+                # refine.mcmc's likelihood: Gaussian in log10 R over the nonzero counts, spread e^lnσ
+                sse = (((np.log10(np.clip(r, 1e-15, None)) - obs) ** 2) * mask).sum(1)
+                sig = np.exp(z[ok, -1])
+                out[ok] = -0.5 * sse / sig**2 - n_valid * np.log(sig)
+            else:
+                lam = S_COUNTS * r
+                out[ok] = (y * np.log(lam) - lam).sum(1)
+        return out
+
+    ndim = len(keys) + gauss
+    z0 = np.zeros(ndim)
+    if gauss:
+        sse0 = (((np.log10(np.clip(r_of(x_ml[None])[0], 1e-15, None)) - obs) ** 2) * mask).sum()
+        z0[-1] = np.clip(np.log(max(np.sqrt(sse0 / n_valid), 1e-4)), *LNSIGMA_BOUNDS)
+    rng = np.random.default_rng(seed)
+    p0 = np.empty((DE_WALKERS, ndim))
+    for i in range(DE_WALKERS):  # a ball of radius 0.1 in z, redrawn until inside the bounds
+        while True:
+            p0[i] = z0 + 0.1 * rng.standard_normal(ndim) / np.sqrt(ndim)
+            if np.isfinite(log_prob(p0[i : i + 1])[0]):
+                break
+    sampler = emcee.EnsembleSampler(
+        DE_WALKERS,
+        ndim,
+        log_prob,
+        vectorize=True,
+        moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2)],
+    )
+    sampler.random_state = np.random.RandomState(seed)
+    t = time.perf_counter()
+    sampler.run_mcmc(p0, steps, progress=False)
+    seconds = time.perf_counter() - t
+    zc = sampler.get_chain(discard=steps // 2)
+    chain = x_ml + zc[:, :, : len(keys)] @ L.T  # back to θ for τ and the interval
+    return summary(chain, keys, steps, seconds) | {
+        "acceptance": float(np.mean(sampler.acceptance_fraction))
+    }
+
+
+def until_converged(run, case: str, lengths=LENGTHS) -> dict:
     tries = []
-    for steps in LENGTHS:
+    for steps in lengths:
         r = run(case, steps)
         tries.append(r)
         print(f"  {case} {steps} steps: tau {r['tau_max']:.0f}, h {r['half_width']:.3f} Å")
@@ -227,7 +319,7 @@ def report() -> None:
         if "profile" not in c:
             continue
         pr = c["profile"]
-        for arm in ("G", "G-long", "P"):
+        for arm in ("G", "G-long", "P", "G-DE", "P-DE"):
             if arm not in c:
                 continue
             r = c[arm]
@@ -244,7 +336,9 @@ def report() -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("parts", nargs="+", choices=["profile", "G", "G-long", "P", "report"])
+    ap.add_argument(
+        "parts", nargs="+", choices=["profile", "G", "G-long", "P", "G-DE", "P-DE", "report"]
+    )
     ap.add_argument("--cases", nargs="+", default=list(CASES), choices=list(CASES))
     ap.add_argument("--threads", type=int, default=4)
     args = ap.parse_args()
@@ -261,8 +355,11 @@ def main() -> None:
                 result = run_gaussian(case, LENGTHS[0])
             elif part == "G-long":
                 result = until_converged(run_gaussian, case)
-            else:
+            elif part == "P":
                 result = until_converged(run_poisson, case)
+            else:
+                lik = "gaussian" if part == "G-DE" else "poisson"
+                result = until_converged(lambda c, n, lik=lik: run_de(c, lik, n), case, DE_LENGTHS)
             data = load()
             data.setdefault(case, {})[part] = result
             RESULTS.write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")

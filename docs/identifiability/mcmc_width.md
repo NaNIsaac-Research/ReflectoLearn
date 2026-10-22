@@ -133,3 +133,41 @@ Chosen by the coordinator over 100000-step chains. Nothing below has been run wh
 - **Width and rules.** Unchanged: h_m from the 16–84 % range of d, comparator h_p from the
   re-anchored profile, agreement 0.5–2, and the decision rules above, with G-DE in place of G-long
   and P-DE in place of P. G (refine.mcmc as shipped, 2000 steps) keeps its recorded result.
+
+## Results of amendment 3
+
+Reproduce (about 50 minutes on CPU, with other jobs running):
+`uv run python experiments/001_identifiability/mcmc_width.py profile G-DE P-DE report`.
+
+| case | h_p (Å) | G-DE: h_m, ratio, τ at 15000 | P-DE: h_m, ratio, τ at 15000 | converged (50 τ ≤ 7500) |
+|---|---|---|---|---|
+| mid_oxide | 1.016 | 0.758, 0.75, 85 | 0.635, 0.62, 104 | both |
+| mid_no_oxide | 0.160 | 0.392, **2.45**, 90 | 0.083, 0.52, 57 | both |
+| t2_low | 1.266 | 1.238, 0.98, 345 | 2.076, 1.64, 603 | neither |
+
+Whitening and DE moves cut τ by a factor of 2 to 4 against the stretch move at the same length
+(mid_oxide 85 vs 291, mid_no_oxide 90 vs 208), enough for two of the three cases to converge within
+15000 steps.
+
+**Verdict by the registered rules, per case:**
+- mid_oxide: both likelihoods agree with the profile (0.75, 0.62). No disagreement to explain.
+- mid_no_oxide: the converged Gaussian log₁₀ R chain is still 2.45 times wider than the profile, and
+  the converged Poisson chain agrees (0.52). For this case the cause is the **likelihood**, not the
+  chain length: refine.mcmc's chain was short (#29), but running it to convergence leaves the
+  width where it was (0.37 → 0.39 Å).
+- t2_low: no verdict. Neither chain converges. τ grows with chain length (P-DE 219 → 603), which is
+  what a sampler crossing between separate basins looks like. R1c had already found two ML solutions
+  of this curve that differ only in the Kα2 ratio (0.51 vs 0.00) within ΔD = 1.
+
+The registered all-case rule ("P agrees in all three cases") cannot be applied, because t2_low gives
+no verdict. What is established: of the two R1c disagreements, the mid_no_oxide one is a likelihood
+problem. The t2_low one ("2–3 times narrower") came from unconverged chains and a coarse comparison;
+with the profile re-anchored, the unconverged widths are 0.8–1.6 times the profile.
+
+Not part of the rules:
+- P-DE for mid_no_oxide sits at the edge of the agreement band (0.52). Its 68 % interval (239.88–240.04
+  Å) is narrower than the profile's Δχ² ≤ 1 interval (239.87–240.19 Å), which is asymmetric (crossings
+  0.118 and 0.202 Å). Profile and marginal can differ when a nuisance sits at a bound (here the Kα2
+  ratio), because the marginal integrates over volume that the bound cuts off. Not tested here.
+- t2_low is the first case in this experiment where the posterior itself, not only the optimizer,
+  shows more than one nuisance basin. It is a candidate for the R2a question, on the nuisance side.
