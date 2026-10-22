@@ -14,7 +14,9 @@ Priors are flat within the same bounds refine used (trust region for the film, g
 the nuisances). All walkers are evaluated in one batch on the refine device.
 
 The kept half of the chain is checked against its integrated autocorrelation time tau: estimates are
-usable when it spans at least 50 tau. With refine's twelve parameters free a 2000-step chain is often
+usable when it spans at least 50 tau. The check is necessary, not sufficient: on a short chain tau
+itself is underestimated, so a flag set near the boundary can be optimistic; "tau_margin" (kept steps
+/ max tau) shows how far from the boundary the chain is. With refine's twelve parameters free a 2000-step chain is often
 several times shorter than that (ReflectoLearn#29); the result reports tau and a warning is logged.
 """
 
@@ -59,7 +61,8 @@ def sample_posterior(
         {"params": {key: {"median", "lo", "hi"}}, "lnsigma": {...}, "acceptance", "steps", "walkers",
          "samples": (N, K) array of the kept samples, "keys": list, "log_prob_start", "log_prob_max",
          "best": the highest-probability point visited, "tau": integrated autocorrelation time of
-         each key and of lnsigma over the kept half, "converged": kept steps >= 50 max(tau)}.
+         each key and of lnsigma over the kept half, "tau_margin": kept steps / max(tau),
+         "converged": tau_margin >= 50}.
         lo/hi are the 16th/84th percentiles (68 % interval).
     """
     import emcee  # optional dependency: pip install reflectolearn[mcmc]
@@ -129,7 +132,8 @@ def sample_posterior(
     chain = sampler.get_chain(discard=steps // 2, flat=True)
     tau = emcee.autocorr.integrated_time(sampler.get_chain(discard=steps // 2), quiet=True)
     kept = steps - steps // 2
-    converged = bool(kept >= TAU_FACTOR * tau.max())
+    tau_margin = float(kept / tau.max())
+    converged = tau_margin >= TAU_FACTOR
     if not converged:
         logger.warning(
             f"MCMC: {kept} kept steps < {TAU_FACTOR} x max autocorrelation time {tau.max():.0f};"
@@ -156,6 +160,7 @@ def sample_posterior(
         "log_prob_max": float(lp.max()),
         "best": dict(zip(keys, best[:-1].tolist(), strict=True)),
         "tau": dict(zip([*keys, "lnsigma"], tau.tolist(), strict=True)),
+        "tau_margin": tau_margin,
         "converged": converged,
     }
 
