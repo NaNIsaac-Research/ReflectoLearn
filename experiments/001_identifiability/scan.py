@@ -380,24 +380,48 @@ def analyze(index: int) -> dict:
     labels = {}
     within = [m for m in out_modes if m["deviance"] <= 1]
     for k in keys:
-        if len(within) > 1 and any(
+        if not out_modes:
+            # no endpoint within Δχ² ≤ 4 (step 2), so no mode and no label (amendment 7)
+            labels[k] = "not reached"
+        elif len(within) > 1 and any(
             abs(a["film"][k] - b["film"][k])
             > 3 * max(a["half_widths"][k]["half_width"], b["half_widths"][k]["half_width"])
             for a, b in itertools.combinations(within, 2)
         ):
             labels[k] = "multimodal"
-        elif within and within[0]["half_widths"][k]["half_width"] >= 0.02 * abs(
-            within[0]["film"][k]
+        elif (best := (within or out_modes)[0])["half_widths"][k]["half_width"] >= 0.02 * abs(
+            best["film"][k]
         ):
             labels[k] = "ridge"
         else:
             labels[k] = "identifiable"
 
-    # Addition: the lowest endpoint above Δχ² 4 that is distinct from every mode.
+    # Amendment 7 observation, post hoc and outside the decision: with no mode, a local fit from the
+    # truth gives the width of the truth's basin. It sees only that basin, so it says nothing about
+    # multimodality.
+    seeded = None
+    refs = [m["best"] for m in modes]
+    if not modes:
+        p_s, d_s, _ = fit(q, y, p0, free, bounds)
+        e_s = {"start": -1, "deviance": d_s, "params": p_s}
+        w = hw(e_s)
+        seeded = {
+            "deviance": d_s,
+            "film": {k: p_s[k] for k in keys},
+            "half_widths": w,
+            "labels": {
+                k: "ridge" if w[k]["half_width"] >= 0.02 * abs(p_s[k]) else "identifiable"
+                for k in keys
+            },
+        }
+        refs = [e_s]
+
+    # Addition: the lowest endpoint above Δχ² 4 that is distinct from every mode (from the seeded
+    # fit when there is no mode).
     competitor = None
-    if modes:
+    if refs:
         for e in (e for e in ends if e["deviance"] > 4):
-            if all(distinct(m["best"], e) for m in modes):
+            if all(distinct(r, e) for r in refs):
                 competitor = {
                     "deviance": e["deviance"],
                     "film": {k: e["params"][k] for k in keys},
@@ -425,6 +449,7 @@ def analyze(index: int) -> dict:
         "n_within_4": sum(e["deviance"] <= 4 for e in ends),
         "modes": out_modes,
         "labels": labels,
+        "seeded": seeded,
         "competitor": competitor,
     }
 
@@ -441,16 +466,26 @@ def report() -> None:
         " Labels per film parameter (d, ρ; layer 2 after the slash). Competitor: the lowest endpoint"
         " above Δχ² 4 distinct from every mode, and s*, the counting level at which it would be"
         " within Δχ² 1 (not part of the registered decision). At cap: fits of the 64 that stopped at"
-        " the 200-evaluation limit.",
+        " the 200-evaluation limit. Not reached: no start ended within Δχ² ≤ 4, so the condition has"
+        " no mode and no label (amendment 7); it is evidence neither for nor against multimodality."
+        " In brackets, the width labels of a local fit from the truth: post hoc, outside the"
+        " decision, and blind to multimodality because it only sees the truth's basin.",
         "",
         "| # | stack | nuisance | 2θ max | ρ film | reached | at cap | modes (Δχ²) | d | ρ"
         " | competitor ΔD | s* |",
         "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
-        c, lab = r["condition"], r["labels"]
-        d = lab["thickness"] + (f" / {lab['thickness2']}" if "thickness2" in lab else "")
-        rho = lab["sld"] + (f" / {lab['sld2']}" if "sld2" in lab else "")
+        c, lab, seeded = r["condition"], r["labels"], r.get("seeded")
+
+        def cell(k1: str, k2: str, lab=lab, seeded=seeded) -> str:
+            ks = [k for k in (k1, k2) if k in lab]
+            text = " / ".join(lab[k] for k in ks)
+            if seeded:
+                text += " (" + " / ".join(seeded["labels"][k] for k in ks) + ")"
+            return text
+
+        d, rho = cell("thickness", "thickness2"), cell("sld", "sld2")
         comp = r["competitor"]
         modes = ", ".join(f"{m['deviance']:.2g}" for m in r["modes"]) or "—"
         comp_d = f"{comp['deviance']:.3g}" if comp else "—"

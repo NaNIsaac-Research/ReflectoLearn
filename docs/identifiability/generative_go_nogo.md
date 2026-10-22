@@ -360,3 +360,31 @@ the same name, case-insensitively, in PowerShell. The watcher never registered t
 so it did not exit and recorded no peak memory. The memory guard summed and stopped the python
 processes directly, so it was in force, but this was not observed in a kill. All 19 conditions
 finished and wrote their output. Fixed in the runner before the bilayer half.
+
+### Amendment 7: conditions without any endpoint within Δχ² ≤ 4 (2026-10-23)
+
+Written **after the bilayer fits of 14 of the 18 conditions had been seen**, and before any bilayer
+condition was analysed. In 10 of those 14 (18, 20, 21, 23, 24, 25, 26, 27, 29, 30), none of the 64
+starts ended within Δχ² ≤ 4. The lowest endpoints are at ΔD 1.8 × 10³ to 2.2 × 10⁵. This is not a
+rule change. It brings the implementation in line with steps 2–3, which define modes only from
+endpoints within Δχ² ≤ 4:
+- **Fixed.** `scan.py analyze` labelled every film parameter "identifiable" when there was no mode,
+  because the label rules fell through to their last branch. Now a condition with no endpoint within
+  Δχ² ≤ 4 has no mode and is labelled *not reached*. When there are modes but none within Δχ² ≤ 1,
+  the ridge/identifiable test uses the best mode ("one mode" in rule 3) instead of falling through.
+- **Decision.** *Not reached* is evidence neither for "go" nor for "no-go": the search did not reach
+  the truth's basin, so the condition is undecided. The step 7 statement gives the number of
+  undecided conditions and does not say that the bilayer half has no multimodality.
+- **Observation (post hoc, outside the decision).** For a condition without a mode, a local fit from
+  the truth and its profiles give the width labels of the truth's basin, and the competitor is taken
+  relative to that fit. By construction this sees only the truth's basin, so it says nothing about
+  multimodality.
+- **Single-film half.** All 19 conditions have a reach ≥ 1/64 and a mode at Δχ² ≤ 10⁻⁶, so their
+  labels are unchanged (`scan_tables.md` regenerated, same rows).
+- **Follow-up.** With most bilayer conditions not reached, the bilayer half is effectively untested by
+  this scan. More starts, a larger evaluation cap, or starts mixed around the truth and across the box
+  belong to a separately registered experiment (R2h, registered by the coordinator), not to this one.
+
+Physics (2026-10-23, before this amendment was committed) agreed with the fix and the observation,
+and asked for the two qualifications above: "not reached" is not evidence either way, and the
+truth-start fit is post hoc and blind to multimodality.
