@@ -60,7 +60,7 @@ def simulate(cfg: Config, rng: np.random.Generator) -> tuple[np.ndarray, np.ndar
     return q, counts.clip(1.0)
 
 
-def run(seed: int = SEED) -> dict:
+def run(seed: int = SEED, config: RefineConfig | None = None) -> dict:
     torch.manual_seed(seed)
     cfg = Config(device="cpu")
     q_meas, counts = simulate(cfg, np.random.default_rng(seed))
@@ -86,17 +86,20 @@ def run(seed: int = SEED) -> dict:
         mask,
         cfg.param_ranges,
         wavelength=cfg.simulation.wavelength,
-        config=RefineConfig(),
+        config=config or RefineConfig(),
         device=cfg.device,
     )
     d, sigma, sld = (float(v) for v in p_fit[0])
+    # refine returns a nuisance only when it is fitted; None marks one that was held off
+    nuisance = {
+        k: float(info[k][0]) if k in info else None for k in ("tth_offset", "oxide_thickness")
+    }
     return {
         "seed": seed,
         "fft_thickness": float(d0[0]),
         "fit": {"thickness": d, "roughness": sigma, "sld": sld},
         "fom_after": float(info["fom_after"]),
-        "tth_offset": float(info["tth_offset"][0]),
-        "oxide_thickness": float(info["oxide_thickness"][0]),
+        **nuisance,
         "q_measured": [float(q_meas[0]), float(q_meas[-1])],
         "points": int(mask.sum()),
     }

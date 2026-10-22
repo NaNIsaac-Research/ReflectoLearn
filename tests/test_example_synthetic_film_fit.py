@@ -14,6 +14,7 @@ import pytest
 
 from reflectolearn.benchmark import parratt
 from reflectolearn.config import Config
+from reflectolearn.refine import RefineConfig
 
 EXAMPLE = Path(__file__).parents[1] / "examples" / "synthetic_film_fit"
 EXPECTED = json.loads((EXAMPLE / "expected.json").read_text(encoding="utf-8"))
@@ -73,6 +74,13 @@ def test_sld_and_roughness_match_the_truth(result, key):
 def test_output_is_unchanged(result, key):
     got = result["fit"][key] if key in result["fit"] else result[key]
     _check(key, got, EXPECTED["regression"][key])
+
+
+def test_a_nuisance_held_off_is_reported_as_none():
+    """refine leaves the nuisances it did not fit out of its info (#22)."""
+    got = example.run(config=RefineConfig(fit_tth_offset=False, fit_oxide=False))
+    assert got["tth_offset"] is None
+    assert got["oxide_thickness"] is None
 
 
 def test_the_example_uses_the_default_q_grid_and_wavelength():
