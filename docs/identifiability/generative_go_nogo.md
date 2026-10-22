@@ -269,6 +269,7 @@ Two things to keep in view for the analysis, without reading anything into them 
   that film the search coverage is thin, and a mode that only a few starts would find could be
   missed.
 
-Cost correction (rule 24): with two processes and no other heavy job, a condition takes 3.5–7.5
-minutes. The 2θ ≤ 6° conditions are not slower than 2.2°, because the fit converges in fewer
-evaluations.
+Cost correction (rule 24): a condition takes 3.5–10 minutes, not the hours implied by the
+registered estimate's per-fit figure for the bilayer. With two processes, the 2θ ≤ 6° conditions
+took 5–7.5 minutes, against 3.5–5 minutes at 2.2°. The number of evaluations per fit was not
+compared.
