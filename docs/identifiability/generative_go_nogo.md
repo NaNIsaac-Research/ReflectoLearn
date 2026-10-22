@@ -162,3 +162,56 @@ mode is within Δχ² ≤ 1; this is reported as an addition, not used in the re
    condition the report also lists the endpoints within Δχ² ≤ 4 whose nuisances differ (Kα2 ratio
    by more than 0.1, or oxide thickness or SLD by more than 10 %), as an observation. It does not enter
    the go/no-go decision, which keeps its registered wording.
+
+### Decision flow (written 2026-10-23, before any scan condition was analysed)
+
+This restates the registered rules and amendments 1–5 as the order the code applies them in
+(`scan.py run`, then `scan.py analyze`). It changes no rule.
+
+1. **Global multi-start.** For each condition, 64 Latin-hypercube starts span the whole prior box,
+   and a Poisson least-squares fit runs from each (at most 200 evaluations) on the noise-free
+   expected counts. The truth has D = 0, so an endpoint's D is its Δχ².
+2. **Candidates.** Endpoints with Δχ² ≤ 4.
+3. **Modes.** Candidates are taken in order of D. Each one joins the first existing mode it is not
+   distinct from, or starts a new mode. Two endpoints are distinct if some film parameter (d or ρ of
+   a layer) differs by more than 3 × the larger of their two profile half-widths for that parameter.
+4. **Per-mode profiles.** Each film parameter at each mode's best endpoint gets a Δχ² = 1
+   half-width. The parameter is stepped out by doubling until Δχ² rises above 1 or the bound is
+   reached, then bisected 6 times. Every point is the lowest of three local fits: continued,
+   nuisances at refine's initial values, nuisances at bound midpoints (amendment 4). A restart that
+   lands below the mode is recorded as `lowest_dchi2` < 0.
+5. **Labels, per film parameter.** *Multimodal* if two or more modes have Δχ² ≤ 1 and differ in
+   that parameter by the rule in step 3. *Ridge* if not, and the best mode's half-width is ≥ 2 % of
+   the value. *Identifiable* otherwise.
+6. **Check of multimodal labels.** Draw one Poisson curve, run emcee with the Poisson likelihood from
+   each mode, and confirm if both modes keep ≥ 5 % of the samples after burn-in in at least one run.
+   This is not implemented yet, and runs only if step 5 gives a multimodal label.
+7. **Decision.** Go if at least one condition with refine's bounds and q_max ≥ 0.21 Å⁻¹ (2θ ≥ 3°)
+   is confirmed multimodal in step 6; otherwise no-go stands and the map is the result.
+
+Reported alongside but outside the decision:
+- the nearest distinct competitor above Δχ² 4, with s* = 10⁶ / ΔD, the counting level at which it
+  would come within Δχ² 1;
+- for every condition, endpoints within Δχ² ≤ 4 whose nuisances differ (amendment 5).
+
+**The named case, t2_low Kα2 basin (condition 36).** On one noisy curve, R1c found two ML solutions
+that differ only in the Kα2 ratio (0.51 vs 0.00) within ΔD = 1. R2c (amendment 3) did not converge
+on that curve, and τ grew with chain length. The scan fits the noise-free curve instead, where the
+truth (Kα2 0.5) has D = 0. Expected readings, stated before the result:
+- If the second basin shows up as endpoints with Kα2 near 0 inside Δχ² ≤ 4, it lies in the
+  likelihood itself.
+- If it shows up only above Δχ² 4, it is a feature of that noise draw, within reach at the counts
+  given by s*.
+
+Either way the film labels follow steps 3–5, which ignore nuisances.
+
+### Interim (2026-10-23 03:20): fits only, no modes, no labels, no verdict
+
+| # | condition | points | starts within Δχ² ≤ 4 | lowest Δχ² above 4 | fit time (one process, 3 threads) |
+|---|---|---|---|---|---|
+| 0 | single, refine bounds, 2θ ≤ 2.2°, ρ 12 | 101 | 2/64 | 4.6 × 10⁴ | 558 s |
+| 1 | single, refine bounds, 2θ ≤ 2.2°, ρ 24 | 101 | 15/64 | 8.0 × 10³ | 575 s |
+| 2 | single, refine bounds, 2θ ≤ 2.2°, ρ 45 | 101 | 13/64 | 1.3 × 10⁴ | 471 s |
+
+These are raw fit counts. Whether the endpoints within Δχ² ≤ 4 form one mode or several is decided
+in step 3, after all of a process's conditions are fitted.
