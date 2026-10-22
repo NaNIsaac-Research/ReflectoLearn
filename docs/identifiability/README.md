@@ -159,6 +159,16 @@ Inference (not yet tested):
 - Where the oxide is free over a wide SLD range and q_max ≤ 0.2 Å⁻¹, a single best fit may be the
   wrong output. Not tested: R1c used refine's bounds and q_max 0.43 Å⁻¹.
 
+## Where the truth curves come from (checked 2026-10-23 for RL#32)
+
+`benchmark.make_synthetic` puts the oxide under the film (buried), while refine, the training
+generator and `genx_fit` put it on top. Swapping the order changes R by a median 60 % (physics,
+RL#32). No case in Experiment 001 (R1b, R1c, R2a, R2b, R2c, R2f) draws its truth from
+`make_synthetic`. Every truth curve comes from one of three forward models, all with the oxide on
+top: `fim.py` (R1b, R1c), refine's `make_forward` (R2b, R2c, R2f) or `scan.py` (R2a).
+`benchmark.parratt` appears only in the forward-model checks, with the layers listed explicitly in
+the same top-oxide order. So none of these results is a buried-versus-top model mismatch.
+
 ## Limits
 
 - Local: F describes the curvature at the truth. Distant solutions with the same curve (for example
