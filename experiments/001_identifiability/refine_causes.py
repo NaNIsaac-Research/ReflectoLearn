@@ -23,14 +23,16 @@ from dataclasses import replace
 import fim
 import numpy as np
 import torch
+from fim import Film
 from nonunique import (
     BOUNDS,
     CASES,
+    EXTRA,
     OUT,
     PARAM_RANGES,
+    REFINE_FREE,
     S_COUNTS,
     Q,
-    case_truth,
     deviance_terms,
     fit_starts,
 )
@@ -52,6 +54,13 @@ torch.set_default_dtype(torch.float32)
 FACTORS = "ABCDEF"
 SINGLES = ["base", *FACTORS, FACTORS, *(f"all-{f}" for f in FACTORS)]
 RESULTS = OUT / "refine_causes.json"
+CONFIRM = OUT / "refine_confirm.json"
+# R2f (registered in refine_causes.md): a film R2b did not use and new seeds for two R2b films.
+R2F = {
+    "thin_oxide": (Film("thin_oxide", 90.0, 3.0, 28.0), REFINE_FREE, 21),
+    "mid_oxide": (*CASES["mid_oxide"], 22),
+    "t2_low": (*CASES["t2_low"], 23),
+}
 ALL_EFFECTS = {"tth_offset", "dq", "kalpha2", "footprint", "oxide"}
 
 
@@ -102,11 +111,15 @@ def build_config(on: set[str], mult: int, oxide: bool) -> RefineConfig:
 
 
 def curve(name: str, seed: int = 0):
-    """One Poisson draw from refine's own forward model at the truth."""
-    _, free = CASES[name]
+    """One Poisson draw from refine's own forward model at the truth of an R2b case."""
+    film, free = CASES[name]
+    return draw(film, free, seed)
+
+
+def draw(film: Film, free: tuple[str, ...], seed: int):
     oxide = any(k in free for k in OXIDE_KEYS)
     fwd = model(oxide)
-    p0 = case_truth(name)
+    p0 = fim.truth(film, "oxide" if oxide else "instr") | EXTRA
     with torch.no_grad():
         r = fwd({k: torch.tensor([v]) for k, v in p0.items()}, ALL_EFFECTS).double().numpy()[0]
     y = np.random.default_rng(seed).poisson(S_COUNTS * r).astype(float)
@@ -176,7 +189,11 @@ def reference_ml(case: str) -> dict:
 
 def run_config(case: str, config_name: str) -> dict:
     film, free = CASES[case]
-    p0, y, oxide = curve(case)
+    return run_fits(film, free, 0, config_name)
+
+
+def run_fits(film: Film, free: tuple[str, ...], seed: int, config_name: str) -> dict:
+    p0, y, oxide = draw(film, free, seed)
     mask = y > 0
     log_r = np.where(mask, np.log10(np.where(mask, y, 1.0) / S_COUNTS), -15.0)
     if config_name == "ref":
@@ -281,9 +298,29 @@ def report() -> None:
     print("\n".join(lines))
 
 
+def run_confirm(case: str) -> dict:
+    """R2f: the preset (ABCF) on a new curve; D* from the endpoints and two least-squares fits."""
+    film, free, seed = R2F[case]
+    result = run_fits(film, free, seed, "ABCF")
+    p0, y, oxide = draw(film, free, seed)
+    _, d_truth, _ = lsq_fit(y, p0, free, oxide)
+    best = min(result["endpoints"], key=lambda e: e["deviance"])
+    _, d_best, _ = lsq_fit(y, p0 | best["params"], free, oxide)
+    d_star = min(d_truth, d_best, best["deviance"])
+    for e in result["endpoints"]:
+        e["delta_D"] = e["deviance"] - d_star
+    return result | {
+        "seed": seed,
+        "d_star": d_star,
+        "lsq_from_truth": d_truth,
+        "lsq_from_best": d_best,
+        "reached": sum(e["delta_D"] <= 4 for e in result["endpoints"]),
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("part", choices=["run", "reference", "report"])
+    ap.add_argument("part", choices=["run", "reference", "report", "confirm"])
     ap.add_argument("--configs", nargs="+", default=SINGLES)
     ap.add_argument("--cases", nargs="+", default=list(CASES), choices=list(CASES))
     ap.add_argument("--threads", type=int, default=4)
@@ -292,6 +329,21 @@ def main() -> None:
         report()
         return
     torch.set_num_threads(args.threads)
+    if args.part == "confirm":
+        total = 0
+        for case in R2F:
+            result = run_confirm(case)
+            data = json.loads(CONFIRM.read_text(encoding="utf-8")) if CONFIRM.exists() else {}
+            data[case] = result
+            CONFIRM.write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
+            total += result["reached"]
+            print(
+                f"R2f {case}: reached {result['reached']}/16, D* {result['d_star']:.1f}"
+                f" (lsq truth {result['lsq_from_truth']:.1f}, best {result['lsq_from_best']:.1f})",
+                flush=True,
+            )
+        print(f"R2f total {total}/48 (confirmed if >= 43)")
+        return
     if args.part == "reference":
         for case in args.cases:
             result = reference_ml(case)
