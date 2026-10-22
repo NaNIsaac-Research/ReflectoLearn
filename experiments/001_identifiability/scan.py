@@ -39,6 +39,7 @@ from reflectolearn.physics import abeles_core, apply_tth_offset
 
 S_COUNTS = 1e6
 N_STARTS = 64
+MAX_NFEV = 200  # evaluations per global-start fit
 TTH_MAX = (2.2, 3.0, 6.0)  # deg -> q_max 0.16, 0.21, 0.43 Å^-1
 FILM_SLD = (12.0, 24.0, 45.0)
 NUISANCE = ("refine", "wide")
@@ -173,7 +174,7 @@ def fit(
     p_start: dict[str, float],
     free: tuple[str, ...],
     bounds: dict[str, tuple[float, float]],
-    max_nfev: int = 200,
+    max_nfev: int = MAX_NFEV,
 ) -> tuple[dict[str, float], float, int]:
     """Poisson deviance minimized over `free` within `bounds` (as nonunique.fit)."""
     lo = np.array([bounds[k][0] for k in free])
@@ -439,10 +440,12 @@ def report() -> None:
         " Modes: groups of those endpoints (registered rule 2); Δχ² of each mode's best endpoint."
         " Labels per film parameter (d, ρ; layer 2 after the slash). Competitor: the lowest endpoint"
         " above Δχ² 4 distinct from every mode, and s*, the counting level at which it would be"
-        " within Δχ² 1 (not part of the registered decision).",
+        " within Δχ² 1 (not part of the registered decision). At cap: fits of the 64 that stopped at"
+        " the 200-evaluation limit.",
         "",
-        "| # | stack | nuisance | 2θ max | ρ film | reached | modes (Δχ²) | d | ρ | competitor ΔD | s* |",
-        "|---|---|---|---|---|---|---|---|---|---|---|",
+        "| # | stack | nuisance | 2θ max | ρ film | reached | at cap | modes (Δχ²) | d | ρ"
+        " | competitor ΔD | s* |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
         c, lab = r["condition"], r["labels"]
@@ -452,9 +455,11 @@ def report() -> None:
         modes = ", ".join(f"{m['deviance']:.2g}" for m in r["modes"]) or "—"
         comp_d = f"{comp['deviance']:.3g}" if comp else "—"
         comp_s = f"{comp['s_star']:.2g}" if comp else "—"
+        fits = json.loads((SCAN_DIR / f"fits_{r['index']:02d}.json").read_text(encoding="utf-8"))
+        at_cap = sum(e["nfev"] >= MAX_NFEV for e in fits["endpoints"])
         lines.append(
             f"| {r['index']} | {c['stack']} | {c['nuisance']} | {c['tth_max']:g}° | {c['film_sld']:g}"
-            f" | {r['n_within_4']}/{r['n_starts']} | {modes} | {d} | {rho} | {comp_d} | {comp_s} |"
+            f" | {r['n_within_4']}/{r['n_starts']} | {at_cap}/{r['n_starts']} | {modes} | {d} | {rho} | {comp_d} | {comp_s} |"
         )
     (OUT / "scan_tables.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))

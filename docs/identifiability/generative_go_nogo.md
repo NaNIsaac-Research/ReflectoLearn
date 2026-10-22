@@ -5,8 +5,11 @@ was started.
 
 ## Verdict
 
-**No-go for now.** In every case we checked, the posterior of the film parameters has one mode, and
-the wrong fits came from the optimizer, not from the curve. A generative posterior model would be
+**No-go for now.** In every case we checked, the posterior of the film parameters has one mode. The
+wrong fits came mostly from the optimizer and partly from refine's log-MSE objective, not from the
+curve. Of refine's 48 wrong endpoints, 43 are worse than the maximum-likelihood fit even under that
+objective (optimizer failures). The other 5 are preferred to it by the objective (objective or model
+error; README, ReflectoLearn#25). A generative posterior model would be
 solving a problem these cases do not have. The question that would justify one is open: under which
 conditions does a single-film or bilayer XRR curve admit several statistically indistinguishable
 structures? That is tomorrow's pre-registered experiment (below). The decision is revisited on its
@@ -29,8 +32,8 @@ parameters free within refine's bounds (`README.md`, R1c).
 
 - Solved: a single film with refine's nuisances on a lab scan to q ≈ 0.43 Å⁻¹. The curve determines
   d to ±0.04–1.4 % (profile Δχ² ≤ 1 at 10⁶ counts). A correct local likelihood fit from a handful of
-  starts finds it; MCMC gives the uncertainty. What is missing is a working optimizer in refine
-  (#25) and a likelihood that matches the counts, not a new model class.
+  starts finds it; MCMC gives the uncertainty. What is missing is a working optimizer and objective in
+  refine (#25) and a likelihood that matches the counts, not a new model class.
 - Possibly needs several solutions (not shown): a thin top layer with a wide free SLD range and a
   short q range (unbounded Fisher analysis in R1b: d–oxide SLD correlation −0.998, γ up to 1300 at
   q_max 0.21 Å⁻¹); bilayers with similar SLDs (layer-order swaps); thickness aliases (a second
@@ -324,6 +327,10 @@ scope, search power, label sensitivity and condition 10 are taken into this sect
   basin's observed share k/64. All 64 starts miss it with probability (1 − k/64)⁶⁴ ≈ e⁻ᵏ: 0.36 for
   k = 1, 0.13 for k = 2, 0.05 for k = 3. For these four conditions, "one mode" is a negative with
   weak search power, not evidence of a single mode.
+- **Fits stopped at the evaluation limit.** In each condition, 26–51 of the 64 global fits stopped at
+  the 200-evaluation limit (column "at cap" of `scan_tables.md`; the bilayer half gets the same
+  column). Such an endpoint is a start that did not reach a minimum. It is neither a mode nor
+  evidence against one. Together with the reach column it gives the search power of each condition.
 - Noise-free data at 10⁶ counts. A noisy curve moves the minimum but not, to first order, the
   curvature that sets the half-widths.
 
