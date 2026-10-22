@@ -248,9 +248,173 @@ def run_condition(index: int, n_starts: int = N_STARTS) -> dict:
     }
 
 
+# ------------------------------------------------------------------ modes and labels
+def film_keys(free) -> tuple[str, ...]:
+    """The film parameters that define modes and get labels: d and ρ of each layer."""
+    return tuple(k for k in ("thickness", "sld", "thickness2", "sld2") if k in free)
+
+
+def half_width(q, y, p, d_p, key, free, bounds, threshold: float = 1.0) -> dict:
+    """Profile Δχ² = 1 half-width of `key` at endpoint p (deviance d_p): step out from p doubling
+    the step until Δχ² - (d_p) > threshold or the bound is hit, then bisect 6 times; mean of both
+    sides. A side that reaches its bound inside the threshold counts as the distance to the bound
+    and is flagged."""
+    others = tuple(k for k in free if k != key)
+    lo_b, hi_b = bounds[key]
+    x0 = p[key]
+    sides = []
+    for sign in (1, -1):
+        limit = (hi_b - x0) if sign > 0 else (x0 - lo_b)
+        step, inner, inner_p, outer = 1e-4 * max(abs(x0), 1e-3), 0.0, p, None
+        while step < limit:
+            pp, dev, _ = fit(q, y, inner_p | {key: x0 + sign * step}, others, bounds, 100)
+            if dev - d_p > threshold:
+                outer = step
+                break
+            inner, inner_p, step = step, pp, 2 * step
+        if outer is None:
+            sides.append({"width": limit, "at_bound": True})
+            continue
+        for _ in range(6):
+            mid = 0.5 * (inner + outer)
+            pp, dev, _ = fit(q, y, inner_p | {key: x0 + sign * mid}, others, bounds, 100)
+            if dev - d_p <= threshold:
+                inner, inner_p = mid, pp
+            else:
+                outer = mid
+        sides.append({"width": 0.5 * (inner + outer), "at_bound": False})
+    return {
+        "half_width": float(np.mean([s["width"] for s in sides])),
+        "at_bound": any(s["at_bound"] for s in sides),
+    }
+
+
+def analyze(index: int) -> dict:
+    """Group the endpoints with Δχ² ≤ 4 into modes (registered rule 2), profile each mode's film
+    parameters, label each film parameter (rule 3); also the nearest distinct competitor above
+    Δχ² 4 and the counting level at which it would come within Δχ² 1 (addition)."""
+    data = json.loads((SCAN_DIR / f"fits_{index:02d}.json").read_text(encoding="utf-8"))
+    cond, p0, free = data["condition"], data["truth"], tuple(data["free"])
+    _, _, bounds = setup(cond)
+    q = q_grid(cond["tth_max"])
+    y = expected_counts(torch.as_tensor(q), {k: torch.tensor(v) for k, v in p0.items()}).numpy()
+    keys = film_keys(free)
+    ends = sorted(data["endpoints"], key=lambda e: e["deviance"])
+
+    widths: dict[int, dict[str, dict]] = {}
+
+    def hw(e) -> dict[str, dict]:
+        if e["start"] not in widths:
+            widths[e["start"]] = {
+                k: half_width(q, y, e["params"], e["deviance"], k, free, bounds) for k in keys
+            }
+        return widths[e["start"]]
+
+    def distinct(a, b) -> bool:
+        """Different modes: some film parameter differs by more than 3 × the larger half-width.
+        b's own widths are only computed when a's alone would call them distinct."""
+        wa = hw(a)
+        far = [k for k in keys if abs(a["params"][k] - b["params"][k]) > 3 * wa[k]["half_width"]]
+        if not far:
+            return False
+        wb = hw(b)
+        return any(
+            abs(a["params"][k] - b["params"][k]) > 3 * max(wa[k]["half_width"], wb[k]["half_width"])
+            for k in far
+        )
+
+    modes: list[dict] = []
+    for e in (e for e in ends if e["deviance"] <= 4):
+        for m in modes:
+            if not distinct(m["best"], e):
+                m["members"].append(e["start"])
+                break
+        else:
+            modes.append({"best": e, "members": [e["start"]]})
+
+    out_modes = [
+        {
+            "deviance": m["best"]["deviance"],
+            "start": m["best"]["start"],
+            "film": {k: m["best"]["params"][k] for k in keys},
+            "half_widths": hw(m["best"]),
+            "members": m["members"],
+        }
+        for m in modes
+    ]
+    labels = {}
+    within = [m for m in out_modes if m["deviance"] <= 1]
+    for k in keys:
+        if len(within) > 1 and any(
+            abs(a["film"][k] - b["film"][k])
+            > 3 * max(a["half_widths"][k]["half_width"], b["half_widths"][k]["half_width"])
+            for a, b in itertools.combinations(within, 2)
+        ):
+            labels[k] = "multimodal"
+        elif within and within[0]["half_widths"][k]["half_width"] >= 0.02 * abs(
+            within[0]["film"][k]
+        ):
+            labels[k] = "ridge"
+        else:
+            labels[k] = "identifiable"
+
+    # Addition: the lowest endpoint above Δχ² 4 that is distinct from every mode.
+    competitor = None
+    if modes:
+        for e in (e for e in ends if e["deviance"] > 4):
+            if all(distinct(m["best"], e) for m in modes):
+                competitor = {
+                    "deviance": e["deviance"],
+                    "film": {k: e["params"][k] for k in keys},
+                    "s_star": S_COUNTS / e["deviance"],
+                }
+                break
+    return {
+        "index": index,
+        "condition": cond,
+        "n_starts": len(ends),
+        "n_within_4": sum(e["deviance"] <= 4 for e in ends),
+        "modes": out_modes,
+        "labels": labels,
+        "competitor": competitor,
+    }
+
+
+def report() -> None:
+    rows = []
+    for path in sorted(SCAN_DIR.glob("modes_*.json")):
+        rows.append(json.loads(path.read_text(encoding="utf-8")))
+    lines = [
+        "# R2a condition scan (generated by scan.py report; do not edit)",
+        "",
+        "Noise-free data at 10⁶ counts. Reached: starts ending within Δχ² ≤ 4 of the truth."
+        " Modes: groups of those endpoints (registered rule 2); Δχ² of each mode's best endpoint."
+        " Labels per film parameter (d, ρ; layer 2 after the slash). Competitor: the lowest endpoint"
+        " above Δχ² 4 distinct from every mode, and s*, the counting level at which it would be"
+        " within Δχ² 1 (not part of the registered decision).",
+        "",
+        "| # | stack | nuisance | 2θ max | ρ film | reached | modes (Δχ²) | d | ρ | competitor ΔD | s* |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for r in rows:
+        c, lab = r["condition"], r["labels"]
+        d = lab["thickness"] + (f" / {lab['thickness2']}" if "thickness2" in lab else "")
+        rho = lab["sld"] + (f" / {lab['sld2']}" if "sld2" in lab else "")
+        comp = r["competitor"]
+        modes = ", ".join(f"{m['deviance']:.2g}" for m in r["modes"]) or "—"
+        comp_d = f"{comp['deviance']:.3g}" if comp else "—"
+        comp_s = f"{comp['s_star']:.2g}" if comp else "—"
+        lines.append(
+            f"| {r['index']} | {c['stack']} | {c['nuisance']} | {c['tth_max']:g}° | {c['film_sld']:g}"
+            f" | {r['n_within_4']}/{r['n_starts']} | {modes} | {d} | {rho} | {comp_d} | {comp_s} |"
+        )
+    (OUT / "scan_tables.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print("\n".join(lines))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("part", choices=["check", "run", "list"])
+    ap.add_argument("part", choices=["check", "run", "analyze", "report", "list"])
     ap.add_argument("--conditions", nargs="+", type=int, default=[])
     ap.add_argument("--starts", type=int, default=N_STARTS)
     ap.add_argument("--threads", type=int, default=4)
@@ -262,6 +426,18 @@ def main() -> None:
     if args.part == "list":
         for i, c in enumerate(conditions()):
             print(i, c)
+        return
+    if args.part == "report":
+        report()
+        return
+    if args.part == "analyze":
+        for i in args.conditions:
+            t = time.perf_counter()
+            r = analyze(i)
+            (SCAN_DIR / f"modes_{i:02d}.json").write_text(
+                json.dumps(r, indent=1, ensure_ascii=False), encoding="utf-8"
+            )
+            print(f"condition {i}: {time.perf_counter() - t:.0f} s, labels {r['labels']}")
         return
     SCAN_DIR.mkdir(exist_ok=True)
     for i in args.conditions:
