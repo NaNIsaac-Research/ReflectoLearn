@@ -10,6 +10,9 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'win32'",
 ]
 
+[manifest]
+overrides = [{ name = "wxpython", marker = "sys_platform != 'linux'" }]
+
 [[package]]
 name = "absl-py"
 version = "2.4.0"
@@ -887,7 +890,7 @@ dependencies = [
     { name = "requests" },
     { name = "scipy" },
     { name = "svgwrite" },
-    { name = "wxpython" },
+    { name = "wxpython", marker = "sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e3/2c/e3ec7764cc9df00285b2b626d985d76fdc3a2a5a4af795ab0695ac525e5a/genx3-3.8.11.tar.gz", hash = "sha256:06916e7de426e8fd569a3eff146f9d28985e8e0df8120b99166018654fc0a902", size = 9985605, upload-time = "2026-08-21T08:23:48.182Z" }
 wheels = [
