@@ -102,3 +102,31 @@ is timed and the bilayer forward model is checked against `benchmark.parratt` as
 
 **Step 0 (reading, 30 minutes).** PANPE's multimodal examples (which stacks, q ranges, priors), so
 that the scan does not re-discover a published case without saying so.
+
+## R2a step 0: PANPE's multimodal cases (read 2026-10-23)
+
+Read: arXiv:2407.18648 v1 HTML (the only arXiv version); the Science Advances version and the
+supplementary figures were not read.
+
+- Where PANPE shows several modes: a simulated two-layer XRR curve with 10 free parameters gives 7
+  modes under a wide prior and one under a narrow prior (Fig. 2); a simulated four-layer structure is
+  "highly ambiguous" (SM Fig. 5, not read); the experimental in situ DIP-on-Si curves (one organic
+  layer over a fixed oxide) show two branches in the film SLD, of which the upper one disappears
+  later in the growth (Fig. 4); one neutron polymer curve in H₂O has two solutions that a D₂O
+  contrast removes (Fig. 6).
+- Regime: q_max 0.15 Å⁻¹, 20–64 points, Gaussian noise of 5–30 % relative per point (their
+  approximation to counting noise), priors over thickness 0–500 Å, roughness 0–50 Å, SLD 0–60;
+  nuisances q offset ±0.002 Å⁻¹ and normalization ±5 %. The numeric prior widths of the
+  multimodal figures are not given.
+- Stated cause: the phase problem, in general terms. No mechanism (layer swap, thickness exchange,
+  zero contrast) is given for any specific case. Zero-contrast bilayers, which make the two
+  thicknesses exactly collinear, were removed from their test set (under 5 %), not analysed.
+- Not in the paper: any map of where multimodality occurs over q range, contrast or prior width;
+  any comparison with a profile likelihood or Fisher information.
+
+Consequence for the scan (no change to the registered rules): the registered scan sits at much
+better statistics than PANPE's examples (10⁶ counts at R = 1, 291 points, against 5–30 % per point
+over 20–64 points) and up to q_max 0.43 Å⁻¹. A single film being unimodal there does not contradict
+PANPE's single-film branches. Because the noise-free deviance scales with the counting level s, the
+scan can report for every secondary mode it finds the counting level s* = 10⁶ / ΔD below which that
+mode is within Δχ² ≤ 1; this is reported as an addition, not used in the registered decision.
