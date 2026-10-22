@@ -253,6 +253,23 @@ level.
    scored by refine's own forward model and objective (log₁₀ MSE over the nonzero counts), to tell a
    failed search from a difference between the two models.
 
+### Review notes on this pre-registration (2026-10-23, after the physics cross-review of PR #24)
+
+- The decisive evidence for "optimization failure" turned out to be amendment 3, which was added and
+  not registered. The registered rule (Poisson ΔD > 25 against the best endpoint) cannot by itself
+  tell a search that stopped early from a search that converged to the optimum of a different
+  objective: refine does not minimize the deviance. Only scoring the endpoints on refine's own model
+  and objective separates the two. The verdict below is therefore split by that unregistered test.
+- The profile as registered ("continued outward from the truth") warm-starts each inner fit from the
+  previous point and runs one local least-squares fit. It is an upper bound on PL(d), so its Δχ² ≤ 1
+  interval is a lower bound on the true one, and "no second minimum" holds only along the tracked
+  branch. The R2a scan does not rely on it to find modes: it runs 64 global starts per condition
+  first and profiles each mode it finds, with restarts of the inner fit (see
+  `generative_go_nogo.md`).
+- Every label is conditional on refine's bounds (Kα2 ratio 0–0.6, oxide SLD 15–22 and the rest). In
+  mid_no_oxide and mid_oxide the d profile is set where the Kα2 ratio or the oxide SLD reaches a
+  bound. The bounds are physically reasonable, but they are a prior, not information in the curve.
+
 ## R1c results
 
 Reproduce (about 4 minutes per case on CPU, mostly the profile; needs `uv sync --extra mcmc`):
@@ -283,25 +300,35 @@ the best refine endpoint.
 
 Verdict by the registered rules:
 
-- All three cases are **identifiable**: single-minimum profiles, no second minimum with Δχ² ≤ 1
-  out to ±30 % (the profile follows one branch by continuation), Δχ² ≤ 1 widths ±0.04 % to ±1.4 %.
+- All three cases are **identifiable given refine's bounds**: no second minimum with Δχ² ≤ 1 out to
+  ±30 % **along the tracked branch** (the profile follows one branch by continuation and is an upper
+  bound on PL(d); see the review notes above), Δχ² ≤ 1 widths ±0.04 % to ±1.4 %. The mid_no_oxide
+  width (−0.04 / +0.03 %) is below the 0.25 % profile grid: it is a quadratic extrapolation from the
+  truth through the first grid points, where the Kα2 ratio jumps to its bounds (0 at −0.25 %, 0.6 at
+  +0.25 %). The true half-width lies between about 0.03 % and the unbounded CRLB of 0.28 %.
   The deviance scales with s, so t2_low (Δχ² = 4.3 at d −2 %) would be labelled *ridge* at about
   2 × 10⁵ counts or fewer.
-- The spread of the refine endpoints (−31 % to +45 % in d) is **optimization failure**: 48 of 48
-  endpoints are worse than the best fit by ΔD > 4.8 × 10⁴, and 43 of 48 are also worse on refine's
-  own forward model and objective than the Poisson ML parameters. The other 5 sit lower on refine's
-  log₁₀ MSE than the ML parameters while being far worse in deviance: the log-MSE over nonzero
-  counts is not the likelihood. A Poisson least-squares fit from the same starts reaches the ML fit
+- None of the refine endpoints (−31 % to +45 % in d) is a second solution of the data: 48 of 48 are
+  worse than the best fit by ΔD > 4.8 × 10⁴. **43 of 48 are optimization failures** in the strict
+  sense: they are also worse on refine's own forward model and objective than the Poisson ML
+  parameters. **5 of 48 are not**: refine's objective prefers them to the ML structure (log₁₀ MSE
+  0.95–0.99 of the ML value: three mid_no_oxide endpoints including the truth start, two t2_low
+  endpoints) while their deviance is 4.9 × 10⁴ to 4.5 × 10⁵ higher. Those are errors of the objective
+  (log-MSE over nonzero counts is not the likelihood) or of refine's model (edge padding), and a
+  better optimizer would not fix them. This split rests on amendment 3, which was not registered. A Poisson least-squares fit from the same starts reaches the ML fit
   from 43 of 45 starts; the other two (both d × 1.2, ρ × 0.85) land on a thickness alias near
   d ≈ 450 Å with ΔD ≈ 3.7 × 10⁵. Filed as ReflectoLearn#25 (not fixed here).
 - T2's open case (200/12 film fitted 13 % high in SLD by every strategy) is reproduced: refine from
-  the truth ends at ρ 13.2 (+10 %), the ML fit at 12.00. It is the same optimization failure, not a
-  contrast ambiguity of the curve.
+  the truth ends at ρ 13.2 (+10 %), the ML fit at 12.00. That endpoint is among the 43: on refine's
+  own objective it is 1.10 times worse than the ML parameters. So it is an optimization failure, not
+  a contrast ambiguity of the curve and not an objective error.
 - MCMC (`refine.mcmc`, Gaussian likelihood in log₁₀ R) is unimodal in every case and gives the same
   interval from the failed refine endpoint as from the ML fit, so it escapes the failure. Its width
   agrees with the profile within the registered factor 2 only for mid_oxide (half-width 0.32 % vs
-  0.39 %). It is 4.7 times wider for mid_no_oxide and 2–3 times narrower for t2_low: that likelihood
-  is not calibrated against Poisson counts in either direction.
+  0.39 %). It is 2–3 times narrower for t2_low. For mid_no_oxide it appeared 4.7 times wider, but the
+  profile width there is below the profile's grid (above), so that ratio is **not established**. R2c
+  (`mcmc_width.md`) repeats the comparison on one curve and one model, with the profile crossing
+  found by bisection, and checks chain convergence.
 
 Side observations (not part of the registered rules):
 

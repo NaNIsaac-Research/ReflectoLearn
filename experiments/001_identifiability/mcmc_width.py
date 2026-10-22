@@ -22,6 +22,7 @@ import emcee
 import fim
 import numpy as np
 import torch
+from nonunique import REFINE_INIT
 from refine_causes import ALL_EFFECTS, BOUNDS, CASES, OUT, S_COUNTS, Q, curve, lsq_fit, model
 
 from reflectolearn.refine.mcmc import sample_posterior
@@ -47,7 +48,19 @@ def run_profile(case: str) -> dict:
     points = [{"d": d_hat, "dchi2": 0.0}]
 
     def at(d: float, start: dict) -> tuple[dict, float]:
-        p, dev, _ = lsq_fit(y, start | {"thickness": d}, others, oxide)
+        """Lowest of three local fits at fixed d: continued from `start`, nuisances at refine's
+        initial values, nuisances at their bound midpoints (amendment 1 in mcmc_width.md)."""
+        nuis = [k for k in others if k in REFINE_INIT]
+        best = None
+        for s in (
+            start,
+            start | {k: REFINE_INIT[k] for k in nuis},
+            start | {k: 0.5 * (BOUNDS[k][0] + BOUNDS[k][1]) for k in nuis},
+        ):
+            p, dev, _ = lsq_fit(y, s | {"thickness": d}, others, oxide)
+            if best is None or dev < best[1]:
+                best = (p, dev)
+        p, dev = best
         points.append({"d": d, "dchi2": dev - d_ml})
         return p, dev - d_ml
 

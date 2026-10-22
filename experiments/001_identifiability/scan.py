@@ -28,7 +28,7 @@ import fim
 import numpy as np
 import torch
 from fim import SUB_ROUGH, SUB_SLD, WAVELENGTH, WAVELENGTH_KA2
-from nonunique import BOUNDS, OUT, deviance_terms
+from nonunique import BOUNDS, OUT, REFINE_INIT, deviance_terms
 from scipy.optimize import least_squares
 from scipy.stats import qmc
 from torch import Tensor
@@ -254,20 +254,40 @@ def film_keys(free) -> tuple[str, ...]:
     return tuple(k for k in ("thickness", "sld", "thickness2", "sld2") if k in free)
 
 
+def fit_fixed(q, y, p_cont, key, value, others, bounds) -> tuple[dict, float]:
+    """Deviance minimized over `others` at `key` = value: the lowest of three local fits, from the
+    previous profile point (continuation), with the nuisances at refine's initial values, and with
+    them at the midpoints of their bounds. One continued local fit alone only bounds PL from above
+    (physics review of PR #24)."""
+    nuis = [k for k in others if k in NUIS]
+    starts = [
+        p_cont,
+        p_cont | {k: REFINE_INIT[k] for k in nuis},
+        p_cont | {k: 0.5 * (bounds[k][0] + bounds[k][1]) for k in nuis},
+    ]
+    best = None
+    for start in starts:
+        pp, dev, _ = fit(q, y, start | {key: value}, others, bounds, 100)
+        if best is None or dev < best[1]:
+            best = (pp, dev)
+    return best
+
+
 def half_width(q, y, p, d_p, key, free, bounds, threshold: float = 1.0) -> dict:
     """Profile Δχ² = 1 half-width of `key` at endpoint p (deviance d_p): step out from p doubling
     the step until Δχ² - (d_p) > threshold or the bound is hit, then bisect 6 times; mean of both
     sides. A side that reaches its bound inside the threshold counts as the distance to the bound
-    and is flagged."""
+    and is flagged. lowest_dchi2 < 0 means a restart found a lower point than the endpoint itself."""
     others = tuple(k for k in free if k != key)
     lo_b, hi_b = bounds[key]
     x0 = p[key]
-    sides = []
+    sides, lowest = [], 0.0
     for sign in (1, -1):
         limit = (hi_b - x0) if sign > 0 else (x0 - lo_b)
         step, inner, inner_p, outer = 1e-4 * max(abs(x0), 1e-3), 0.0, p, None
         while step < limit:
-            pp, dev, _ = fit(q, y, inner_p | {key: x0 + sign * step}, others, bounds, 100)
+            pp, dev = fit_fixed(q, y, inner_p, key, x0 + sign * step, others, bounds)
+            lowest = min(lowest, dev - d_p)
             if dev - d_p > threshold:
                 outer = step
                 break
@@ -277,7 +297,8 @@ def half_width(q, y, p, d_p, key, free, bounds, threshold: float = 1.0) -> dict:
             continue
         for _ in range(6):
             mid = 0.5 * (inner + outer)
-            pp, dev, _ = fit(q, y, inner_p | {key: x0 + sign * mid}, others, bounds, 100)
+            pp, dev = fit_fixed(q, y, inner_p, key, x0 + sign * mid, others, bounds)
+            lowest = min(lowest, dev - d_p)
             if dev - d_p <= threshold:
                 inner, inner_p = mid, pp
             else:
@@ -286,6 +307,7 @@ def half_width(q, y, p, d_p, key, free, bounds, threshold: float = 1.0) -> dict:
     return {
         "half_width": float(np.mean([s["width"] for s in sides])),
         "at_bound": any(s["at_bound"] for s in sides),
+        "lowest_dchi2": float(lowest),
     }
 
 

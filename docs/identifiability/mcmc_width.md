@@ -49,3 +49,13 @@ short of 50 τ at 20000 is reported as unconverged, with its τ.
 
 **Cost.** refine's forward model for 52 walkers takes a few milliseconds, so 20000 steps are about
 2 minutes per arm and case; the profile about a minute per case.
+
+### Amendments (with reasons)
+
+1. *Profile inner fits restarted (2026-10-23, after the physics review of PR #24, before any
+   verdict).* A profile point continued from its neighbour with one local fit only bounds PL from
+   above, and R1c's t2_low showed that the nuisances have more than one basin (two ML solutions that
+   differ only in the Kα2 ratio). Each fixed-d point is now the lowest of three local fits: continued,
+   nuisances at refine's initial values, nuisances at their bound midpoints. The comparator profile
+   had already been computed once without restarts (h_p 0.160 Å for mid_no_oxide); it is recomputed
+   with restarts and only the recomputed one is used. The MCMC arms are unchanged.
