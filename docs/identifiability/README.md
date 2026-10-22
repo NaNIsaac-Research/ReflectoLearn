@@ -326,9 +326,13 @@ Verdict by the registered rules:
   interval from the failed refine endpoint as from the ML fit, so it escapes the failure. Its width
   agrees with the profile within the registered factor 2 only for mid_oxide (half-width 0.32 % vs
   0.39 %). It is 2–3 times narrower for t2_low. For mid_no_oxide it appeared 4.7 times wider, but the
-  profile width there is below the profile's grid (above), so that ratio is **not established**. R2c
-  (`mcmc_width.md`) repeats the comparison on one curve and one model, with the profile crossing
-  found by bisection, and checks chain convergence.
+  profile width there is below the profile's grid (above), so that ratio is **not established**.
+  **Correction from R2c (2026-10-23):** these MCMC intervals come from unconverged chains. Run on the
+  same kind of curves, `refine.mcmc`'s 2000 steps (1000 kept) are a quarter to a fifth of the 50
+  integrated autocorrelation times that a converged estimate needs (τ 76–97 at 2000 steps, and τ keeps
+  growing with chain length, up to 208–893 at 20000). The MCMC column of the table above is therefore
+  not a calibrated interval, and nothing in R1c about MCMC widths (agreement for mid_oxide, 2–3 times
+  narrower for t2_low) is established. See `mcmc_width.md`.
 
 Side observations (not part of the registered rules):
 
