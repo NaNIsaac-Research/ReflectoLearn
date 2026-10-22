@@ -232,3 +232,43 @@ Step 6 runs as follows if step 5 gives any multimodal label; the confirmation ru
   to the nearer mode in the film parameters, scaled by each mode's profile half-widths.
 - An unconverged run still counts if it confirms: mass in both modes after burn-in is evidence for
   both, even from a short chain. It does not count against confirmation.
+
+### Interim (2026-10-23, single-film fits finished): fits only, no modes, no labels, no verdict
+
+Film 240 Å / 6 Å unless noted, oxide 10 Å / 18.9 / 3 Å on top. Condition 36 is the named case.
+"Lowest Δχ² above 4" is the best endpoint outside the candidate set. It may belong to the same mode
+as the candidates (steps 3–4 decide), so it is not a competitor yet. Fit times are with two
+processes of 4 threads, except 0–5 (three processes of 3 threads).
+
+| # | nuisance bounds | 2θ max | d / σ / ρ | points | starts within Δχ² ≤ 4 | lowest Δχ² above 4 | fit time |
+|---|---|---|---|---|---|---|---|
+| 0 | refine | 2.2° | 240/6/12 | 101 | 2/64 | 4.6 × 10⁴ | 558 s |
+| 1 | refine | 2.2° | 240/6/24 | 101 | 15/64 | 8.0 × 10³ | 575 s |
+| 2 | refine | 2.2° | 240/6/45 | 101 | 13/64 | 1.3 × 10⁴ | 471 s |
+| 3 | refine | 3° | 240/6/12 | 141 | 3/64 | 4.7 × 10⁴ | 451 s |
+| 4 | refine | 3° | 240/6/24 | 141 | 10/64 | **4.3** | 430 s |
+| 5 | refine | 3° | 240/6/45 | 141 | 14/64 | 1.4 × 10⁴ | 438 s |
+| 6 | refine | 6° | 240/6/12 | 291 | 1/64 | 4.7 × 10⁴ | 444 s |
+| 7 | refine | 6° | 240/6/24 | 291 | 13/64 | **17** | 372 s |
+| 8 | refine | 6° | 240/6/45 | 291 | 13/64 | 1.4 × 10⁴ | 323 s |
+| 9 | wide | 2.2° | 240/6/12 | 101 | 3/64 | 4.4 × 10⁴ | 278 s |
+| 10 | wide | 2.2° | 240/6/24 | 101 | 10/64 | 8.0 × 10³ | 235 s |
+| 11 | wide | 2.2° | 240/6/45 | 101 | 11/64 | 1.8 × 10³ | 205 s |
+| 12 | wide | 3° | 240/6/12 | 141 | 2/64 | 4.9 × 10³ | 231 s |
+| 13 | wide | 3° | 240/6/24 | 141 | 12/64 | **4.3** | 230 s |
+| 14 | wide | 3° | 240/6/45 | 141 | 9/64 | 2.1 × 10³ | 199 s |
+| 15 | wide | 6° | 240/6/12 | 291 | 3/64 | 4.8 × 10⁴ | 308 s |
+| 16 | wide | 6° | 240/6/24 | 291 | 16/64 | **12** | 306 s |
+| 17 | wide | 6° | 240/6/45 | 291 | 10/64 | 2.5 × 10³ | 299 s |
+| 36 | refine | 6° | 200/4/12 | 291 | 2/64 | 2.5 × 10⁴ | 326 s |
+
+Two things to keep in view for the analysis, without reading anything into them yet:
+- Endpoints just above the Δχ² 4 line (4.3, 12, 17) appear only for ρ = 24, the film closest to the
+  Si substrate (20.07).
+- The film with ρ = 12 (below Si) is reached from only 1–3 of 64 starts in every condition. So for
+  that film the search coverage is thin, and a mode that only a few starts would find could be
+  missed.
+
+Cost correction (rule 24): with two processes and no other heavy job, a condition takes 3.5–7.5
+minutes. The 2θ ≤ 6° conditions are not slower than 2.2°, because the fit converges in fewer
+evaluations.
