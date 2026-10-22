@@ -48,6 +48,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from scipy.special import erf
 from torch import Tensor
 from torch.func import jacfwd
 
@@ -57,6 +58,7 @@ from reflectolearn.physics import abeles_core, apply_tth_offset
 torch.set_default_dtype(torch.float64)
 
 WAVELENGTH = 1.5406  # Å, Cu Kα1
+WAVELENGTH_KA2 = 1.54439  # Å, Cu Kα2 (RefineConfig.kalpha2_wavelength)
 SUB_SLD, SUB_ROUGH = 20.07, 3.0  # Si, known
 TTH_MIN, TTH_STEP = 0.2, 0.01  # deg
 N_RES, RES_WIDTH = 41, 5.0  # quadrature of the resolution Gaussian: points, half-width in sigma
@@ -76,6 +78,8 @@ SYMBOL = {
     "oxide_thickness": "d_ox",
     "oxide_sld": "ρ_ox",
     "oxide_roughness": "σ_ox",
+    "kalpha2_ratio": "Kα2",
+    "footprint": "fp",
 }
 
 
@@ -115,6 +119,18 @@ def truth(film: Film, scenario: str, bkg: float = TRUE_INSTR["bkg"]) -> dict[str
     return p
 
 
+def effects_of(p0: dict[str, float]) -> frozenset[str]:
+    """Optional parts of the model switched on by the truth: a top oxide, Kα2, a footprint."""
+    on = set()
+    if p0["oxide_thickness"] != 0:
+        on.add("oxide")
+    if p0.get("kalpha2_ratio", 0.0) > 0:
+        on.add("kalpha2")
+    if "footprint" in p0:
+        on.add("footprint")
+    return frozenset(on)
+
+
 # ------------------------------------------------------------------ forward model (torch, float64)
 def reflectivity(q: Tensor, p: dict[str, Tensor], oxide: bool, absorption: float = 1e-9) -> Tensor:
     """R(q) of ambient / top oxide / film / substrate through abeles_core, prepared like AbelesMatrix
@@ -135,15 +151,27 @@ def reflectivity(q: Tensor, p: dict[str, Tensor], oxide: bool, absorption: float
 
 
 def expected_counts(
-    q: Tensor, p: dict[str, Tensor], s: float, oxide: bool, absorption: float = 1e-9
+    q: Tensor,
+    p: dict[str, Tensor],
+    s: float,
+    effects: frozenset[str],
+    absorption: float = 1e-9,
 ) -> Tensor:
-    """Mean Poisson counts at the measured q: offset, constant-dq resolution, i0, background."""
+    """Mean Poisson counts at the measured q: offset, [Kα2, footprint,] constant-dq resolution, i0,
+    background, in the order refine.make_forward applies them."""
     q_eff = apply_tth_offset(q, p["tth_offset"].reshape(1, 1), WAVELENGTH)[0]
     u = torch.linspace(-RES_WIDTH, RES_WIDTH, N_RES)
     w = torch.exp(-0.5 * u**2)
     w = w / w.sum()
-    qq = q_eff[:, None] + p["dq"] * u[None, :]
-    r = (reflectivity(qq.reshape(-1), p, oxide, absorption).reshape(qq.shape) * w).sum(1)
+    qq = (q_eff[:, None] + p["dq"] * u[None, :]).reshape(-1)
+    oxide = "oxide" in effects
+    r = reflectivity(qq, p, oxide, absorption)
+    if "kalpha2" in effects:
+        r2 = reflectivity(qq * (WAVELENGTH / WAVELENGTH_KA2), p, oxide, absorption)
+        r = (r + p["kalpha2_ratio"] * r2) / (1 + p["kalpha2_ratio"])
+    if "footprint" in effects:
+        r = r * torch.erf(p["footprint"] * (qq * WAVELENGTH / (4 * math.pi)).clamp_min(0))
+    r = (r.reshape(-1, N_RES) * w).sum(1)
     return s * (p["i0"] * r + 10.0 ** p["bkg"])
 
 
@@ -153,11 +181,11 @@ def jacobian(
     """(counts (Q,), J = d ln counts / d theta (Q, P)) at p0, theta = the `free` parameters."""
     qt = torch.as_tensor(q)
     fixed = {k: torch.tensor(v) for k, v in p0.items()}
-    oxide = p0["oxide_thickness"] != 0
+    effects = effects_of(p0)
 
     def log_counts(theta: Tensor) -> Tensor:
         p = fixed | dict(zip(free, theta, strict=True))
-        return torch.log(expected_counts(qt, p, s, oxide, absorption))
+        return torch.log(expected_counts(qt, p, s, effects, absorption))
 
     theta0 = torch.tensor([p0[k] for k in free])
     lam = torch.exp(log_counts(theta0)).numpy()
@@ -181,8 +209,13 @@ def expected_counts_np(q: np.ndarray, p: dict[str, float], s: float) -> np.ndarr
     w = np.exp(-0.5 * u**2)
     w /= w.sum()
     qq = q_eff[:, None] + p["dq"] * u[None, :]
-    r = (parratt(qq.ravel(), layers).reshape(qq.shape) * w).sum(1)
-    return s * (p["i0"] * r + 10.0 ** p["bkg"])
+    r = parratt(qq.ravel(), layers).reshape(qq.shape)
+    if p.get("kalpha2_ratio", 0.0) > 0:
+        r2 = parratt(qq.ravel() * WAVELENGTH / WAVELENGTH_KA2, layers).reshape(qq.shape)
+        r = (r + p["kalpha2_ratio"] * r2) / (1 + p["kalpha2_ratio"])
+    if "footprint" in p:
+        r = r * erf(p["footprint"] * np.clip(qq * WAVELENGTH / (4 * np.pi), 0, None))
+    return s * (p["i0"] * (r * w).sum(1) + 10.0 ** p["bkg"])
 
 
 FD_STEP = {
@@ -196,6 +229,8 @@ FD_STEP = {
     "oxide_thickness": 1e-4,
     "oxide_sld": 1e-4,
     "oxide_roughness": 1e-4,
+    "kalpha2_ratio": 1e-6,
+    "footprint": 1e-3,
 }
 
 
@@ -312,7 +347,7 @@ def check_vs_refine_model(film: Film = FILMS[0]) -> float:
     vals = {k: torch.tensor([v], dtype=torch.float32) for k, v in p0.items()}
     r_refine = fwd(vals, {"tth_offset", "dq"})[0].double().numpy()
     p = {k: torch.tensor(v) for k, v in p0.items()}
-    r_here = expected_counts(torch.as_tensor(q), p, 1.0, oxide=False).numpy()
+    r_here = expected_counts(torch.as_tensor(q), p, 1.0, frozenset()).numpy()
     edge = int(math.ceil(3 * cfg.dq_bounds[1] / (q[1] - q[0]))) + 1
     d = np.abs(np.log10(r_here) - np.log10(r_refine))[edge:-edge]
     return float(d.max())

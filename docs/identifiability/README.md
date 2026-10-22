@@ -224,3 +224,25 @@ level.
 - Open case: the 200 Å / 4 Å / 12 film (SLD below Si) from FORUM T2, which refine fitted 13 % high in
   every strategy ("oxide nuisance or film/substrate contrast ambiguity, unconfirmed"). Judged by the
   same rules; no expected label.
+
+### Amendments to the pre-registration (made after the first runs, with reasons)
+
+1. *Counter-example case.* "The same film with the oxide fixed" cannot be fitted by refine:
+   `fit_oxide=False` removes the oxide layer rather than holding it at a known value, so refine would
+   fit a model without the oxide that the data contain. The counter-example is therefore the mid
+   film **without** an oxide in the truth, fitted with the oxide off (`mid_no_oxide`); everything
+   else as registered. Found from the refine-model log-MSE of the truth (0.138 vs 0.018 with the oxide
+   on), before the profile of the old case was looked at.
+2. *Bounds and the Fisher result (correction to R1b).* The profile is computed within refine's
+   bounds, as registered, and the bounds cut the weak direction: at the mid film with the oxide,
+   Kα2 ratio and footprint free, the weakest direction is +0.67 Kα2 ratio +0.51 d −0.36 ρ −0.30 ρ_ox
+   (γ = 125, CRLB of d 0.92 %), and the Kα2 ratio reaches its upper bound 0.6 and the oxide SLD its
+   lower bound 15 within the first 0.5 % of d. With both held, the CRLB of d is 0.044 % (γ = 21). The
+   unbounded Fisher analysis of R1b therefore overstates how far d can move: "practically
+   non-identifiable" there means "within an unbounded local model". Whether d is identifiable under
+   refine's bounds is decided by the profile, not by γ.
+3. *Added, not registered:* every start is also fitted by the Poisson least-squares fit used for the
+   profile (all twelve parameters free, nuisances started at refine's initial values), to see whether
+   a different optimizer from the same starts reaches the same solution. And every point is also
+   scored by refine's own forward model and objective (log₁₀ MSE over the nonzero counts), to tell a
+   failed search from a difference between the two models.
