@@ -59,3 +59,54 @@ short of 50 τ at 20000 is reported as unconverged, with its τ.
    nuisances at refine's initial values, nuisances at their bound midpoints. The comparator profile
    had already been computed once without restarts (h_p 0.160 Å for mid_no_oxide); it is recomputed
    with restarts and only the recomputed one is used. The MCMC arms are unchanged.
+2. *ML re-anchored (2026-10-23, after the arms had run).* With restarts, some profile points fell
+   below the least-squares "ML" by up to 0.70 (t2_low) and 0.45 (mid_oxide): that fit from the truth
+   had stopped in a nuisance basin above the minimum. Δχ² must be measured from the minimum, so when
+   a profile point is more than 0.05 below the ML, every parameter is refitted from that point and
+   the profile is recomputed (one round each for mid_oxide and t2_low). The ML thickness moved from
+   239.87 to 239.50 Å (mid_oxide) and from 198.04 to 196.65 Å (t2_low). The MCMC arms had started
+   from the old ML. A start point only shifts the burn-in, but none of the chains converged (below),
+   so this cannot be checked from these runs.
+
+## Results
+
+Reproduce (about 45 minutes on CPU, mostly the 20000-step chains; needs `uv sync --extra mcmc` and
+the R2b curves, which `refine_causes.py` generates on the fly):
+
+```bash
+uv run python experiments/001_identifiability/mcmc_width.py profile G G-long P report
+```
+
+Table: [`mcmc_width_tables.md`](mcmc_width_tables.md); data: `mcmc_width.json`.
+
+| case | h_p (Å) | G: h_m, ratio | G-long (20000): h_m, ratio, τ | P (20000): h_m, ratio, τ |
+|---|---|---|---|---|
+| mid_oxide | 1.016 | 0.679, 0.67 | 0.748, 0.74, 291 | 0.652, 0.64, 357 |
+| mid_no_oxide | 0.160 | 0.367, 2.29 | 0.399, 2.49, 208 | 0.086, 0.54, 231 |
+| t2_low | 1.266 | 1.037, 0.82 | 1.155, 0.91, 653 | 1.999, 1.58, 893 |
+
+**Verdict by the registered rules: none.** No arm converged. At 20000 steps the kept half is 10000
+steps, against 50 τ = 10400 to 44700, so every arm is unconverged and gives no verdict for its case.
+The chains of `refine.mcmc` as shipped (2000 steps, 1000 kept) are 4 to 5 times shorter than their
+own 50 τ. R1c's MCMC intervals came from such chains.
+
+What can be read without a verdict (inference, not established):
+
+- The half-widths change little between 2000, 8000 and 20000 steps for the Gaussian likelihood
+  (0.68 → 0.73 → 0.75 Å for mid_oxide). The Poisson chain of t2_low does not settle (1.27 → 2.17 →
+  2.00 Å).
+- With these unconverged chains, the Poisson-likelihood widths are within the factor 2 in all three
+  cases (0.54–1.58). The Gaussian log₁₀ R likelihood is outside it for mid_no_oxide (2.3–2.5 times
+  wider) and inside for the other two. That is what a likelihood problem would look like, but the
+  registered rule needs converged chains, so it stays a hypothesis.
+- R1c's "4.7 times wider for mid_no_oxide" becomes 2.3–2.5 times here, with a profile whose crossing
+  is found by bisection on a single curve and model. The rest of the R1c factor came from the
+  comparison: the profile grid, the noise-free curve and the different model.
+
+**Next.** Converging these chains needs either about 100000 steps per arm and case (about 6 hours of
+CPU for the three cases and two long arms; [HEAVY]) or a sampler that mixes better in these
+correlated 12–13-dimensional posteriors, for example emcee's differential-evolution moves or
+stretch moves in coordinates whitened by the Fisher matrix at the ML. Either one is a change to the
+registered lengths and goes in as a new amendment before it is run. Separately, `refine.mcmc`
+should report τ and warn when the chain is shorter than 50 τ. It currently discards half the chain
+and reports the rest without a check.

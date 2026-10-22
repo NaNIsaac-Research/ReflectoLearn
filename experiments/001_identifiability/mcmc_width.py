@@ -41,11 +41,16 @@ def ml(case: str):
 
 
 # ------------------------------------------------------------------ profile on the noisy curve
-def run_profile(case: str) -> dict:
+def run_profile(case: str, ml_start: dict | None = None, rounds: int = 0) -> dict:
+    """If a profile point falls more than 0.05 below the ML deviance, the least-squares ML was not
+    the minimum: refit every parameter from that point and profile again from the new ML."""
     p_ml, d_ml, y, oxide, free = ml(case)
+    if ml_start is not None:
+        p_ml, d_ml, _ = lsq_fit(y, ml_start, free, oxide)
     others = tuple(k for k in free if k != "thickness")
     d_hat = p_ml["thickness"]
     points = [{"d": d_hat, "dchi2": 0.0}]
+    lowest: list = [0.0, p_ml]
 
     def at(d: float, start: dict) -> tuple[dict, float]:
         """Lowest of three local fits at fixed d: continued from `start`, nuisances at refine's
@@ -62,6 +67,8 @@ def run_profile(case: str) -> dict:
                 best = (p, dev)
         p, dev = best
         points.append({"d": d, "dchi2": dev - d_ml})
+        if dev - d_ml < lowest[0]:
+            lowest[:] = [dev - d_ml, p]
         return p, dev - d_ml
 
     crossings = []
@@ -81,8 +88,11 @@ def run_profile(case: str) -> dict:
             else:
                 outer = mid
         crossings.append(0.5 * (inner + outer))
+    if lowest[0] < -0.05 and rounds < 3:
+        return run_profile(case, lowest[1], rounds + 1)
     points.sort(key=lambda r: r["d"])
     return {
+        "ml_rounds": rounds,
         "ml_thickness": d_hat,
         "ml_deviance": d_ml,
         "crossings": crossings,
