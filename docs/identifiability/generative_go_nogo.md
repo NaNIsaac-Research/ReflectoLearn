@@ -215,3 +215,20 @@ Either way the film labels follow steps 3–5, which ignore nuisances.
 
 These are raw fit counts. Whether the endpoints within Δχ² ≤ 4 form one mode or several is decided
 in step 3, after all of a process's conditions are fitted.
+
+### Amendment 6: step 6 alternative (registered 2026-10-23, before any condition was analysed; not run)
+
+Step 6 runs as follows if step 5 gives any multimodal label; the confirmation rule itself is unchanged.
+- *Single film:* one Poisson draw (seed 0, 10⁶ counts) from refine's `make_forward` at the truth.
+  The chains use the Poisson likelihood under that same float32, walker-batched model. The bounds
+  and flat priors are the condition's.
+- *Bilayer* (refine's model has one film): the draw and the likelihood use `scan.expected_counts`,
+  batched over walkers with `torch.vmap`.
+- *Chains:* one run from each mode's best endpoint, in R2c amendment 3's form: coordinates whitened by
+  the Poisson Fisher information at that endpoint, 0.8 `DEMove` + 0.2 `DESnookerMove`, 64 walkers,
+  5000 steps, then 15000 if the kept half is shorter than 50 τ (5000 only for the bilayer, at about
+  0.4 s per step).
+- *Confirmed:* both modes keep ≥ 5 % of the kept samples in at least one run. Samples are assigned
+  to the nearer mode in the film parameters, scaled by each mode's profile half-widths.
+- An unconverged run still counts if it confirms: mass in both modes after burn-in is evidence for
+  both, even from a short chain. It does not count against confirmation.
