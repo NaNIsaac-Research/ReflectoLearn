@@ -166,8 +166,8 @@ with the profile re-anchored, the unconverged widths are 0.8–1.6 times the pro
 
 Not part of the rules:
 - P-DE for mid_no_oxide sits at the edge of the agreement band (0.52). Its 68 % interval (239.88–240.04
-  Å) is narrower than the profile's Δχ² ≤ 1 interval (239.87–240.19 Å), which is asymmetric (crossings
-  0.118 and 0.202 Å). Profile and marginal can differ when a nuisance sits at a bound (here the Kα2
+  Å) is narrower than the profile's Δχ² ≤ 1 interval (239.79–240.11 Å), which is asymmetric (0.202 Å
+  below the ML, 0.118 Å above). Profile and marginal can differ when a nuisance sits at a bound (here the Kα2
   ratio), because the marginal integrates over volume that the bound cuts off. Not tested here.
 - t2_low is the first case in this experiment where the posterior itself, not only the optimizer,
   shows more than one nuisance basin. It is a candidate for the R2a question, on the nuisance side.
