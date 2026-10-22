@@ -269,7 +269,7 @@ Two things to keep in view for the analysis, without reading anything into them 
   that film the search coverage is thin, and a mode that only a few starts would find could be
   missed.
 
-Cost correction (rule 24): a condition takes 3.5–10 minutes, not the hours implied by the
-registered estimate's per-fit figure for the bilayer. With two processes, the 2θ ≤ 6° conditions
-took 5–7.5 minutes, against 3.5–5 minutes at 2.2°. The number of evaluations per fit was not
-compared.
+Cost correction (rule 24): the 19 single-film conditions took about an hour of wall time, with 2–3
+processes and 3.5–10 minutes per condition. Amendment 3 had expected several hours. With two
+processes, the 2θ ≤ 6° conditions took 5–7.5 minutes and the 2.2° conditions 3.5–5 minutes. The
+number of evaluations per fit was not compared.
