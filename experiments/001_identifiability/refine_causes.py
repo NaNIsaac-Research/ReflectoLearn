@@ -5,7 +5,7 @@ curve is drawn from refine's own forward model at the truth; refine runs from th
 the truth under a configuration built from factors A-F (budget, stage 2, objective, Occam prior,
 trust region, step size), and every endpoint is scored by its Poisson deviance under the same model.
 
-Configuration names: "base" (all off), a string of factor letters ("A", "ABCDEF"), "-X" for all on
+Configuration names: "base" (all off), a string of factor letters ("A", "ABCDEF"), "all-X" for all on
 minus factor X, and an optional "@m" budget multiplier on top ("ABCDEF@20"). "ref" is ABCDEF@30
 from the truth only.
 
@@ -50,7 +50,7 @@ from reflectolearn.refine.pipeline import (
 torch.set_default_dtype(torch.float32)
 
 FACTORS = "ABCDEF"
-SINGLES = ["base", *FACTORS, FACTORS, *(f"-{f}" for f in FACTORS)]
+SINGLES = ["base", *FACTORS, FACTORS, *(f"all-{f}" for f in FACTORS)]
 RESULTS = OUT / "refine_causes.json"
 ALL_EFFECTS = {"tth_offset", "dq", "kalpha2", "footprint", "oxide"}
 
@@ -72,10 +72,12 @@ def factors_of(name: str) -> tuple[set[str], int]:
     name, _, mult = name.partition("@")
     if name == "base":
         on = set()
-    elif name.startswith("-"):
-        on = set(FACTORS) - {name[1]}
+    elif name.startswith("all-"):
+        on = set(FACTORS) - {name[4]}
     else:
         on = set(name)
+    if not on <= set(FACTORS) or name.startswith("all-") and name[4:] not in FACTORS:
+        raise ValueError(f"unknown configuration {name!r}")
     return on, int(mult or (10 if "A" in on else 1))
 
 
