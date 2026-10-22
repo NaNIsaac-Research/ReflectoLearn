@@ -140,6 +140,11 @@ class RefineConfig:
     fit_i0: bool = True  # intensity scale
     fit_bkg: bool = True  # background (log10)
     fit_tth_offset: bool = True  # q-axis zero offset
+    # Fit tth_offset only in the last log_mse stage that lists it, starting from 0, and refit that
+    # stage with the offset fixed at 0 for comparison (info["offset_off"]). Off keeps the original
+    # path, where stages 1-2 move the offset too: their scale-insensitive losses let it slide along
+    # the offset-SLD valley of a dense film (ReflectoLearn#14).
+    tth_offset_last_stage: bool = False
     fit_dq: bool = True  # resolution (q-smearing)
     # q-proportional resolution, sigma(q) = sqrt(dq² + (dq_rel·q)²): angular divergence gives the
     # constant part, the wavelength spread the proportional one. Off keeps the constant-only model.
@@ -157,6 +162,11 @@ class RefineConfig:
     i0_bounds: tuple[float, float] = (0.5, 2.0)
     bkg_bounds: tuple[float, float] = (-10.0, -4.0)
     tth_offset_bounds: tuple[float, float] = (-0.08, 0.08)  # [deg]
+    # tth_offset within this fraction of the bound range from either end counts as at the bound
+    tth_offset_bound_tol: float = 0.01
+    # offset-off refit counts as better when its log-MSE is lower by more than this fraction. A tie
+    # only says the data do not need an offset; the two fits differed by up to 1.2 % that way.
+    offset_off_margin: float = 0.05
     dq_bounds: tuple[float, float] = (0.0, 0.012)  # [Å^-1] resolution sigma
     dq_rel_bounds: tuple[float, float] = (0.0, 0.05)  # relative resolution dq/q
     kalpha2_ratio_bounds: tuple[float, float] = (0.0, 0.6)  # Kα2/Kα1 intensity ratio
@@ -474,6 +484,17 @@ def refine(
 
     active: set[str] = set()  # once enabled, an effect stays on through later stages / final FOM
 
+    # With tth_offset_last_stage, the stage that fits the offset (index), else every stage does.
+    offset_stage = None
+    if config.tth_offset_last_stage and _enabled("tth_offset"):
+        listed = [
+            i
+            for i, st in enumerate(config.stages)
+            if st.loss == "log_mse" and "tth_offset" in st.optimize
+        ]
+        offset_stage = listed[-1] if listed else -1  # -1: no such stage, offset stays at 0
+    offset_off = None  # inputs of the offset-off refit: state before the offset stage, its setup
+
     # Fair baseline: so that both fom_before/after measure "film-parameter fit
     # quality", before measuring we keep film parameters **fixed** at AI-init and
     # only align the trivial global scale/offset (i0, bkg). (Previously i0=1, bkg=-7
@@ -486,8 +507,10 @@ def refine(
         _optimize(base_keys, log_mse_loss, steps=80, lr=0.05, active_set=active, stage_mask=mask)
     fom_before = fom(active)
 
-    for stage in config.stages:
+    for i_stage, stage in enumerate(config.stages):
         opt_keys = [k for k in stage.optimize if _enabled(k)]
+        if offset_stage is not None and i_stage != offset_stage:
+            opt_keys = [k for k in opt_keys if k != "tth_offset"]
         if not opt_keys:
             continue
         active |= _stage_effects(opt_keys)
@@ -499,6 +522,13 @@ def refine(
         if stage.q_max is not None:
             stage_mask = stage_mask * (q_grid < stage.q_max)
 
+        if i_stage == offset_stage:
+            cur["tth_offset"] = zeros.clone()
+            offset_off = (
+                {k: v.clone() for k, v in cur.items()},
+                [k for k in opt_keys if k != "tth_offset"],
+                (loss_fn, stage.steps, stage.lr, set(active - {"tth_offset"}), stage_mask),
+            )
         _optimize(opt_keys, loss_fn, stage.steps, stage.lr, active, stage_mask)
 
         if verbose:
@@ -522,6 +552,42 @@ def refine(
     info["bounds"] = bounds
     info["fitted"] = [k for k in cur if _enabled(k)]
     info["forward"] = simulate
+
+    if _enabled("tth_offset") and "tth_offset" in active:
+        lo, hi = bounds["tth_offset"]
+        tol = config.tth_offset_bound_tol * (hi - lo)
+        at_bound = (cur["tth_offset"] - lo < tol) | (hi - cur["tth_offset"] < tol)
+        info["tth_offset_at_bound"] = at_bound
+        if at_bound.any():
+            logger.warning(
+                f"refine: tth_offset at its bound {config.tth_offset_bounds} deg for "
+                f"{int(at_bound.sum())}/{B} curves; the film parameters are likely biased"
+            )
+
+    if offset_off is not None:
+        # Same stage from the same state with the offset held at 0: if this fits as well or better,
+        # the fitted offset did not earn its place (ReflectoLearn#14).
+        on_state, on_active = dict(cur), set(active)
+        with torch.no_grad():
+            fom_on = per_curve_log_mse(simulate(on_state, on_active), log_r_obs, mask)
+        start, keys, (loss_fn, steps, lr, active_off, stage_mask) = offset_off
+        cur.update(start)
+        _optimize(keys, loss_fn, steps, lr, active_off, stage_mask)
+        with torch.no_grad():
+            fom_off = per_curve_log_mse(simulate(cur, active_off), log_r_obs, mask)
+        info["offset_off"] = {
+            "p": torch.stack([cur["thickness"], cur["roughness"], cur["sld"]], dim=1).detach(),
+            "fom": fom_off,
+            "fom_offset_fitted": fom_on,
+            "better": fom_off < fom_on * (1.0 - config.offset_off_margin),
+        }
+        cur.update(on_state)
+        if info["offset_off"]["better"].any():
+            n = int(info["offset_off"]["better"].sum())
+            logger.warning(
+                f"refine: holding tth_offset at 0 fits better for {n}/{B} curves; "
+                f"compare info['offset_off']"
+            )
     return p_refined, info
 
 
