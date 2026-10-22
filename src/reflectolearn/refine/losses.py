@@ -65,6 +65,23 @@ def log_gradient_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
     return val + 10.0 * grad
 
 
+def poisson_deviance_loss(counts_scale: float) -> LossFn:
+    """Poisson deviance per point for counts = counts_scale · R (counts_scale: counts at R = 1).
+
+    Unlike the log losses this is the likelihood of counting data: each point is weighted by its
+    counts, and points with zero counts inside the mask contribute too. Built per curve set because
+    it needs the count scale, so it is not in LOSS_PRESETS; a stage selects it with loss="poisson".
+    """
+
+    def loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
+        lam = counts_scale * r_sim.double().clamp_min(_EPS)
+        y = counts_scale * torch.pow(10.0, log_r_obs.double())
+        dev = 2.0 * (lam - y + torch.special.xlogy(y, y / lam))
+        return _masked_mean(dev, mask).to(r_sim.dtype)
+
+    return loss
+
+
 def hybrid_linear_log_loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:
     """Mix of linear (intensity/critical angle) + log (fringe/dynamic range), linear:log = 20:1."""
     return 20.0 * linear_mse_loss(r_sim, log_r_obs, mask) + log_mse_loss(r_sim, log_r_obs, mask)
@@ -93,6 +110,7 @@ __all__ = [
     "correlation_loss",
     "log_gradient_loss",
     "hybrid_linear_log_loss",
+    "poisson_deviance_loss",
     "LOG_MSE",
     "LINEAR_MSE",
     "CORRELATION",
