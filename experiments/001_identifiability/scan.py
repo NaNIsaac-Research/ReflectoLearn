@@ -467,8 +467,9 @@ def report() -> None:
         " the 200-evaluation limit. Not reached: no start ended within Δχ² ≤ 4, so the condition has"
         " no mode and no label (amendment 7); it is evidence neither for nor against multimodality."
         " In brackets, the width labels of a local fit from the truth: post hoc, outside the"
-        " decision, and blind to multimodality because it only sees the truth's basin. Not analysed: fitted, but"
-        " `analyze` was not run for the condition.",
+        " decision, and blind to multimodality because it only sees the truth's basin (not run in"
+        " R2a, so no brackets appear). Not analysed: fitted, but `analyze` was not run for the"
+        " condition.",
         "",
         "| # | stack | nuisance | 2θ max | ρ film | reached | at cap | modes (Δχ²) | d | ρ"
         " | competitor ΔD | s* |",
