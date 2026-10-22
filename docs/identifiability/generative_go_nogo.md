@@ -17,7 +17,8 @@ result.
 
 *Revisited 2026-10-23 after R2a (condition scan, below):* the no-go stands. No analysed condition
 has a multimodal label. 13 of the 18 bilayer conditions are undecided, because no start reached the
-truth's basin, and they are to be re-tested in R2h.
+truth's basin, among them 5 of the 6 bilayer conditions in the decision region (refine bounds,
+2θ ≥ 3°). They are to be re-tested in R2h.
 
 ## What the four approaches did on the checked cases
 
