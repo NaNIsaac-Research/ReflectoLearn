@@ -153,3 +153,12 @@ mode is within Δχ² ≤ 1; this is reported as an addition, not used in the re
    a half-width is not set by one tracked nuisance branch. Modes themselves come from the 64 global
    starts, not from the profiles. A restart that finds a point below the mode's own deviance is
    recorded (`lowest_dchi2` < 0).
+5. *Named case added: t2_low Kα2 basin (2026-10-23, before the scan ran; decision rules unchanged).*
+   Condition 36 is R1c's t2_low film (200 Å / 4 Å / SLD 12, with the 10 Å top oxide, single film,
+   refine's bounds, 2θ 0.2–6°), run like the 36 registered conditions. On its noisy R1c curve two ML
+   solutions differ only in the Kα2 ratio (0.51 vs 0.00) within ΔD = 1, and in R2c (amendment 3)
+   neither MCMC chain converged, with τ growing with chain length. The registered rules label film
+   parameters (d, ρ) only, so a basin that differs only in a nuisance is one mode under them. For this
+   condition the report also lists the endpoints within Δχ² ≤ 4 whose nuisances differ (Kα2 ratio
+   by more than 0.1, or oxide thickness or SLD by more than 10 %), as an observation. It does not enter
+   the go/no-go decision, which keeps its registered wording.

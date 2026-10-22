@@ -66,11 +66,22 @@ GH_U, GH_W = torch.as_tensor(_GH_X), torch.as_tensor(_GH_W / _GH_W.sum())
 
 
 # ------------------------------------------------------------------ conditions
+# Named case (amendment 5): R1c's t2_low film, whose noisy curve has two Kα2 basins.
+T2_LOW = {
+    "tth_max": 6.0,
+    "film_sld": 12.0,
+    "nuisance": "refine",
+    "stack": "single",
+    "film": (200.0, 4.0),
+}
+
+
 def conditions() -> list[dict]:
-    return [
+    grid = [
         {"tth_max": t, "film_sld": s, "nuisance": n, "stack": k}
         for k, n, t, s in itertools.product(STACK, NUISANCE, TTH_MAX, FILM_SLD)
     ]
+    return [*grid, T2_LOW]
 
 
 def q_grid(tth_max: float) -> np.ndarray:
@@ -81,7 +92,8 @@ def q_grid(tth_max: float) -> np.ndarray:
 
 def setup(cond: dict) -> tuple[dict[str, float], tuple[str, ...], dict[str, tuple[float, float]]]:
     """Truth, free parameters and bounds for a condition."""
-    p0 = {"thickness": 240.0, "roughness": 6.0, "sld": cond["film_sld"]}
+    d, sigma = cond.get("film", (240.0, 6.0))
+    p0 = {"thickness": d, "roughness": sigma, "sld": cond["film_sld"]}
     p0 |= fim.TRUE_INSTR | fim.TRUE_OXIDE | {"kalpha2_ratio": 0.5, "footprint": 500.0}
     free = FILM1
     if cond["stack"] == "bilayer":
@@ -391,9 +403,23 @@ def analyze(index: int) -> dict:
                     "s_star": S_COUNTS / e["deviance"],
                 }
                 break
+    # Amendment 5 observation: endpoints within Δχ² ≤ 4 whose nuisances differ from the best one.
+    basins = []
+    if ends and ends[0]["deviance"] <= 4:
+        b0 = ends[0]["params"]
+        for e in (e for e in ends[1:] if e["deviance"] <= 4):
+            p = e["params"]
+            if abs(p["kalpha2_ratio"] - b0["kalpha2_ratio"]) > 0.1 or any(
+                abs(p[k] / b0[k] - 1) > 0.1 for k in ("oxide_thickness", "oxide_sld") if b0[k]
+            ):
+                basins.append(
+                    {"deviance": e["deviance"]}
+                    | {k: p[k] for k in ("kalpha2_ratio", "oxide_thickness", "oxide_sld")}
+                )
     return {
         "index": index,
         "condition": cond,
+        "nuisance_basins": basins,
         "n_starts": len(ends),
         "n_within_4": sum(e["deviance"] <= 4 for e in ends),
         "modes": out_modes,
