@@ -140,10 +140,10 @@ class RefineConfig:
     fit_i0: bool = True  # intensity scale
     fit_bkg: bool = True  # background (log10)
     fit_tth_offset: bool = True  # q-axis zero offset
-    # Fit tth_offset only in the last log_mse stage that lists it, starting from 0, and refit that
-    # stage with the offset fixed at 0 for comparison (info["offset_off"]). Off keeps the original
-    # path, where stages 1-2 move the offset too: their scale-insensitive losses let it slide along
-    # the offset-SLD valley of a dense film (ReflectoLearn#14).
+    # Fit tth_offset only in the last log_mse stage that lists it, starting from 0, and refit from
+    # that stage on with the offset fixed at 0 for comparison (info["offset_off"]). Off keeps the
+    # original path, where stages 1-2 move the offset too: their scale-insensitive losses let it
+    # slide along the offset-SLD valley of a dense film (ReflectoLearn#14).
     tth_offset_last_stage: bool = False
     fit_dq: bool = True  # resolution (q-smearing)
     # q-proportional resolution, sigma(q) = sqrt(dq² + (dq_rel·q)²): angular divergence gives the
@@ -493,7 +493,37 @@ def refine(
             if st.loss == "log_mse" and "tth_offset" in st.optimize
         ]
         offset_stage = listed[-1] if listed else -1  # -1: no such stage, offset stays at 0
-    offset_off = None  # inputs of the offset-off refit: state before the offset stage, its setup
+        if offset_stage < 0:
+            logger.warning(
+                "refine: tth_offset_last_stage is on but no log_mse stage lists tth_offset; "
+                "the offset is not fitted and stays at 0"
+            )
+    offset_off = None  # inputs of the offset-off refit: state and effects before the offset stage
+
+    def _run_stages(stages, active_set: set[str], offset_at: int | None, tag: str = "") -> None:
+        """Run (index, stage) pairs in order, adding their effects to active_set. With offset_at
+        set, tth_offset is optimized only in the stage with that index (-1: in none)."""
+        for i_stage, stage in stages:
+            opt_keys = [k for k in stage.optimize if _enabled(k)]
+            if offset_at is not None and i_stage != offset_at:
+                opt_keys = [k for k in opt_keys if k != "tth_offset"]
+            if not opt_keys:
+                continue
+            active_set |= _stage_effects(opt_keys)
+
+            loss_fn = LOSS_PRESETS[stage.loss]
+            stage_mask = mask
+            if stage.q_min is not None:
+                stage_mask = stage_mask * (q_grid > stage.q_min)
+            if stage.q_max is not None:
+                stage_mask = stage_mask * (q_grid < stage.q_max)
+
+            _optimize(opt_keys, loss_fn, stage.steps, stage.lr, active_set, stage_mask)
+
+            if verbose:
+                logger.info(
+                    f"  [refine{tag}] {stage.name:<12} ({stage.loss}) FOM={fom(active_set):.5f}"
+                )
 
     # Fair baseline: so that both fom_before/after measure "film-parameter fit
     # quality", before measuring we keep film parameters **fixed** at AI-init and
@@ -507,32 +537,14 @@ def refine(
         _optimize(base_keys, log_mse_loss, steps=80, lr=0.05, active_set=active, stage_mask=mask)
     fom_before = fom(active)
 
-    for i_stage, stage in enumerate(config.stages):
-        opt_keys = [k for k in stage.optimize if _enabled(k)]
-        if offset_stage is not None and i_stage != offset_stage:
-            opt_keys = [k for k in opt_keys if k != "tth_offset"]
-        if not opt_keys:
-            continue
-        active |= _stage_effects(opt_keys)
-
-        loss_fn = LOSS_PRESETS[stage.loss]
-        stage_mask = mask
-        if stage.q_min is not None:
-            stage_mask = stage_mask * (q_grid > stage.q_min)
-        if stage.q_max is not None:
-            stage_mask = stage_mask * (q_grid < stage.q_max)
-
-        if i_stage == offset_stage:
-            cur["tth_offset"] = zeros.clone()
-            offset_off = (
-                {k: v.clone() for k, v in cur.items()},
-                [k for k in opt_keys if k != "tth_offset"],
-                (loss_fn, stage.steps, stage.lr, set(active - {"tth_offset"}), stage_mask),
-            )
-        _optimize(opt_keys, loss_fn, stage.steps, stage.lr, active, stage_mask)
-
-        if verbose:
-            logger.info(f"  [refine] {stage.name:<12} ({stage.loss}) FOM={fom(active):.5f}")
+    stages = list(enumerate(config.stages))
+    if offset_stage is None or offset_stage < 0:
+        _run_stages(stages, active, offset_stage)
+    else:
+        _run_stages(stages[:offset_stage], active, offset_stage)
+        cur["tth_offset"] = zeros.clone()
+        offset_off = ({k: v.clone() for k, v in cur.items()}, set(active))
+        _run_stages(stages[offset_stage:], active, offset_stage)
 
     fom_after = fom(active)
     p_refined = torch.stack([cur["thickness"], cur["roughness"], cur["sld"]], dim=1)
@@ -560,19 +572,20 @@ def refine(
         info["tth_offset_at_bound"] = at_bound
         if at_bound.any():
             logger.warning(
-                f"refine: tth_offset at its bound {config.tth_offset_bounds} deg for "
+                f"refine: tth_offset at its bound ({float(lo):g}, {float(hi):g}) deg for "
                 f"{int(at_bound.sum())}/{B} curves; the film parameters are likely biased"
             )
 
     if offset_off is not None:
-        # Same stage from the same state with the offset held at 0: if this fits as well or better,
-        # the fitted offset did not earn its place (ReflectoLearn#14).
+        # The same stages, from the offset's to the last, from the same state with the offset held
+        # at 0: if this fits as well or better, the fitted offset did not earn its place
+        # (ReflectoLearn#14). Rerunning every later stage keeps the two fits nested for any stages.
         on_state, on_active = dict(cur), set(active)
         with torch.no_grad():
             fom_on = per_curve_log_mse(simulate(on_state, on_active), log_r_obs, mask)
-        start, keys, (loss_fn, steps, lr, active_off, stage_mask) = offset_off
+        start, active_off = offset_off
         cur.update(start)
-        _optimize(keys, loss_fn, steps, lr, active_off, stage_mask)
+        _run_stages(stages[offset_stage:], active_off, -1, tag=" offset 0")
         with torch.no_grad():
             fom_off = per_curve_log_mse(simulate(cur, active_off), log_r_obs, mask)
         info["offset_off"] = {

@@ -12,7 +12,7 @@ from reflectolearn.benchmark import SI, parratt
 from reflectolearn.config import Config
 from reflectolearn.physics import tth2q
 from reflectolearn.predict import preprocess_measured
-from reflectolearn.refine.pipeline import RefineConfig, _default_stages, refine
+from reflectolearn.refine.pipeline import RefineConfig, RefineStage, _default_stages, refine
 
 DEV = torch.device("cpu")
 CFG = Config()
@@ -106,3 +106,23 @@ def test_offset_at_its_bound_is_flagged():
     _, info = run(config, "constant")
     assert float(info["tth_offset"][0]) == pytest.approx(0.01, abs=4e-4)
     assert bool(info["tth_offset_at_bound"][0])
+
+
+def test_offset_off_refit_reruns_the_stages_after_the_offset_stage():
+    """A stage after the offset's: the refit must run it too, or the two fits are not nested."""
+    stages = [
+        RefineStage("offset", optimize=("thickness", "sld", "tth_offset"), steps=5, lr=0.01),
+        RefineStage("after", optimize=("roughness",), steps=5, lr=0.01),
+    ]
+    config = RefineConfig(stages=stages, tth_offset_last_stage=True)
+    p, info = run(config, "constant")
+    # roughness is fitted only after the offset stage: it starts at the truth in both fits
+    assert float(p[0, 1]) != FILM[1]
+    assert float(info["offset_off"]["p"][0, 1]) != FILM[1]
+
+
+def test_no_stage_to_fit_the_offset_in_leaves_it_at_zero():
+    stages = [RefineStage("film", optimize=("thickness", "sld"), steps=5, lr=0.01)]
+    _, info = run(RefineConfig(stages=stages, tth_offset_last_stage=True), "constant")
+    assert float(info["state"]["tth_offset"][0]) == 0.0
+    assert "offset_off" not in info
