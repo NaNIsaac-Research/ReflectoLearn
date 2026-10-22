@@ -284,8 +284,9 @@ then `scan.py report`. Table: [`scan_tables.md`](scan_tables.md); data: `scan/mo
 that mode. The endpoints just above Δχ² 4 noted in the interim (4.3, 12, 17, all ρ = 24) are not
 distinct from it either: the nearest distinct endpoint of every condition is at ΔD ≥ 1.8 × 10³.
 
-**Step 4, profiles.** No half-width reached a bound, and no restart landed below its mode by more
-than 10⁻⁶ (condition 10, d: −8.7 × 10⁻⁷).
+**Step 4, profiles.** No half-width reached a bound. In one condition a restart landed below its
+mode: condition 10, d, by 8.7 × 10⁻⁷, with the mode itself at Δχ² 9.6 × 10⁻⁷. That mode is therefore
+marked as not fully converged. The amount is far below any threshold and cannot change its labels.
 
 | ρ film | 2θ max | d half-width, refine bounds | d half-width, wide | ρ half-width (both) |
 |---|---|---|---|---|
@@ -298,19 +299,31 @@ Condition 36 (200/4/12, refine bounds, 6°): d 1.4 %, ρ 0.21 %.
 **Step 5, labels.** No condition has a multimodal label. ρ is identifiable in all 19 conditions. d is
 a ridge in 12 (half-width ≥ 2 %): ρ 24 everywhere; ρ 12 at 2θ ≤ 3°; ρ 45 with wide nuisances at
 2θ ≤ 3°. d is identifiable in 7 (2, 5, 6, 8, 15, 17, 36). Two labels sit close to the 2 % line:
-condition 6 (1.48 %, identifiable) and 14 (2.23 %, ridge).
+condition 6 (1.48 %, identifiable) and 14 (2.23 %, ridge). Eleven of the twelve ridge half-widths
+are 2.2–3.8 %, not far above the line (condition 10: 6.7 %). The ridge/identifiable split of d
+therefore depends on where the registered 2 % line is drawn: at 4 % only condition 10 would be a
+ridge, at 1.5 % condition 6 would join the ridges. The line is the registered one and is not
+moved here.
 
 **Step 6, check of multimodal labels: not applicable.** Step 5 gave no multimodal label, so no chain
 was run (amendment 6 stays unused for this half).
 
-**Step 7, decision: open until the bilayer half.** No single-film condition with refine's bounds and
-2θ ≥ 3° is multimodal, so this half gives no "go". The registered decision covers all 36 conditions,
-and conditions 18–35 (bilayer) are not run yet.
+**Step 7, decision: no-go stands; the final decision comes after the bilayer half.** The single-film
+half has no multimodal label, so it gives no "go", and the no-go of R1d stands. The registered
+decision covers all 36 conditions (single film and bilayer). Conditions 18–35 are not run yet, so
+this half does not settle it either way.
+
+Physics pre-check (2026-10-23, before this verdict was written): an independent re-application of
+the step 5 rules to `scan/modes_*.json` gave the same labels in 19 of 19 conditions. Its points on
+scope, search power, label sensitivity and condition 10 are taken into this section.
 
 **Limits of this half.**
-- The ρ = 12 film is reached from only 1–3 of 64 starts (condition 36: 2/64, with 44 of 64 fits
-  stopping at the 200-evaluation cap). A second mode that few starts lead to could be missed. One
-  mode is what the scan found, not a proof that there is only one.
+- **Weak negatives at low contrast.** The ρ = 12 film is reached from only 1–3 of 64 starts. In
+  conditions 0, 6, 12 and 36, it is reached from 1–2 (condition 36: 2/64, with 44 of 64 fits stopping
+  at the 200-evaluation cap). Take another basin whose share of the start box equals the truth
+  basin's observed share k/64. All 64 starts miss it with probability (1 − k/64)⁶⁴ ≈ e⁻ᵏ: 0.36 for
+  k = 1, 0.13 for k = 2, 0.05 for k = 3. For these four conditions, "one mode" is a negative with
+  weak search power, not evidence of a single mode.
 - Noise-free data at 10⁶ counts. A noisy curve moves the minimum but not, to first order, the
   curvature that sets the half-widths.
 
