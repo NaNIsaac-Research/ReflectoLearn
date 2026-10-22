@@ -62,3 +62,16 @@ not from the search, and #25 is reclassified as a model mismatch.
 
 **Cost.** Baseline is about 10 s per case; configurations with A run about 10 times longer. Timed on
 one configuration first; the sweep is queued as [HEAVY] if it exceeds 2 minutes.
+
+### Amendments (made after the first runs, with reasons)
+
+1. *Reference for D\*.* After the baseline, the single factors B–F and A on `mid_oxide` had run, the
+   lowest deviance any configuration had found (457, 566, 536) was above the deviance of the truth
+   itself (300, 288, 323), so "lowest D found by any configuration" was not an optimum and would
+   have counted fits worse than the truth as reached. D\* now also includes a reference fit that does
+   not use refine's optimizer: bounded least squares on deviance residuals under refine's own forward
+   model (central-difference Jacobian, the model is float32), started at the truth, within the
+   global bounds. It gives 289.9, 279.0, 313.0, below the truth by 10 in each case, as expected for
+   about a dozen fitted parameters. The reference run "ref" (refine, all on, ×30, from the truth) is
+   kept as registered. Nothing else changes; no configuration with A had been run on more than one
+   case when this was decided.
