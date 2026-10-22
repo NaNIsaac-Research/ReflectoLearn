@@ -140,3 +140,25 @@ That combination is the opt-in preset proposed for #25. It reaches **46/48** (16
 mid_no_oxide and t2_low, 14/16 for mid_oxide), which meets the ≥ 43/48 criterion. The two misses
 are the same two starts that all-but-E misses: d × 1.2 with ρ × 0.85 and × 1.0. They end at d
 241–245 Å, ΔD ≈ 335 from D\*. Their cause was not separated; the wider trust margin (E) recovers them.
+
+## R2f: out-of-sample confirmation of the preset (registered 2026-10-23, before running)
+
+The physics review of RL#31 points out that 46/48 for ABCF is an in-sample number: the factors were
+chosen on the same three curves and the same 48 fits. This check uses new noise and a new film,
+with everything below fixed before running.
+
+- **Configuration.** ABCF ×10 as in RL#31 (`RefineConfig.likelihood`), run through this script's
+  `build_config` (identical stages) on refine's own forward model, as in R2b.
+- **Curves (48 fits).** One Poisson draw each, 10⁶ counts, 2θ 0.2–6°, other nuisances as in R2b:
+  - `thin_oxide`: the benchmark's `fixed_thin` film (90 Å / 3 Å / SLD 28), which R2b did not use,
+    under the same 10 Å top oxide, fitted with the oxide on (refine's default). Seed 21.
+  - `mid_oxide`, new seed 22.
+  - `t2_low`, new seed 23.
+  Seeds 0–7 have been used before (R1c, R2b, R2c, the reviewer's seed 7) and are excluded.
+- **Starts.** 16 per curve, as in R2b: the 15 grid starts plus the truth.
+- **Score.** Reached if D − D\* ≤ 4. D\* is the lowest of three things on that curve: every endpoint,
+  the least-squares fit under refine's model from the truth, and the same least-squares fit restarted
+  from the lowest endpoint. The restart closes the gap R2c found, where a fit from the truth stopped
+  in a nuisance basin.
+- **Rule.** Confirmed if at least 43 of the 48 reach. Otherwise RL#31 stays opt-in and DECISIONS #17
+  goes back to recommending (a) only. Per-curve counts are reported, but the rule uses the total.
