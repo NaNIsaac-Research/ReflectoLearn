@@ -75,3 +75,59 @@ one configuration first; the sweep is queued as [HEAVY] if it exceeds 2 minutes.
    about a dozen fitted parameters. The reference run "ref" (refine, all on, ×30, from the truth) is
    kept as registered. Nothing else changes; no configuration with A had been run on more than one
    case when this was decided.
+
+## Results
+
+Reproduce (about 2.5 hours on CPU with other jobs running; [HEAVY]):
+
+```bash
+uv run python experiments/001_identifiability/refine_causes.py reference
+uv run python experiments/001_identifiability/refine_causes.py run
+uv run python experiments/001_identifiability/refine_causes.py run --configs ABCDEF@20 ref
+uv run python experiments/001_identifiability/refine_causes.py report
+```
+
+Table: [`refine_causes_tables.md`](refine_causes_tables.md); data: `refine_causes.json`.
+
+| configuration | factors on | reached (of 16 per case) | total | median ΔD |
+|---|---|---|---|---|
+| base | none | 0 / 0 / 0 | 0/48 | 8.3 × 10⁵ |
+| each factor alone | A, B, C, D, E or F | 0 / 0 / 0 for every one | 0/48 | 1.4 × 10⁴ (C) to 9.7 × 10⁵ |
+| all on | ABCDEF ×10 | 16 / 16 / 16 | **48/48** | 0.32 |
+| all on, ×20 (convergence check) | ABCDEF ×20 | 16 / 16 / 16 | 48/48 | 0.21 |
+| all but A (budget ×1) | BCDEF | 0 / 6 / 1 | **7/48** | 34 |
+| all but B (stage 2 kept) | ACDEF | 11 / 14 / 7 | **32/48** | 1.6 |
+| all but C (log-MSE objective) | ABDEF | 0 / 0 / 0 | **0/48** | 8.7 × 10⁵ |
+| all but D (Occam prior on) | ABCEF | 16 / 16 / 16 | 48/48 | 0.34 |
+| all but E (trust margin 0.4) | ABCDF | 14 / 16 / 16 | 46/48 | 0.23 |
+| all but F (no step-size decay) | ABCDE | 13 / 14 / 10 | **37/48** | 1.4 |
+
+Cases in the order mid_oxide / mid_no_oxide / t2_low. The reference run (all on, ×30, from the truth)
+reaches D\* in all three cases.
+
+**Verdict by the registered rules.**
+- The baseline reaches 0/48 on curves from refine's own model, so #25 is not a model mismatch between
+  `fim.py` and refine (the falsification condition does not apply).
+- No factor is sufficient: each one alone reaches 0/48.
+- All on reaches 48/48, and the ×20 check also gives 48/48, so the ×10 budget is converged.
+- **Necessary: A (step budget), B (removing stage 2), C (Poisson objective) and F (step-size decay).**
+  Leaving any one of them out drops the reach rate below 43/48: to 7, 32, 0 and 37 of 48.
+- Not necessary: D (Occam prior, 48/48 without it) and E (wider trust region, 46/48 without it).
+- The three causes listed in #25 are each necessary and none is sufficient. The fourth necessary
+  factor, F, was added at registration: Adam at a fixed learning rate does not settle to within
+  Δχ² ≤ 4 of the optimum.
+
+What the leave-one-out rows show beyond the rule (observations):
+- *Objective (C).* With every search factor on, the log-MSE fits never reach the ML point. For
+  t2_low, all 16 starts end together at ΔD ≈ 3.0 × 10³ (median 3.4 × 10³ against a minimum of 3.3 ×
+  10³), so this is where the log-MSE optimum lies, not a failed search. For the mid film the
+  log-MSE fits mostly also fail to converge (median ΔD 1.1 × 10⁶). The curves come from refine's own
+  model, so this is an error of the objective (log₁₀ MSE over the nonzero counts), not of the model.
+  It is the clean form of R1c's 5/48 endpoints that refine's objective preferred to the ML.
+- *Stage 2 (B).* With stage 2 kept and the other factors on, the correlation loss moves d to fringe
+  aliases from some starts: 520–570 Å for the mid film (from d × 1.1 and × 1.2 with ρ × 1.15), and
+  19–330 Å for t2_low. The correlation loss is blind to the overall level and fits the fringe pattern
+  only, so it accepts another fringe order. With the default trust margin 0.4 the aliases are
+  partly outside the bounds. That is one reason the default refine moves less far.
+- *Budget (A).* Without the ×10 budget, the other five factors get 7/48, with median ΔD 34: close
+  but not converged.
