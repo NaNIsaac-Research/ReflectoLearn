@@ -110,3 +110,26 @@ stretch moves in coordinates whitened by the Fisher matrix at the ML. Either one
 registered lengths and goes in as a new amendment before it is run. Separately, `refine.mcmc`
 should report τ and warn when the chain is shorter than 50 τ. It currently discards half the chain
 and reports the rest without a check.
+
+### Amendment 3: whitened differential-evolution chains (registered 2026-10-23, before running)
+
+Chosen by the coordinator over 100000-step chains. Nothing below has been run when this is written.
+
+- **Arms.** G-DE: the Gaussian log₁₀ R likelihood with one fitted spread, exactly as
+  `refine.mcmc.sample_posterior` computes it (same residuals, same lnσ bounds and term, weight 1).
+  P-DE: the Poisson likelihood of arm P. Same model, curve, bounds and flat priors as before.
+- **Start.** The re-anchored ML of amendment 2, with lnσ at the log of the RMS log₁₀ residual
+  there (as `refine.mcmc` starts it).
+- **Coordinates.** θ = θ_ML + L z, with L the Cholesky factor of F⁻¹, F the Poisson Fisher
+  information at the ML under refine's model (central-difference Jacobian of ln λ). The transform is
+  linear, so flat priors in θ stay flat in z; bounds are checked in θ. lnσ (G-DE only) is appended
+  unscaled. The same whitening serves both likelihoods; it is exact only for P-DE.
+- **Sampler.** emcee with 0.8 `DEMove` + 0.2 `DESnookerMove`, 64 walkers, started in a ball of radius
+  0.1 in z (clipped into the bounds), seed 0.
+- **Length and convergence.** 5000 steps; if the kept half (2500 steps) is shorter than 50 τ, one
+  more run of 15000 steps. τ is emcee's integrated autocorrelation time of each θ coordinate over the
+  kept half, maximum over parameters, as before. An arm still short of 50 τ at 15000 steps is
+  unconverged and gives no verdict.
+- **Width and rules.** Unchanged: h_m from the 16–84 % range of d, comparator h_p from the
+  re-anchored profile, agreement 0.5–2, and the decision rules above, with G-DE in place of G-long
+  and P-DE in place of P. G (refine.mcmc as shipped, 2000 steps) keeps its recorded result.
