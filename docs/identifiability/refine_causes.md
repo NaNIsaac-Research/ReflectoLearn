@@ -127,7 +127,7 @@ What the leave-one-out rows show beyond the rule (observations):
 - *Stage 2 (B).* With stage 2 kept and the other factors on, the correlation loss moves d to fringe
   aliases from some starts: 520–570 Å for the mid film (from d × 1.1 and × 1.2 with ρ × 1.15), and
   19–330 Å for t2_low. The correlation loss is blind to the overall level and fits the fringe pattern
-  only, so it accepts another fringe order. With the default trust margin 0.4 the aliases are
-  partly outside the bounds. That is one reason the default refine moves less far.
+  only, so it accepts another fringe order. With the default trust margin 0.4 these aliases
+  would be outside the bounds for most starts (inference, not run).
 - *Budget (A).* Without the ×10 budget, the other five factors get 7/48, with median ΔD 34: close
   but not converged.
