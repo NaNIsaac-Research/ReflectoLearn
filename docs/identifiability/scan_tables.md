@@ -23,21 +23,21 @@ Noise-free data at 10⁶ counts. Reached: starts ending within Δχ² ≤ 4 of t
 | 16 | single | wide | 6° | 24 | 16/64 | 37/64 | 1.5e-10 | ridge | identifiable | 1.1e+04 | 91 |
 | 17 | single | wide | 6° | 45 | 10/64 | 35/64 | 5.1e-10 | identifiable | identifiable | 2.48e+03 | 4e+02 |
 | 18 | bilayer | refine | 2.2° | 12 | 0/64 | 44/64 | — | not reached, not analysed | not reached, not analysed | — | — |
-| 19 | bilayer | refine | 2.2° | 24 | 1/64 | 54/64 | — | not analysed | not analysed | — | — |
+| 19 | bilayer | refine | 2.2° | 24 | 1/64 | 54/64 | 2.8e-07 | ridge / identifiable | identifiable / identifiable | 1.47e+03 | 6.8e+02 |
 | 20 | bilayer | refine | 2.2° | 45 | 0/64 | 46/64 | — | not reached, not analysed | not reached, not analysed | — | — |
 | 21 | bilayer | refine | 3° | 12 | 0/64 | 51/64 | — | not reached, not analysed | not reached, not analysed | — | — |
-| 22 | bilayer | refine | 3° | 24 | 1/64 | 51/64 | — | not analysed | not analysed | — | — |
+| 22 | bilayer | refine | 3° | 24 | 1/64 | 51/64 | 3.9e-10 | ridge / identifiable | identifiable / identifiable | 1.99e+04 | 50 |
 | 23 | bilayer | refine | 3° | 45 | 0/64 | 52/64 | — | not reached, not analysed | not reached, not analysed | — | — |
 | 24 | bilayer | refine | 6° | 12 | 0/64 | 50/64 | — | not reached, not analysed | not reached, not analysed | — | — |
 | 25 | bilayer | refine | 6° | 24 | 0/64 | 44/64 | — | not reached, not analysed | not reached, not analysed | — | — |
 | 26 | bilayer | refine | 6° | 45 | 0/64 | 44/64 | — | not reached, not analysed | not reached, not analysed | — | — |
 | 27 | bilayer | wide | 2.2° | 12 | 0/64 | 53/64 | — | not reached, not analysed | not reached, not analysed | — | — |
-| 28 | bilayer | wide | 2.2° | 24 | 4/64 | 49/64 | — | not analysed | not analysed | — | — |
+| 28 | bilayer | wide | 2.2° | 24 | 4/64 | 49/64 | 6.2e-06 | ridge / identifiable | identifiable / identifiable | 3.13e+04 | 32 |
 | 29 | bilayer | wide | 2.2° | 45 | 0/64 | 52/64 | — | not reached, not analysed | not reached, not analysed | — | — |
 | 30 | bilayer | wide | 3° | 12 | 0/64 | 46/64 | — | not reached, not analysed | not reached, not analysed | — | — |
-| 31 | bilayer | wide | 3° | 24 | 4/64 | 41/64 | — | not analysed | not analysed | — | — |
+| 31 | bilayer | wide | 3° | 24 | 4/64 | 41/64 | 4.5e-10 | ridge / identifiable | identifiable / identifiable | 3.28e+04 | 31 |
 | 32 | bilayer | wide | 3° | 45 | 0/64 | 54/64 | — | not reached, not analysed | not reached, not analysed | — | — |
 | 33 | bilayer | wide | 6° | 12 | 0/64 | 48/64 | — | not reached, not analysed | not reached, not analysed | — | — |
-| 34 | bilayer | wide | 6° | 24 | 5/64 | 47/64 | — | not analysed | not analysed | — | — |
+| 34 | bilayer | wide | 6° | 24 | 5/64 | 47/64 | 3e-10 | ridge / identifiable | identifiable / identifiable | 3.34e+04 | 30 |
 | 35 | bilayer | wide | 6° | 45 | 0/64 | 50/64 | — | not reached, not analysed | not reached, not analysed | — | — |
 | 36 | single | refine | 6° | 12 | 2/64 | 44/64 | 2.6e-10 | identifiable | identifiable | 2.54e+04 | 39 |

@@ -398,3 +398,45 @@ The 18 bilayer conditions were fitted with 64 starts each (about 2 h of CPU, two
 conditions. The coordinator decided not to run the amendment 7 observation (truth-start profiles)
 for the 13: it does not enter the decision, and R2h will test the same conditions again with a
 stronger search. The table lists them as "not reached, not analysed".
+
+### Bilayer half: steps 3–7 for the reached conditions (analysed 2026-10-23)
+
+Analysed: the five reached conditions (19, 22, 28, 31, 34), all with the first film at ρ = 24. The
+other 13 are *not reached* and undecided (amendment 7). Their truth-start observation was not run
+(coordinator's decision above). R2h will test them again.
+
+| # | nuisance | 2θ max | reached | d₁ half-width | ρ₁ | d₂ | ρ₂ | labels d₁ / ρ₁ / d₂ / ρ₂ | nearest distinct ΔD |
+|---|---|---|---|---|---|---|---|---|---|
+| 19 | refine | 2.2° | 1/64 | 2.83 % | 0.31 % | 0.13 % | 0.21 % | ridge / identifiable / identifiable / identifiable | 1.5 × 10³ |
+| 22 | refine | 3° | 1/64 | 2.54 % | 0.28 % | 0.13 % | 0.20 % | ridge / identifiable / identifiable / identifiable | 2.0 × 10⁴ |
+| 28 | wide | 2.2° | 4/64 | 3.86 % | 0.32 % | 0.14 % | 0.22 % | ridge / identifiable / identifiable / identifiable | 3.1 × 10⁴ |
+| 31 | wide | 3° | 4/64 | 3.23 % | 0.29 % | 0.14 % | 0.21 % | ridge / identifiable / identifiable / identifiable | 3.3 × 10⁴ |
+| 34 | wide | 6° | 5/64 | 2.37 % | 0.28 % | 0.14 % | 0.20 % | ridge / identifiable / identifiable / identifiable | 3.3 × 10⁴ |
+
+**Step 3, modes.** Each reached condition has exactly one mode. All its candidates are members.
+
+**Step 4, profiles.** No half-width reached a bound. In conditions 19 and 28, a restart landed below
+the mode by 2.8 × 10⁻⁷ and 5.8 × 10⁻⁶, with the modes at Δχ² 2.8 × 10⁻⁷ and 6.2 × 10⁻⁶. Both are
+marked as not fully converged, as condition 10 was. The amounts cannot change a label.
+
+**Step 5, labels.** No multimodal label. The top film's thickness d₁ is a ridge in all five
+(2.4–3.9 %, close to the 2 % line as in the single-film half). Its ρ₁ and both parameters of the
+buried 120 Å film are identifiable (0.13–0.32 %).
+
+**Step 6: not applicable** (no multimodal label).
+
+**Step 7, decision: the no-go of R1d stands.** No analysed condition of either half has a multimodal
+label. This does not establish that XRR has no multimodality in this map:
+- **13 of the 18 bilayer conditions are undecided**, because no search reached the truth's basin
+  (18, 20, 21, 23, 24, 25, 26, 27, 29, 30, 32, 33, 35). Every bilayer condition with ρ₁ = 12 or 45 is
+  among them. Five of the six bilayer conditions in the decision region (refine bounds, 2θ ≥ 3°:
+  21–26) are undecided; only 22 was analysed. The bilayer half is therefore largely untested, and
+  R2h re-tests it with a stronger search.
+- **Weak negatives.** Conditions 19 and 22 were reached from 1 of 64 starts. As in the single-film
+  half, a second basin of the same size is missed with probability about 0.36. The same holds for
+  single-film conditions 0, 6, 12 and 36 (0.13–0.36).
+- The labels are for noise-free data at 10⁶ counts and the registered 2 % ridge line. Labels close to
+  the line are listed above.
+
+Run: 2 processes × 4 threads, 11–28 minutes per condition, peak 1.4 GB. The planning estimate of
+about 17 minutes per condition was short.
