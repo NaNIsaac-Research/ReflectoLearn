@@ -124,8 +124,11 @@ Facts, under the stated model (no model error, local, Poisson):
    errors reported for refine: CRLB 0.01–0.04 % for d and ρ, 0.3–1 % for σ, γ < 2.
 2. Freeing the 2θ offset creates one near-degenerate direction, offset together with ρ: correlation
    0.995 for the mid film, 0.98 for the low-contrast film, 0.72 for the thin film; γ 18, 9.5, 2.9.
-   This is the offset–SLD valley found in ReflectoLearn#14 (FORUM T2, DECISIONS #1), now measured.
-   Even so the bounds stay small (ρ 0.08 % for the mid film at 10⁶ counts).
+   This is the offset–SLD valley of ReflectoLearn#14; FORUM T2 already computed it with a numpy
+   Parratt copy for a 250 Å / 6 Å / 45 film (corr +0.997 at 10⁷ counts, six parameters), and this
+   reproduces it through the torch engine. Even so the bounds stay small (ρ 0.08 % for the mid film
+   at 10⁶ counts), and T2 showed that refine's 30 % SLD drift along this valley ends at a worse fit
+   than the offset-free one: an optimization failure, not a second solution.
 3. Freeing a top oxide layer (refine's oxide nuisance) is what makes the film practically
    non-identifiable: the film thickness trades against the oxide SLD and thickness (correlation
    −0.998 to −1.000), γ 60–1300. At q_max 0.21 Å⁻¹ the CRLB of d is 5 % (mid), 34 % (thin), 26 %
@@ -171,3 +174,53 @@ Inference (not yet tested):
    `refine.mcmc`, and compare the spread of the fits with the CRLB and the posterior. Agreement means
    the spread is information-limited; a wider spread means optimization failure; separate clusters
    mean non-uniqueness.
+
+## R1c pre-registration: non-uniqueness vs optimization failure (written before running)
+
+Registered 2026-10-22 23:59, before any of the computations below were run. Results go in a separate
+section; if a rule turns out unworkable it is changed in a new commit that says why, not edited here.
+
+**Setup.** Lab-like scan: q uniform from q(2θ = 0.2°) to q(2θ = 6°), 291 points, λ 1.5406 Å.
+Forward model as above plus the two effects refine also fits: Cu Kα2 (ratio 0.5, λ₂ 1.54439 Å, mixed
+as in `make_forward`) and the footprint factor `erf(s_fp · sin θ)` with s_fp = 500. Truth: i0 1,
+background 10⁻⁷, offset 0, dq 0.002 Å⁻¹, top oxide 10 Å / 18.9 / 3 Å. Free parameters: the twelve
+refine fits (d, σ, ρ, i0, bkg, offset, dq, Kα2 ratio, footprint, oxide thickness, SLD, roughness),
+within `RefineConfig`'s bounds for the nuisances. Counting level s = 10⁶ unless stated.
+
+**Profile likelihood in d.** For noise-free data (the expected counts at the truth, "asymptotic data"
+as in Raue et al. 2009), PL(d) is the Poisson deviance minimized over the other eleven parameters at
+fixed d, by bounded least squares on deviance residuals, continued outward from the truth. Since
+PL(d₀) = 0, Δχ²(d) = PL(d). The deviance is proportional to s, so one profile gives every counting
+level.
+
+**Labels for a case** (from the profile at s = 10⁶):
+- *identifiable*: the Δχ² ≤ 1 interval of d is narrower than ±2 % of d.
+- *ridge* (practical non-identifiability): the Δχ² ≤ 1 interval is connected and spans ≥ ±2 % of d.
+- *multimodal* (non-uniqueness proper): PL has a second local minimum with Δχ² ≤ 1, separated from
+  the truth by a barrier with Δχ² > 1.
+- A "pair giving the same curve within the noise" is the truth and the profile point at Δχ² = 1
+  farthest from it; reported with both curves and their normalized residual.
+
+**Fits on one noisy curve** (Poisson draw, seed 0, s = 10⁶; zero-count points masked):
+- Multi-start: `refine.refine` with default `RefineConfig` from 15 starts, d₀ × {0.8, 0.9, 1.0, 1.1,
+  1.2} × ρ₀ × {0.85, 1.0, 1.15}, σ start 0.8 σ₀; plus one fit started at the truth.
+- For each endpoint, D(endpoint) is the Poisson deviance against the noisy counts and D* the lowest
+  D over all endpoints. An endpoint is *in the valley* if D − D* ≤ 4, an *optimization failure* if
+  D − D* > 25, undecided in between.
+- Verdict for the case: if the endpoints' spread in d is mostly in-valley endpoints and matches the
+  profile's Δχ² ≤ 1 width (within a factor 2), the spread is information-limited (ridge or
+  multimodal, as labelled above). If the spread comes from failure endpoints, it is optimization
+  failure.
+- MCMC: `refine.mcmc.sample_posterior` from the lowest-D endpoint (its Gaussian log₁₀ R likelihood,
+  as implemented). Its 68 % interval of d is compared with the profile's Δχ² ≤ 1 interval; within a
+  factor 2 counts as agreement. Runtime is measured on a short chain first; anything over 2 minutes
+  is queued as [HEAVY].
+
+**Cases.**
+- Main: mid film (240 Å / 6 Å / 45), `oxide` scenario (γ = 84 at q_max 0.43 in the table above).
+- Counter-example of known type: the same film with the oxide fixed (only the offset as a weak
+  nuisance), where T2 already showed refine drifts by optimization failure; expected *identifiable*
+  with failure endpoints.
+- Open case: the 200 Å / 4 Å / 12 film (SLD below Si) from FORUM T2, which refine fitted 13 % high in
+  every strategy ("oxide nuisance or film/substrate contrast ambiguity, unconfirmed"). Judged by the
+  same rules; no expected label.
