@@ -130,3 +130,19 @@ over 20–64 points) and up to q_max 0.43 Å⁻¹. A single film being unimodal 
 PANPE's single-film branches. Because the noise-free deviance scales with the counting level s, the
 scan can report for every secondary mode it finds the counting level s* = 10⁶ / ΔD below which that
 mode is within Δχ² ≤ 1; this is reported as an addition, not used in the registered decision.
+
+### Amendments to the condition scan (before any condition was run with its 64 starts)
+
+1. *Second film of the bilayer.* The registration gives its thickness (120 Å) and SLD "±25 %" but not
+   the sign or its roughness. Fixed here: SLD 1.25 × the first film's (15, 30, 56.25), roughness
+   6 Å like the first. One sign keeps the count at 36 conditions; the other sign is not scanned.
+2. *Resolution quadrature.* `scan.py` integrates the Gaussian resolution with 15 Gauss–Hermite nodes
+   instead of `fim.py`'s 41-point ±5σ rule. Against `fim.expected_counts` the counts differ by at most
+   2.2 × 10⁻⁵ relative and by a deviance of 0.0004 on the noise-free curve, far below the Δχ²
+   thresholds of 1 and 4. The bilayer stack agrees with `benchmark.parratt` to 3.1 × 10⁻¹⁵ (no
+   absorption, 2θ 0.2–6°).
+3. *Cost.* The registered estimate (1–5 s per fit) was wrong. Measured with two other runs on the
+   machine and 2 threads: about 14 s per fit for a single film at 2θ ≤ 6° and about 60 s for the
+   bilayer before the quadrature change, with many fits from Latin-hypercube starts stopping at the
+   200-evaluation cap far from any minimum. 2304 fits are therefore several hours of CPU, not 1–3.
+   The method is unchanged; the scan runs in the two registered halves, as [HEAVY] slots allow.

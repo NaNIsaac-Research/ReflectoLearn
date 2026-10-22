@@ -129,21 +129,21 @@ def scores(states: dict[str, torch.Tensor], y: np.ndarray, oxide: bool) -> np.nd
     return deviance_terms(S_COUNTS * r, y).sum(1)
 
 
-def reference_ml(case: str) -> dict:
-    """Poisson maximum likelihood under refine's own model by bounded least squares on deviance
-    residuals, from the truth, independent of refine's optimizer. The model is float32, so the
-    Jacobian is central differences, all of them in one batched forward call."""
-    _, free = CASES[case]
-    p0, y, oxide = curve(case)
+def lsq_fit(
+    y: np.ndarray, p_base: dict[str, float], free: tuple[str, ...], oxide: bool
+) -> tuple[dict[str, float], float, int]:
+    """Minimize the Poisson deviance of counts y under refine's own model over `free` from p_base,
+    by bounded least squares on deviance residuals, within the global bounds. The model is float32,
+    so the Jacobian is central differences, all of them in one batched forward call. Returns the
+    full parameter dict, the deviance and the number of evaluations."""
     fwd = model(oxide)
     lo = np.array([BOUNDS[k][0] for k in free])
     hi = np.array([BOUNDS[k][1] for k in free])
     h = 3e-4 * (hi - lo)
     n = len(free)
 
-    def lam(x: np.ndarray) -> np.ndarray:
-        rows = np.repeat(x[None], len(x), 0) if x.ndim == 1 else x
-        vals = {k: torch.full((len(rows),), v) for k, v in p0.items()}
+    def lam(rows: np.ndarray) -> np.ndarray:
+        vals = {k: torch.full((len(rows),), v) for k, v in p_base.items()}
         vals |= {k: torch.as_tensor(rows[:, i], dtype=torch.float32) for i, k in enumerate(free)}
         with torch.no_grad():
             return S_COUNTS * fwd(vals, ALL_EFFECTS).double().numpy()
@@ -155,21 +155,23 @@ def reference_ml(case: str) -> dict:
         return resid_of(lam(x[None])[0])
 
     def jac(x):
-        steps = np.diag(h)
-        xs = np.clip(np.r_[x + steps, x - steps], lo, hi)
+        xs = np.clip(np.r_[x + np.diag(h), x - np.diag(h)], lo, hi)
         r = resid_of(lam(xs))
         width = (xs[:n] - xs[n:]).diagonal()
         return ((r[:n] - r[n:]) / width[:, None]).T
 
-    x0 = np.array([p0[k] for k in free])
+    x0 = np.clip([p_base[k] for k in free], lo, hi)
     res = least_squares(resid, x0, jac=jac, bounds=(lo, hi), x_scale="jac", max_nfev=200)
-    p = dict(zip(free, res.x.tolist(), strict=True))
-    return {
-        "deviance": float(2 * res.cost),
-        "params": p,
-        "nfev": int(res.nfev),
-        "status": res.status,
-    }
+    return p_base | dict(zip(free, res.x.tolist(), strict=True)), float(2 * res.cost), res.nfev
+
+
+def reference_ml(case: str) -> dict:
+    """The Poisson maximum likelihood under refine's own model, from the truth, independent of
+    refine's optimizer."""
+    _, free = CASES[case]
+    p0, y, oxide = curve(case)
+    p, dev, nfev = lsq_fit(y, p0, free, oxide)
+    return {"deviance": dev, "params": {k: p[k] for k in free}, "nfev": int(nfev)}
 
 
 def run_config(case: str, config_name: str) -> dict:
