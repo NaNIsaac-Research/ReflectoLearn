@@ -71,6 +71,11 @@ def poisson_deviance_loss(counts_scale: float) -> LossFn:
     Unlike the log losses this is the likelihood of counting data: each point is weighted by its
     counts, and points with zero counts inside the mask contribute too. Built per curve set because
     it needs the count scale, so it is not in LOSS_PRESETS; a stage selects it with loss="poisson".
+
+    It is the likelihood only if counts_scale · 10**log_r_obs are the raw per-point counts on the
+    measured points. Values interpolated onto another grid (as `predict.preprocess_measured` does
+    for the network) or averaged over equal q are not Poisson counts, and the deviance of such
+    values is only an approximation. Pass refine the measured q grid and the raw counts instead.
     """
 
     def loss(r_sim: Tensor, log_r_obs: Tensor, mask: Tensor) -> Tensor:

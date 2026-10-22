@@ -196,7 +196,11 @@ class RefineConfig:
     def likelihood(cls, counts_scale: float, **overrides) -> RefineConfig:
         """The configuration that reaches the Poisson maximum-likelihood fit (ReflectoLearn#25):
         likelihood_stages() with the count scale of the data. Other fields keep their defaults
-        unless overridden."""
+        unless overridden.
+
+        Use it on raw counts on the measured q points (refine's q_grid = the measured q,
+        log_r_obs = log10(counts / counts_scale)), not on a curve interpolated onto the model grid:
+        see `poisson_deviance_loss`."""
         return cls(counts_scale=counts_scale, stages=likelihood_stages(), **overrides)
 
 
