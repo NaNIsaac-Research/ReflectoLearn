@@ -131,3 +131,12 @@ What the leave-one-out rows show beyond the rule (observations):
   would be outside the bounds for most starts (inference, not run).
 - *Budget (A).* Without the ×10 budget, the other five factors get 7/48, with median ΔD 34: close
   but not converged.
+
+### Added after the results: the four necessary factors alone (ABCF)
+
+Not registered. The leave-one-out rows never switch D and E off together, so the combination of the
+four necessary factors with the Occam prior and the trust margin at their defaults was run on its own.
+That combination is the opt-in preset proposed for #25. It reaches **46/48** (16/16 for
+mid_no_oxide and t2_low, 14/16 for mid_oxide), which meets the ≥ 43/48 criterion. The two misses
+are the same two starts that all-but-E misses: d × 1.2 with ρ × 0.85 and × 1.0. They end at d
+241–245 Å, ΔD ≈ 335 from D\*. Their cause was not separated; the wider trust margin (E) recovers them.
