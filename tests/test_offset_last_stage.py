@@ -76,10 +76,24 @@ def test_correct_model_recovers_the_film_with_the_offset_fitted(constant_model_c
     assert abs(float(info["tth_offset"][0])) < 0.005  # measured -0.0023; old path -0.0158
 
 
+@pytest.fixture(scope="module")
+def original_path():
+    return run(RefineConfig(), "constant")
+
+
 @pytest.mark.xfail(strict=True, reason="ReflectoLearn#14: stages 1-2 drag the offset and the SLD")
-def test_original_path_recovers_the_film_with_the_offset_fitted():
-    p, _ = run(RefineConfig(), "constant")
+def test_original_path_recovers_the_film_with_the_offset_fitted(original_path):
+    p, _ = original_path
     assert float(p[0, 2]) == pytest.approx(FILM[2], rel=0.015)  # measured 42.49
+
+
+def test_flag_off_keeps_the_original_results(original_path):
+    """Values of the parent commit, where this path was the only one (equal to its last digit
+    there). The new path lands at SLD 44.70 and offset -0.0023, outside these tolerances."""
+    p, info = original_path
+    assert float(p[0, 2]) == pytest.approx(42.49, abs=1.0)
+    assert float(info["tth_offset"][0]) == pytest.approx(-0.0158, abs=0.005)
+    assert "offset_off" not in info
 
 
 def test_offset_off_refit_is_reported(constant_model_constant_data):
