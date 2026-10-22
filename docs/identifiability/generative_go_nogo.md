@@ -388,3 +388,13 @@ endpoints within Δχ² ≤ 4:
 Physics (2026-10-23, before this amendment was committed) agreed with the fix and the observation,
 and asked for the two qualifications above: "not reached" is not evidence either way, and the
 truth-start fit is post hoc and blind to multimodality.
+
+### Bilayer half: fits, and what gets analysed (2026-10-23, before any bilayer analysis)
+
+The 18 bilayer conditions were fitted with 64 starts each (about 2 h of CPU, two processes, peak
+1.5 GB). Only five reached the truth's basin: 19 (1/64), 22 (1/64), 28 (4/64), 31 (4/64) and
+34 (5/64). The other 13 are *not reached* and therefore undecided (amendment 7). In each condition
+41–54 of the 64 fits stopped at the evaluation limit. Steps 3–6 run for the five reached
+conditions. The coordinator decided not to run the amendment 7 observation (truth-start profiles)
+for the 13: it does not enter the decision, and R2h will test the same conditions again with a
+stronger search. The table lists them as "not reached, not analysed".
