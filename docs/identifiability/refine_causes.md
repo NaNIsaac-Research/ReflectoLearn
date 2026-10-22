@@ -162,3 +162,27 @@ with everything below fixed before running.
   in a nuisance basin.
 - **Rule.** Confirmed if at least 43 of the 48 reach. Otherwise RL#31 stays opt-in and DECISIONS #17
   goes back to recommending (a) only. Per-curve counts are reported, but the rule uses the total.
+
+### R2f results
+
+`uv run python experiments/001_identifiability/refine_causes.py confirm` (about 6 minutes, 2
+threads, with R2a running); data in `refine_confirm.json`.
+
+| curve | seed | reached | misses (start: ΔD, end d) |
+|---|---|---|---|
+| thin_oxide (new film) | 21 | 15/16 | d × 1.2 ρ × 1: 88.7, 96.6 Å (truth 90) |
+| mid_oxide | 22 | 14/16 | d × 1.2 ρ × 0.85 and × 1: 336, 244.6 Å |
+| t2_low | 23 | 13/16 | d × 1.2 with ρ × 0.85, × 1, × 1.15: 4.1 each, 201.0 Å |
+| total | | **42/48** | |
+
+**Verdict by the registered rule: not confirmed** (42 < 43). RL#31 stays opt-in, and DECISIONS #17
+recommends (a). Three of the six misses (t2_low) are 0.1 above the ΔD ≤ 4 threshold. The rule is
+applied as registered, without adjusting the threshold.
+
+Observations, not part of the rule:
+- Every miss starts from d × 1.2, the start farthest above the truth.
+- The two mid_oxide misses repeat the two R2b misses on a new noise draw (same starts, same end at
+  d ≈ 244.6 Å, ΔD ≈ 336). So these are a property of the preset from those starts, not of one
+  curve. In R2b, a trust margin of 1.0 removed them.
+- D\* came from the least-squares fit from the truth in every case. The restart from the lowest
+  endpoint found nothing lower.
