@@ -133,7 +133,16 @@ Facts, under the stated model (no model error, local, Poisson):
    non-identifiable: the film thickness trades against the oxide SLD and thickness (correlation
    −0.998 to −1.000), γ 60–1300. At q_max 0.21 Å⁻¹ the CRLB of d is 5 % (mid), 34 % (thin), 26 %
    (low contrast), and σ (here the buried oxide/film roughness) is not determined at all (82–590 %).
-   ρ stays well determined (≤ 0.17 %).
+   ρ stays well determined (≤ 0.17 %). **Corrected by R1c:** this is the unbounded local result.
+   Within refine's bounds (oxide SLD 15–22, Kα2 ratio ≤ 0.6) the weak direction is cut, and the
+   profile likelihood of the same film on a 2θ 0.2–6° scan gives d to ±0.4 % (see R1c results).
+   "Practically non-identifiable" holds only if the oxide SLD is left free over a wide range.
+
+Prior work (`literature.md`): Poisson Fisher information and Cramér–Rao bounds for reflectometry
+have been computed before for neutrons (Durant et al. 2021, 2022). For X-rays, Gil & Windover (2012)
+showed by MCMC that a thin contamination layer dominates the film-thickness uncertainty, and Windover
+et al. (2014) calibrated how an angle offset biases thickness and density. Facts 2 and 3 restate
+those effects in Fisher terms with the refine nuisances; they are not new phenomena.
 
 Inference (not yet tested):
 
@@ -147,9 +156,8 @@ Inference (not yet tested):
   happens to look like that direction is amplified by about γ (≈ 100 with the oxide free) relative
   to a well-determined direction. Whether the oxide nuisance absorbs model errors this way is the
   most useful next test (below).
-- Where the oxide is free and q_max ≤ 0.2 Å⁻¹, a single best fit is the wrong output: a posterior
-  (or a set of solutions) is needed for d and σ. Whether that posterior is multimodal or only
-  elongated is not answered by F.
+- Where the oxide is free over a wide SLD range and q_max ≤ 0.2 Å⁻¹, a single best fit may be the
+  wrong output. Not tested: R1c used refine's bounds and q_max 0.43 Å⁻¹.
 
 ## Limits
 
@@ -170,10 +178,8 @@ Inference (not yet tested):
    are present (constant vs q-proportional resolution, as in RL#20; Kα2 ratio; footprint; oxide
    under the film as in `benchmark.make_synthetic` vs on top as in refine), per scenario. Shows
    which nuisance turns which error into a film-parameter bias.
-2. R1c: for the `oxide` cases with γ > 100, draw curves at the truth, run multi-start refine and
-   `refine.mcmc`, and compare the spread of the fits with the CRLB and the posterior. Agreement means
-   the spread is information-limited; a wider spread means optimization failure; separate clusters
-   mean non-uniqueness.
+2. R1c: done, see below. Next for it: the pre-registered condition scan in
+   [`generative_go_nogo.md`](generative_go_nogo.md).
 
 ## R1c pre-registration: non-uniqueness vs optimization failure (written before running)
 
@@ -246,3 +252,62 @@ level.
    a different optimizer from the same starts reaches the same solution. And every point is also
    scored by refine's own forward model and objective (log₁₀ MSE over the nonzero counts), to tell a
    failed search from a difference between the two models.
+
+## R1c results
+
+Reproduce (about 4 minutes per case on CPU, mostly the profile; needs `uv sync --extra mcmc`):
+
+```bash
+for c in mid_oxide mid_no_oxide t2_low; do
+  uv run python experiments/001_identifiability/nonunique.py profile fits lsq mcmc --case $c
+done
+uv run python experiments/001_identifiability/nonunique.py report
+```
+
+Writes `nonunique_<case>.json`, [`nonunique_tables.md`](nonunique_tables.md) and `nonunique.png`.
+`mcmc` takes `--mcmc-start refine` (as registered) or `--mcmc-start ml`; both were run.
+
+| case | label | profile Δχ² ≤ 1 (d, %) | refine endpoints: failure / worse on own objective | refine endpoint d (%) | Poisson LSQ from same starts at ML | MCMC 68 % of d (%), refine / ML start |
+|---|---|---|---|---|---|---|
+| mid_oxide | identifiable | −0.40 / +0.38 | 16/16, 16/16 (min ΔD 1.1e5) | −31 to +15 | 14/15 | +0.19 to +0.83 / +0.09 to +0.75 |
+| mid_no_oxide | identifiable | −0.04 / +0.03 | 16/16, 13/16 (min ΔD 2.8e5) | −26 to +29 | 14/15 | −0.04 to +0.29 / −0.03 to +0.30 |
+| t2_low | identifiable | −1.41 / +1.40 | 16/16, 14/16 (min ΔD 4.9e4) | −30 to +45 | 15/15 | −1.82 to −0.49 / −2.05 to −1.08 |
+
+![Profiles, endpoints, residuals](nonunique.png)
+
+(a) Profile likelihood of d on noise-free data; every other parameter is re-fitted within refine's
+bounds. (b) One Poisson curve per case: endpoints of refine (open) and of the Poisson least-squares
+fit (filled) from the same 15 starts plus the truth, against their deviance above the best fit.
+(c) Normalized residuals on the mid_oxide curve for the ML fit, a profile point inside Δχ² ≤ 1, and
+the best refine endpoint.
+
+Verdict by the registered rules:
+
+- All three cases are **identifiable**: single-minimum profiles, no second minimum with Δχ² ≤ 1
+  out to ±30 % (the profile follows one branch by continuation), Δχ² ≤ 1 widths ±0.04 % to ±1.4 %.
+  The deviance scales with s, so t2_low (Δχ² = 4.3 at d −2 %) would be labelled *ridge* at about
+  2 × 10⁵ counts or fewer.
+- The spread of the refine endpoints (−31 % to +45 % in d) is **optimization failure**: 48 of 48
+  endpoints are worse than the best fit by ΔD > 4.8 × 10⁴, and 43 of 48 are also worse on refine's
+  own forward model and objective than the Poisson ML parameters. The other 5 sit lower on refine's
+  log₁₀ MSE than the ML parameters while being far worse in deviance: the log-MSE over nonzero
+  counts is not the likelihood. A Poisson least-squares fit from the same starts reaches the ML fit
+  from 43 of 45 starts; the other two (both d × 1.2, ρ × 0.85) land on a thickness alias near
+  d ≈ 450 Å with ΔD ≈ 3.7 × 10⁵. Filed as ReflectoLearn#25 (not fixed here).
+- T2's open case (200/12 film fitted 13 % high in SLD by every strategy) is reproduced: refine from
+  the truth ends at ρ 13.2 (+10 %), the ML fit at 12.00. It is the same optimization failure, not a
+  contrast ambiguity of the curve.
+- MCMC (`refine.mcmc`, Gaussian likelihood in log₁₀ R) is unimodal in every case and gives the same
+  interval from the failed refine endpoint as from the ML fit, so it escapes the failure. Its width
+  agrees with the profile within the registered factor 2 only for mid_oxide (half-width 0.32 % vs
+  0.39 %). It is 4.7 times wider for mid_no_oxide and 2–3 times narrower for t2_low: that likelihood
+  is not calibrated against Poisson counts in either direction.
+
+Side observations (not part of the registered rules):
+
+- In t2_low the ML fit puts the film roughness at its bound 0 (truth 4 Å) and moves the oxide
+  (14 Å / 16.2 instead of 10 Å / 18.9) without changing d or ρ; two ML solutions that differ only in
+  the Kα2 ratio (0.51 vs 0.00) are within ΔD = 1. With the oxide on top, the film's roughness is the
+  buried oxide/film interface, and these nuisances trade against it. d was profiled; σ was not.
+- `make_forward` pads the grid edges before smearing; with the footprint on this changes R by up to
+  3.6 % at the first grid point and 13 % at the last. Recorded in #25.

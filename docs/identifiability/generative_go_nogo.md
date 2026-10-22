@@ -1,0 +1,104 @@
+# Generative inverse model for XRR: go / no-go (R1d)
+
+Written 2026-10-23 after Experiment 001 (R1b, R1c). Nothing was trained; no diffusion or flow model
+was started.
+
+## Verdict
+
+**No-go for now.** In every case we checked, the posterior of the film parameters has one mode, and
+the wrong fits came from the optimizer, not from the curve. A generative posterior model would be
+solving a problem these cases do not have. The question that would justify one is open: under which
+conditions does a single-film or bilayer XRR curve admit several statistically indistinguishable
+structures? That is tomorrow's pre-registered experiment (below). The decision is revisited on its
+result.
+
+## What the four approaches did on the checked cases
+
+Cases: 240 Å / 6 Å / 45 film with and without a 10 Å top oxide, 200 Å / 4 Å / 12 film with the
+oxide; 2θ 0.2–6°, 10⁶ counts, Kα2, footprint, offset, resolution, i0, background; all twelve refine
+parameters free within refine's bounds (`README.md`, R1c).
+
+| approach | result here | cost per curve (CPU) | status |
+|---|---|---|---|
+| CNN + refine | CNN not run (no checkpoint on this machine, DotFiles#30). refine alone, from 16 starts within ±20 % of the truth: 48/48 endpoints far from the best fit (ΔD > 4.8 × 10⁴), endpoint d −31 % to +45 % | ~5–10 s for 16 starts | fails as an optimizer: ReflectoLearn#25 |
+| multi-start Poisson least squares | 43/45 starts reach the maximum-likelihood fit; the other 2 land on a thickness alias at ΔD ≈ 3.7 × 10⁵, clearly rejected | ~20–30 s for 15 starts | works |
+| MCMC (`refine.mcmc`, emcee) | unimodal in all cases; from a failed refine endpoint it moves to the same posterior as from the ML fit. Width vs Poisson profile: agrees for 1 case, 4.7× too wide and 2–3× too narrow for the others | ~12 s, 2000 steps × 52 walkers | works for the mode; its likelihood (Gaussian in log₁₀ R) is not calibrated against counts |
+| conditional normalizing flow / flow matching | not trained (out of scope tonight) | training: GPU hours; inference: ms | justified only by amortization or multimodality, neither shown here |
+
+## Already solved by existing methods vs needs several solutions
+
+- Solved: a single film with refine's nuisances on a lab scan to q ≈ 0.43 Å⁻¹. The curve determines
+  d to ±0.04–1.4 % (profile Δχ² ≤ 1 at 10⁶ counts). A correct local likelihood fit from a handful of
+  starts finds it; MCMC gives the uncertainty. What is missing is a working optimizer in refine
+  (#25) and a likelihood that matches the counts, not a new model class.
+- Possibly needs several solutions (not shown): a thin top layer with a wide free SLD range and a
+  short q range (unbounded Fisher analysis in R1b: d–oxide SLD correlation −0.998, γ up to 1300 at
+  q_max 0.21 Å⁻¹); bilayers with similar SLDs (layer-order swaps); thickness aliases (a second
+  local minimum near 1.9 d was found, but at ΔD ≈ 3.7 × 10⁵ it is not a competing solution).
+- Amortization is a separate argument: if thousands of curves must be inverted (in-situ growth,
+  mapping), a trained posterior is fast. PANPE (Starostin et al. 2025) already does this for XRR and
+  NR with a normalizing flow, q-offset and normalization nuisances, and importance-sampling/MCMC
+  correction. A flow-matching or diffusion version of the same thing is an engineering variant, not
+  a research question, unless it addresses something PANPE cannot (see `literature.md`).
+
+## Candidate research questions before graduation
+
+Both are hypotheses; neither has been checked against a full literature search.
+
+1. **Where does XRR become multimodal?** A map, over q range, film/substrate contrast, number of
+   layers and how freely the nuisance layer is allowed to vary, of where the Poisson likelihood of a
+   curve has several indistinguishable structures (multimodal), one stretched solution (ridge), or a
+   well-determined one. Criteria pre-registered, profile likelihood plus global multi-start, checked
+   against MCMC. Prior work to separate from: Durant et al. 2021 (neutron, local Fisher only), Gil &
+   Windover 2012 (X-ray, one contamination case, MCMC), PANPE (multimodal posteriors shown on
+   examples, not mapped). If the map shows a realistic region with multimodality, that region is the
+   test bed that justifies a generative posterior, and the comparison with PANPE has a defined target.
+2. **How much information do common XRR fitting objectives throw away?** Log-MSE in log₁₀ R (refine,
+   GenX's logR-type FOMs) against the Poisson likelihood: efficiency against the Cramér–Rao bound,
+   bias at low counts, calibration of the resulting MCMC intervals. Tonight's data already show a
+   2–5× miscalibration of `refine.mcmc` widths and endpoints where log-MSE and the likelihood
+   disagree on which fit is better. Small, concrete, and directly useful to anyone fitting XRR; the
+   risk is that it is known folklore without a paper, which the literature check must settle.
+
+## Pre-registered experiment for 2026-10-23: condition scan for multimodality
+
+Registered before running. Changes go in a new commit with the reason.
+
+**Conditions (36).**
+- q_max: 2θ_max ∈ {2.2°, 3°, 6°} (q_max ≈ 0.16, 0.21, 0.43 Å⁻¹), 2θ_min 0.2°, uniform q, 0.02° step
+  equivalent.
+- Contrast: film SLD ∈ {12, 24, 45} (×10⁻⁶ Å⁻², Si 20.07), d 240 Å, σ 6 Å.
+- Nuisance freedom: (i) refine's bounds; (ii) wide: oxide SLD 5–40, oxide thickness 0–60 Å, Kα2
+  ratio 0–1.
+- Stack: (i) single film with top oxide; (ii) bilayer: the film plus a second film of 120 Å, SLD
+  ±25 % of the first, under it, with top oxide.
+- Fixed: 10⁶ counts at R = 1, background 10⁻⁷, offset 0, dq 0.002 Å⁻¹, Kα2 0.5, footprint 500,
+  oxide 10 Å / 18.9 / 3 Å.
+
+**Per condition, on noise-free data (expected counts):**
+1. Global multi-start: 64 starts from a Latin hypercube over the full prior box (film parameters
+   over `config.yaml` ranges, nuisances over the condition's bounds); Poisson least squares (as in
+   `nonunique.py fit`) from each.
+2. Modes: endpoints with Δχ² ≤ 4 (deviance against the noise-free data; the truth has 0) are
+   grouped; two endpoints are in different modes if any film parameter differs by more than 3 times
+   the larger of their two profile Δχ² ≤ 1 half-widths for that parameter (computed at each endpoint
+   by the `nonunique.py` profile on that parameter).
+3. Labels as in R1c, applied per film parameter (d of each layer, ρ of each layer): *multimodal* if
+   more than one mode with Δχ² ≤ 1 exists; *ridge* if one mode whose Δχ² ≤ 1 profile half-width is
+   ≥ 2 % of the value; *identifiable* otherwise.
+4. Check: for every condition labelled multimodal, draw one Poisson curve and run emcee with the
+   Poisson likelihood from each mode; it counts as confirmed if both modes keep posterior mass
+   (each ≥ 5 % of samples after burn-in) in at least one of the runs.
+
+**Decision rule.**
+- Go for a generative posterior study (R2) if at least one condition with refine's bounds (nuisance
+  freedom (i)) and q_max ≥ 0.21 Å⁻¹ is confirmed multimodal.
+- Otherwise no-go stands, and the condition map itself is the result (question 1 above, with
+  multimodality only in the wide or short-range corners, if anywhere).
+
+**Cost.** 36 × 64 = 2304 least-squares fits at about 1–5 s each (12–15 parameters), 1–3 hours on one
+CPU, under 1 GB. Queued as [HEAVY] in two halves (single film, bilayer). Before that, one condition
+is timed and the bilayer forward model is checked against `benchmark.parratt` as in R1b.
+
+**Step 0 (reading, 30 minutes).** PANPE's multimodal examples (which stacks, q ranges, priors), so
+that the scan does not re-discover a published case without saying so.
