@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 import torch
 
-from reflectolearn.benchmark import SI, smeared
+from reflectolearn.benchmark import SI, parratt, smeared
 from reflectolearn.config import Config
 from reflectolearn.physics import tth2q
 from reflectolearn.predict import preprocess_measured
@@ -68,16 +68,16 @@ def test_proportional_term_matches_the_generator(dq_over_q):
     assert np.abs(np.log10(got[inner]) - np.log10(want[inner])).max() < 0.01
 
 
-def _refine(two_term: bool, offset: bool, seed: int = 1) -> tuple[float, float, float]:
-    """#14's case: film on Si, dq/q = 2 %, 1e7 counts, bkg 1e-7, refined from the truth."""
-    tth = np.arange(0.2, 6.0001, 0.02)
-    q = tth2q(tth, WL)
-    layers = [(0j, 0, 0), (FILM[2] + 0j, FILM[0], FILM[1]), (SI, 0.0, 3.0)]
-    counts = np.random.default_rng(seed).poisson(1e7 * (smeared(q, layers, 0.02) + 1e-7))
-    _, r_obs, mask = preprocess_measured(q, counts.astype(float), CFG, DEV)
-    cfg = RefineConfig(fit_dq_rel=two_term, fit_tth_offset=offset)
+LAYERS = [(0j, 0, 0), (FILM[2] + 0j, FILM[0], FILM[1]), (SI, 0.0, 3.0)]
+Q_SCAN = tth2q(np.arange(0.2, 6.0001, 0.02), WL)
+
+
+def _fit(r: np.ndarray, config: RefineConfig, seed: int = 1):
+    """r on Q_SCAN as 1e7 counts plus a 1e-7 background, refined from the truth."""
+    counts = np.random.default_rng(seed).poisson(1e7 * (r + 1e-7))
+    _, r_obs, mask = preprocess_measured(Q_SCAN, counts.astype(float), CFG, DEV)
     with torch.enable_grad():
-        p, info = refine(
+        return refine(
             torch.tensor([list(FILM)]),
             torch.tensor([[20.0, 3.0]]),
             CFG.q_grid,
@@ -85,9 +85,15 @@ def _refine(two_term: bool, offset: bool, seed: int = 1) -> tuple[float, float, 
             mask,
             CFG.param_ranges,
             wavelength=WL,
-            config=cfg,
+            config=config,
             device=DEV,
         )
+
+
+def _refine(two_term: bool, offset: bool, seed: int = 1) -> tuple[float, float, float]:
+    """#14's case: film on Si, dq/q = 2 %, 1e7 counts, bkg 1e-7, refined from the truth."""
+    config = RefineConfig(fit_dq_rel=two_term, fit_tth_offset=offset)
+    p, info = _fit(smeared(Q_SCAN, LAYERS, 0.02), config, seed)
     return float(p[0, 0]), float(p[0, 2]), float(info.get("dq_rel", [float("nan")])[0])
 
 
@@ -103,6 +109,36 @@ def test_two_term_model_recovers_the_film_with_the_offset_fixed():
 def test_two_term_model_recovers_the_film_with_the_offset_fitted():
     _, sld, _ = _refine(two_term=True, offset=True)
     assert sld == pytest.approx(FILM[2], rel=0.05)  # measured: 34.4, offset -0.068 deg
+
+
+@pytest.fixture(scope="module")
+def both_terms() -> np.ndarray:
+    """R smeared with sigma = sqrt(0.002² + (0.02 q)²): a constant and a proportional term."""
+    u = np.linspace(-3, 3, 17)
+    w = np.exp(-0.5 * u**2) / np.exp(-0.5 * u**2).sum()
+    qq = (Q_SCAN[:, None] + np.hypot(0.002, 0.02 * Q_SCAN)[:, None] * u).clip(1e-6)
+    return (parratt(qq.ravel(), LAYERS).reshape(qq.shape) * w).sum(1)
+
+
+def _resolution(r: np.ndarray, **config) -> tuple[float, float]:
+    """Fitted (dq, dq_rel) with the offset and the oxide fixed, so no other key carries a prior."""
+    _, info = _fit(r, RefineConfig(fit_tth_offset=False, fit_oxide=False, **config))
+    return float(info["dq"][0]), float(info.get("dq_rel", [float("nan")])[0])
+
+
+def test_two_term_model_recovers_both_terms_with_no_prior_on_either(both_terms):
+    """A prior left on dq or dq_rel would pull it toward 0 at a large nuisance_reg."""
+    dq, dq_rel = _resolution(both_terms, fit_dq_rel=True)
+    assert dq == pytest.approx(0.002, rel=0.25)  # measured 0.00224
+    assert dq_rel == pytest.approx(0.02, rel=0.1)  # measured 0.0192
+    strong = _resolution(both_terms, fit_dq_rel=True, nuisance_reg=20.0)
+    assert strong == pytest.approx((dq, dq_rel), rel=1e-3)
+
+
+def test_constant_model_keeps_its_prior_on_dq(both_terms):
+    """The same weight does act on the default path: dq 0.00256 at 0.2, 0.00055 at 20."""
+    dq, _ = _resolution(both_terms, nuisance_reg=20.0)
+    assert dq < 0.001
 
 
 def test_kernel_covers_the_top_of_the_refine_grid():
