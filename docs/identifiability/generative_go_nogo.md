@@ -147,3 +147,9 @@ mode is within Δχ² ≤ 1; this is reported as an addition, not used in the re
    200-evaluation cap far from any minimum. 2304 fits are therefore several hours of CPU, not 1–3.
    The method and the decision rules are unchanged; the scan runs in the two registered halves
    (single film first), each split over three processes.
+4. *Profiles restart the inner fit (2026-10-23, physics review of PR #24).* The per-mode profiles of
+   rule 2 compute each fixed-parameter point as the lowest of three local fits (continued from the
+   previous point, nuisances at refine's initial values, nuisances at their bound midpoints), so that
+   a half-width is not set by one tracked nuisance branch. Modes themselves come from the 64 global
+   starts, not from the profiles. A restart that finds a point below the mode's own deviance is
+   recorded (`lowest_dchi2` < 0).
