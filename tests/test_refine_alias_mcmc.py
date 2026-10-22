@@ -92,3 +92,6 @@ def test_mcmc_interval_brackets_the_truth(double_start):
     assert d["hi"] - d["lo"] < 0.05 * case.thickness
     assert np.isfinite(post["lnsigma"]["median"])
     assert 0.1 < post["acceptance"] < 0.7
+    # a 1000-step chain keeps 500 steps, far short of 50 autocorrelation times here (#29)
+    assert set(post["tau"]) == {*post["keys"], "lnsigma"}
+    assert post["converged"] == (500 >= 50 * max(post["tau"].values()))
