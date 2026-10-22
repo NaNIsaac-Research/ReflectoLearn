@@ -273,3 +273,70 @@ Cost correction (rule 24): the 19 single-film conditions took about an hour of w
 processes and 3.5–10 minutes per condition. Amendment 3 had expected several hours. With two
 processes, the 2θ ≤ 6° conditions took 5–7.5 minutes and the 2.2° conditions 3.5–5 minutes. The
 number of evaluations per fit was not compared.
+
+### Single-film half: steps 3–7 (analysed 2026-10-23)
+
+Reproduce: `uv run python experiments/001_identifiability/scan.py analyze --conditions 0 1 ... 17 36`,
+then `scan.py report`. Table: [`scan_tables.md`](scan_tables.md); data: `scan/modes_*.json`.
+
+**Step 3, modes.** Every one of the 19 conditions has exactly one mode. Its best endpoint is at
+Δχ² 7 × 10⁻¹¹ to 5 × 10⁻¹⁰ (condition 10: 1 × 10⁻⁶). All candidates of a condition are members of
+that mode. The endpoints just above Δχ² 4 noted in the interim (4.3, 12, 17, all ρ = 24) are not
+distinct from it either: the nearest distinct endpoint of every condition is at ΔD ≥ 1.8 × 10³.
+
+**Step 4, profiles.** No half-width reached a bound, and no restart landed below its mode by more
+than 10⁻⁶ (condition 10, d: −8.7 × 10⁻⁷).
+
+| ρ film | 2θ max | d half-width, refine bounds | d half-width, wide | ρ half-width (both) |
+|---|---|---|---|---|
+| 12 | 2.2° / 3° / 6° | 2.6 / 2.4 / 1.5 % | 3.5 / 3.2 / 1.9 % | 0.30–0.38 % |
+| 24 | 2.2° / 3° / 6° | 3.2 / 2.7 / 2.4 % | 6.7 / 3.8 / 2.8 % | 0.12–0.13 % |
+| 45 | 2.2° / 3° / 6° | 0.6 / 0.5 / 0.5 % | 2.5 / 2.2 / 0.8 % | 0.21–0.28 % |
+
+Condition 36 (200/4/12, refine bounds, 6°): d 1.4 %, ρ 0.21 %.
+
+**Step 5, labels.** No condition has a multimodal label. ρ is identifiable in all 19 conditions. d is
+a ridge in 12 (half-width ≥ 2 %): ρ 24 everywhere; ρ 12 at 2θ ≤ 3°; ρ 45 with wide nuisances at
+2θ ≤ 3°. d is identifiable in 7 (2, 5, 6, 8, 15, 17, 36). Two labels sit close to the 2 % line:
+condition 6 (1.48 %, identifiable) and 14 (2.23 %, ridge).
+
+**Step 6, check of multimodal labels: not applicable.** Step 5 gave no multimodal label, so no chain
+was run (amendment 6 stays unused for this half).
+
+**Step 7, decision: open until the bilayer half.** No single-film condition with refine's bounds and
+2θ ≥ 3° is multimodal, so this half gives no "go". The registered decision covers all 36 conditions,
+and conditions 18–35 (bilayer) are not run yet.
+
+**Limits of this half.**
+- The ρ = 12 film is reached from only 1–3 of 64 starts (condition 36: 2/64, with 44 of 64 fits
+  stopping at the 200-evaluation cap). A second mode that few starts lead to could be missed. One
+  mode is what the scan found, not a proof that there is only one.
+- Noise-free data at 10⁶ counts. A noisy curve moves the minimum but not, to first order, the
+  curvature that sets the half-widths.
+
+**Outside the decision: nuisances (amendment 5).** Endpoints within Δχ² ≤ 4 with differing nuisances
+appear in conditions 1 and 10 (2θ ≤ 2.2°, ρ 24): Kα2 ratio 0 and oxide thickness 0 at Δχ² 1.4, with
+the film the same mode. Condition 36 has no such endpoint, so neither registered reading for the
+named case applies: no endpoint with Kα2 near 0 appears at any Δχ² near the film mode.
+
+Unregistered check (added after the labels, does not enter any rule): the profile in the Kα2 ratio
+on the noise-free curve, each point the lowest of the three fits of amendment 4.
+
+| condition | D at Kα2 = 0 | D at Kα2 = 0.25 | d at Kα2 = 0 |
+|---|---|---|---|
+| 36 (200/4/12, 6°) | 0.098 | 0.011 | 200.85 Å |
+| 1 (240/6/24, 2.2°) | 0.065 | 0.008 | 233.75 Å |
+| 6 (240/6/12, 6°) | 0.091 | 0.011 | 240.99 Å |
+
+At 10⁶ counts the Kα2 ratio is not determined: 0 to 0.5 costs Δχ² < 0.1, with the oxide and d
+taking up the difference. D falls monotonically from 0 through 0.25 to the truth (0.5) at these three
+points, so this is one flat valley, not two basins. The two t2_low solutions of R1c (Kα2 0.51 and
+0.00) are then the two ends of that valley, and the growing τ of R2c fits a chain wandering along it
+to the bound. Three points do not exclude a barrier between them.
+
+Note on the run itself: the process watcher of the runner script did not work during the
+single-film fits after the restart and during this analysis. A parameter and a local variable had
+the same name, case-insensitively, in PowerShell. The watcher never registered the child processes,
+so it did not exit and recorded no peak memory. The memory guard summed and stopped the python
+processes directly, so it was in force, but this was not observed in a kill. All 19 conditions
+finished and wrote their output. Fixed in the runner before the bilayer half.
