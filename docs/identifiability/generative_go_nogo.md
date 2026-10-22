@@ -15,6 +15,10 @@ conditions does a single-film or bilayer XRR curve admit several statistically i
 structures? That is tomorrow's pre-registered experiment (below). The decision is revisited on its
 result.
 
+*Revisited 2026-10-23 after R2a (condition scan, below):* the no-go stands. No analysed condition
+has a multimodal label. 13 of the 18 bilayer conditions are undecided, because no start reached the
+truth's basin, and they are to be re-tested in R2h.
+
 ## What the four approaches did on the checked cases
 
 Cases: 240 Å / 6 Å / 45 film with and without a 10 Å top oxide, 200 Å / 4 Å / 12 film with the
