@@ -410,3 +410,15 @@ xrr-kit (what X2b needs from the shared package, so that switching is an import 
    `(20261024, n, j)`, the same seed as the truth's generator, so the starts would have been drawn from
    the same random stream as the truth parameters. It is now `(20261024, n, j, 2)`. Found while writing
    the generator for X2b.
+2. 2026-10-24, while writing the environment, before any episode ran. Three gaps between section 4
+   and protocol A:
+   - Steps 2 and 3 of A1 set values from the data, which no action in 4.2 could do. Two actions are
+     added: `estimate_rho` sets the top layer's ρ by the q_c rule of step 2 (no change if q_c is
+     within 5 % of the substrate's), and `estimate_d` scales every layer's d so that their sum is the
+     Kiessig thickness of step 3 (no change if it is NaN). Both are available to every policy.
+   - Step 7 tries candidates and keeps the best, which needs branching. Protocol A runs each candidate
+     on a copy of the state. Copies share the episode's evaluation budget and its best-state record,
+     so every evaluation counts and the returned model is still the lowest BIC visited anywhere; the
+     60-action cap counts the actions on the kept path. A policy limited to the action space can only
+     go back through `revert`; this asymmetry favours A and is reported with the results.
+   - The Kiessig search range is 20–800 Å, since three-layer truths reach 750 Å in total.
