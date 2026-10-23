@@ -148,6 +148,7 @@ def _effect_on(key: str, active: set[str]) -> bool:
     effect = {
         "tth_offset": "tth_offset",
         "dq": "dq",
+        "dq_rel": "dq",
         "kalpha2_ratio": "kalpha2",
         "footprint": "footprint",
         "oxide_thickness": "oxide",

@@ -18,6 +18,7 @@ forward-model mismatch from leaking into the parameters of interest (thickness e
   * i0  : intensity scale,  bkg : background (log10)
   * tth_offset : q-axis zero (alignment) offset
   * dq         : resolution (Gaussian q-smearing) — disentangles from roughness
+  * dq_rel     : q-proportional resolution term, sigma(q) = sqrt(dq² + (dq_rel·q)²); off by default
   * footprint  : low-angle beam footprint attenuation (beam > sample) —
                  disentangles from low-angle amplitude
   * oxide      : native oxide / surface layer (nuisance layer between ambient and film)
@@ -37,6 +38,7 @@ import torch
 import torch.nn.functional as F
 from loguru import logger
 from torch import Tensor
+from torch.utils.checkpoint import checkpoint
 
 from reflectolearn.physics import AbelesMatrix, apply_tth_offset
 from reflectolearn.refine.losses import LOSS_PRESETS, log_mse_loss
@@ -51,8 +53,11 @@ OXIDE_KEYS = ("oxide_thickness", "oxide_sld", "oxide_roughness")
 # value (= effect off) so they only turn on "when truly needed". {key: neutral}.
 #   oxide_thickness=0 -> no oxide layer, dq=0 -> no smearing.
 # tth_offset is excluded: it is well identified by fringe positions, so its
-# degeneracy risk is low.
+# degeneracy risk is low. With the two-term resolution (fit_dq_rel) dq is excluded too, see there.
 _PENALIZE_NEUTRAL = {"oxide_thickness": 0.0, "dq": 0.0}
+
+# Curves per checkpointed chunk in the q-dependent smearing (bounds its (chunk, Q, K) weights).
+_SMEAR_CHUNK = 4
 
 # nuisance key -> RefineConfig active-flag name
 _NUISANCE_FLAG = {
@@ -60,6 +65,7 @@ _NUISANCE_FLAG = {
     "bkg": "fit_bkg",
     "tth_offset": "fit_tth_offset",
     "dq": "fit_dq",
+    "dq_rel": "fit_dq_rel",
     "kalpha2_ratio": "fit_kalpha2",
     "footprint": "fit_footprint",
     "oxide_thickness": "fit_oxide",
@@ -115,6 +121,7 @@ def _default_stages() -> list[RefineStage]:
                 "bkg",
                 "tth_offset",
                 "dq",
+                "dq_rel",
                 "kalpha2_ratio",
                 "footprint",
                 *OXIDE_KEYS,
@@ -134,6 +141,11 @@ class RefineConfig:
     fit_bkg: bool = True  # background (log10)
     fit_tth_offset: bool = True  # q-axis zero offset
     fit_dq: bool = True  # resolution (q-smearing)
+    # q-proportional resolution, sigma(q) = sqrt(dq² + (dq_rel·q)²): angular divergence gives the
+    # constant part, the wavelength spread the proportional one. Off keeps the constant-only model.
+    # On, neither term gets the Occam prior: the q dependence of the smearing tells them apart, and
+    # at dq/q = 2 % the pull, 0.2·(0.02/0.05)², is three times the log-MSE and held dq_rel near 0.009.
+    fit_dq_rel: bool = False
     fit_kalpha2: bool = True  # Cu Kα2 doublet (matches generator)
     fit_footprint: bool = True  # low-angle footprint attenuation (beam > sample)
     fit_oxide: bool = True  # native oxide (nuisance layer)
@@ -146,6 +158,7 @@ class RefineConfig:
     bkg_bounds: tuple[float, float] = (-10.0, -4.0)
     tth_offset_bounds: tuple[float, float] = (-0.08, 0.08)  # [deg]
     dq_bounds: tuple[float, float] = (0.0, 0.012)  # [Å^-1] resolution sigma
+    dq_rel_bounds: tuple[float, float] = (0.0, 0.05)  # relative resolution dq/q
     kalpha2_ratio_bounds: tuple[float, float] = (0.0, 0.6)  # Kα2/Kα1 intensity ratio
     kalpha2_wavelength: float = 1.54439  # [A] Cu Kα2 (same as generator)
     # footprint effective scale s: factor = erf(s·sinθ). Large s -> erf≈1 -> attenuation off.
@@ -158,6 +171,7 @@ class RefineConfig:
     # Initial values
     bkg_init: float = -7.0
     dq_init: float = 0.002
+    dq_rel_init: float = 0.01  # mid lab range (Cu + Göbel mirror ~0.5-2 % dq/q)
     kalpha2_ratio_init: float = 0.5  # start near the Cu physical value
     footprint_init: float = 2000.0  # start at weak attenuation (data shrinks it if needed)
     oxide_thickness_init: float = 5.0
@@ -191,7 +205,7 @@ def _stage_effects(opt_keys: list[str]) -> set[str]:
     eff: set[str] = set()
     if "tth_offset" in opt_keys:
         eff.add("tth_offset")
-    if "dq" in opt_keys:
+    if "dq" in opt_keys or "dq_rel" in opt_keys:
         eff.add("dq")
     if "kalpha2_ratio" in opt_keys:
         eff.add("kalpha2")
@@ -218,9 +232,12 @@ def make_forward(
     substrate = substrate.to(device).float()
     Q = q_grid.shape[0]
     abeles = AbelesMatrix(device=device)
-    # Grid spacing / kernel half-width for resolution smearing (fixed to max dq).
+    # Grid spacing / kernel half-width for resolution smearing (fixed to the largest sigma).
     grid_dq = (q_grid[-1] - q_grid[0]).abs() / max(Q - 1, 1)
-    max_half = max(int(min(math.ceil(3.0 * config.dq_bounds[1] / grid_dq.item()), Q // 4)), 1)
+    sigma_max = config.dq_bounds[1]
+    if config.fit_dq_rel:
+        sigma_max = math.hypot(sigma_max, config.dq_rel_bounds[1] * q_grid.abs().max().item())
+    max_half = max(int(min(math.ceil(3.0 * sigma_max / grid_dq.item()), Q // 4)), 1)
 
     def _smear(R: Tensor, dq: Tensor) -> Tensor:
         """Differentiable Gaussian q-smearing. dq(B,) = sigma in q units. Kernel width is fixed."""
@@ -232,6 +249,35 @@ def make_forward(
         inp = F.pad(R.unsqueeze(0), (max_half, max_half), mode="replicate")  # (1, B, Q+2h)
         out = F.conv1d(inp, kernel.unsqueeze(1), groups=B)  # (1, B, Q)
         return out.squeeze(0)
+
+    def _smear_varying(R: Tensor, sigma: Tensor) -> Tensor:
+        """Gaussian q-smearing with a sigma(B, Q) [Å^-1] that varies along q, evaluated at each
+        output q like ``benchmark.smeared``. With a constant sigma it equals ``_smear``.
+
+        The weights are (B, Q, K), so the kernel reaches only 5 sigma of the current largest sigma
+        (the tail beyond is below 1e-6) and chunks of curves are checkpointed: their weights are
+        recomputed in backward instead of being kept for the whole batch.
+        """
+        half = max(1, min(max_half, math.ceil(5.0 * float(sigma.detach().max()) / grid_dq.item())))
+        xs = torch.arange(-half, half + 1, device=device, dtype=R.dtype)
+
+        def smear_chunk(r: Tensor, s: Tensor) -> Tensor:
+            sigma_px = (s / grid_dq).clamp_min(1e-3).unsqueeze(-1)  # (b, Q, 1)
+            weights = torch.exp(-0.5 * (xs / sigma_px) ** 2)  # (b, Q, K)
+            weights = weights / weights.sum(-1, keepdim=True)
+            padded = F.pad(r.unsqueeze(0), (half, half), mode="replicate").squeeze(0)
+            return torch.einsum("bqk,bqk->bq", padded.unfold(-1, 2 * half + 1, 1), weights)
+
+        chunks = [
+            checkpoint(
+                smear_chunk,
+                R[i : i + _SMEAR_CHUNK],
+                sigma[i : i + _SMEAR_CHUNK],
+                use_reentrant=False,
+            )
+            for i in range(0, R.shape[0], _SMEAR_CHUNK)
+        ]
+        return torch.cat(chunks)
 
     def simulate(vals: dict[str, Tensor], active: set[str]) -> Tensor:
         """Film+substrate(+oxide) parameters -> reflectivity. Applies only nuisance effects in `active`."""
@@ -278,7 +324,11 @@ def make_forward(
             arg = vals["footprint"].unsqueeze(-1) * sin_theta.clamp_min(0.0)
             R = R * torch.erf(arg)
 
-        if config.fit_dq and "dq" in active:
+        if config.fit_dq_rel and "dq" in active:
+            dq = vals["dq"] if config.fit_dq else torch.zeros_like(vals["dq_rel"])
+            sigma = torch.sqrt(dq.unsqueeze(1) ** 2 + (vals["dq_rel"].unsqueeze(1) * q_grid) ** 2)
+            R = _smear_varying(R, sigma)
+        elif config.fit_dq and "dq" in active:
             R = _smear(R, vals["dq"])
 
         return R * vals["i0"].unsqueeze(-1) + torch.pow(10.0, vals["bkg"]).unsqueeze(-1)
@@ -337,6 +387,7 @@ def refine(
     bounds["bkg"] = _scalar_bounds(config.bkg_bounds)
     bounds["tth_offset"] = _scalar_bounds(config.tth_offset_bounds)
     bounds["dq"] = _scalar_bounds(config.dq_bounds)
+    bounds["dq_rel"] = _scalar_bounds(config.dq_rel_bounds)
     bounds["kalpha2_ratio"] = _scalar_bounds(config.kalpha2_ratio_bounds)
     bounds["footprint"] = _scalar_bounds(config.footprint_bounds)
     bounds["oxide_thickness"] = _scalar_bounds(config.oxide_thickness_bounds)
@@ -355,6 +406,7 @@ def refine(
         "bkg": _full(config.bkg_init),
         "tth_offset": zeros.clone(),
         "dq": _full(config.dq_init),
+        "dq_rel": _full(config.dq_rel_init),
         "kalpha2_ratio": _full(config.kalpha2_ratio_init),
         "footprint": _full(config.footprint_init),
         "oxide_thickness": _full(config.oxide_thickness_init),
@@ -368,6 +420,10 @@ def refine(
         flag = _NUISANCE_FLAG.get(key)
         return bool(getattr(config, flag)) if flag else False
 
+    penalized = {
+        k: v for k, v in _PENALIZE_NEUTRAL.items() if not (config.fit_dq_rel and k == "dq")
+    }
+
     def _reg(vals: dict[str, Tensor], keys: list[str]) -> Tensor:
         """Occam prior: L2 penalty pulling risky nuisances under optimization toward
         their neutral (off) value.
@@ -378,7 +434,7 @@ def refine(
         total = q_grid.new_zeros(())
         if config.nuisance_reg <= 0.0:
             return total
-        for k, neutral in _PENALIZE_NEUTRAL.items():
+        for k, neutral in penalized.items():
             if k in keys:
                 lo, hi = bounds[k]
                 total = total + (((vals[k] - neutral) / (hi - lo)) ** 2).mean()
@@ -456,7 +512,7 @@ def refine(
     with torch.no_grad():
         info["r_fit"] = simulate(cur, active).detach()
     # Also return the fitted nuisance values (only the active ones).
-    for k in ("i0", "bkg", "tth_offset", "dq", "kalpha2_ratio", "footprint", *OXIDE_KEYS):
+    for k in ("i0", "bkg", "tth_offset", "dq", "dq_rel", "kalpha2_ratio", "footprint", *OXIDE_KEYS):
         if _enabled(k):
             info[k] = cur[k].detach()
     # What a posterior sampler needs to continue from here: the full state, the effects that are on,
