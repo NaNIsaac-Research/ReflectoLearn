@@ -2,9 +2,8 @@
 quietly.
 
 ``predict.preprocess_measured`` is the step every measured curve takes. The curve here is a
-synthetic Parratt reflectivity on 300 points from 0.01 to 0.4 1/A, scaled to counts. Cases the code
-does not handle yet are strict xfails tied to ReflectoLearn#16, so a fix turns them into failures
-that prompt removing the marker.
+synthetic Parratt reflectivity on 300 points from 0.01 to 0.4 1/A, scaled to counts. The cases
+below were found silently wrong in ReflectoLearn#16.
 """
 
 import warnings
@@ -59,7 +58,6 @@ def test_a_nan_point_is_treated_as_unmeasured(cfg, curve):
     assert 0 < ref.sum() - mask.sum() < 10  # only the grid points next to the NaN drop out
 
 
-@pytest.mark.xfail(strict=True, reason="ReflectoLearn#16: descending q drops the whole curve")
 def test_a_descending_scan_gives_the_same_input_as_an_ascending_one(cfg, curve):
     q, counts = curve
     assert _same(
@@ -68,7 +66,6 @@ def test_a_descending_scan_gives_the_same_input_as_an_ascending_one(cfg, curve):
     )
 
 
-@pytest.mark.xfail(strict=True, reason="ReflectoLearn#16: unsorted q scrambles the curve")
 def test_an_unsorted_scan_is_sorted_or_rejected(cfg, curve):
     q, counts = curve
     order = np.random.default_rng(0).permutation(q.size)
@@ -79,24 +76,36 @@ def test_an_unsorted_scan_is_sorted_or_rejected(cfg, curve):
     assert _same(got, preprocess_measured(q, counts, cfg, CPU))
 
 
-@pytest.mark.xfail(strict=True, reason="ReflectoLearn#16: swapped arguments pass silently")
 def test_swapped_arguments_are_rejected(cfg, curve):
     q, counts = curve
     with pytest.raises(ValueError):
         preprocess_measured(counts, q, cfg, CPU)
 
 
-@pytest.mark.xfail(
-    strict=True, reason="ReflectoLearn#16: no overlap with the q grid passes silently"
-)
 def test_a_scan_outside_the_q_grid_is_rejected(cfg, curve):
     q, counts = curve
     with pytest.raises(ValueError):
         preprocess_measured(q + 5.0, counts, cfg, CPU)
 
 
-@pytest.mark.xfail(strict=True, reason="ReflectoLearn#16: negative counts are clipped silently")
 def test_negative_counts_are_flagged(cfg, curve):
     q, counts = curve
     with pytest.warns(UserWarning, match="negative"):
         preprocess_measured(q, counts - 0.5 * counts.max(), cfg, CPU)
+
+
+def test_repeated_q_values_are_averaged(cfg, curve):
+    """Overlapping segments of a multi-range scan repeat q; the points are averaged."""
+    q, counts = curve
+    twice = np.r_[q[:200], q[150:]], np.r_[counts[:200], 3 * counts[150:]]
+    with pytest.warns(UserWarning, match="50 points share a q value"):
+        got = preprocess_measured(*twice, cfg, CPU)
+    merged = np.r_[counts[:150], 2 * counts[150:200], 3 * counts[200:]]
+    assert _same(got, preprocess_measured(q, merged, cfg, CPU))
+
+
+def test_swapped_arguments_with_normalised_reflectivity_are_rejected(cfg, curve):
+    """R already in 0-1 overlaps the q grid, so the range check alone cannot catch the swap."""
+    q, counts = curve
+    with pytest.raises(ValueError, match="argument order"):
+        preprocess_measured(counts / counts.max(), q, cfg, CPU)
