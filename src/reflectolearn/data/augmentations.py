@@ -8,11 +8,24 @@ drawn fresh here, since the streaming generator calls this once per batch.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 import torch
 import torch.nn.functional as F
 
 from reflectolearn.config import Config
+
+
+@dataclass
+class AugmentDraw:
+    """One batch's instrument effects; None where the effect's gate was off."""
+
+    beam_width: float | None = None  # [mm] FWHM
+    sample_len: float | None = None  # [mm]
+    sigma: float | None = None  # [Å^-1] resolution σ
+    i0: torch.Tensor | None = None  # (B, 1)
+    bkg: torch.Tensor | None = None  # (B, 1) log10
+    poisson_scale: torch.Tensor | None = None  # (B, 1) counts at R = 1
 
 
 class XRRAugmentor:
@@ -79,51 +92,54 @@ class XRRAugmentor:
         out = F.conv1d(inp, kernel)  # (B, 1, Q)
         return out.squeeze(1)
 
-    def forward(self, q: torch.Tensor, R: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Apply instrument effects.
-
-        R: (B, Q) linear -> returns (R, mask):
-          R    : (B, Q) linear, instrument effects applied (still > 0)
-          mask : (B, Q) in {0, 1}; 0 marks angles that were NOT measured
-                 (low/high-angle cutoff). The generator uses this to fill the
-                 masked region with the log-floor (-15) consistently, exactly
-                 like the offline exp07 pipeline.
-        """
-        R = R.to(torch.float32)
-        B, Q = R.shape
-        device = R.device
-        q = q.to(R.dtype).to(device)
-        mask = torch.ones(B, Q, device=device, dtype=R.dtype)
-
+    def draw(self, B: int, device) -> AugmentDraw:
+        """Draw the instrument effects of one batch (gates and values), in the order `forward`
+        always drew them, so a seed gives the same batch whichever engine applies them."""
+        d = AugmentDraw()
         # 1. Footprint attenuation (low-angle geometric correction)
         if self.do_footprint and self._maybe():
-            beam_width = self._u(*self.beam_width_range)
-            sample_len = self._u(*self.sample_len_range)
-            R = self._footprint(q, R, beam_width, sample_len)
-
+            d.beam_width = self._u(*self.beam_width_range)
+            d.sample_len = self._u(*self.sample_len_range)
         # 2. Resolution smearing (Gaussian convolution in q)
         if self._maybe():
-            sigma = self._u(*self.res_sigma_range)
-            R = self._smear(q, R, sigma)
-
+            d.sigma = self._u(*self.res_sigma_range)
         # 3. Intensity scale i0 (per-sample multiplicative)
         if self._maybe():
-            i0 = torch.empty(B, 1, device=device).uniform_(*self.i0_range)
-            R = R * i0
-
+            d.i0 = torch.empty(B, 1, device=device).uniform_(*self.i0_range)
         # 4. Additive background (per-sample, 10**bkg with bkg in log10)
         if self._maybe():
-            bkg_log = torch.empty(B, 1, device=device).uniform_(*self.bkg_range)
-            R = R + torch.pow(torch.tensor(10.0), bkg_log)
+            d.bkg = torch.empty(B, 1, device=device).uniform_(*self.bkg_range)
+        # 5. Poisson counting scale (the counts themselves are drawn in `noise_and_mask`)
+        if self._maybe():
+            d.poisson_scale = torch.pow(
+                torch.tensor(10.0),
+                torch.empty(B, 1, device=device).uniform_(*self.poisson_log_scale),
+            )
+        return d
+
+    def apply(self, q: torch.Tensor, R: torch.Tensor, d: AugmentDraw) -> torch.Tensor:
+        """Footprint, grid convolution, i0 and background of a draw on linear R (B, Q)."""
+        if d.beam_width is not None:
+            R = self._footprint(q, R, d.beam_width, d.sample_len)
+        if d.sigma is not None:
+            R = self._smear(q, R, d.sigma)
+        if d.i0 is not None:
+            R = R * d.i0
+        if d.bkg is not None:
+            R = R + torch.pow(torch.tensor(10.0), d.bkg)
+        return R
+
+    def noise_and_mask(self, R: torch.Tensor, d: AugmentDraw) -> tuple[torch.Tensor, torch.Tensor]:
+        """Poisson counts of a draw, then the low/high-angle mask (drawn here, after the counts)."""
+        B, Q = R.shape
+        device = R.device
+        mask = torch.ones(B, Q, device=device, dtype=R.dtype)
 
         # 5. Poisson counting noise (counts = R*s -> sample -> rescale).
         #    s must be large (1e5~1e8); otherwise R(~1e-6) gives lam~0 and the
         #    high-q signal is destroyed. s is per-sample (signal-dependent SNR).
-        if self._maybe():
-            s = torch.pow(
-                torch.tensor(10.0),
-                torch.empty(B, 1, device=device).uniform_(*self.poisson_log_scale),
-            )
+        if d.poisson_scale is not None:
+            s = d.poisson_scale
             lam = (R * s).clamp_min(0.0)
             R = torch.poisson(lam) / s
 
@@ -140,3 +156,18 @@ class XRRAugmentor:
         # Guarantee finite, non-negative output
         R = torch.nan_to_num(R, nan=0.0, posinf=0.0, neginf=0.0).clamp_min(0.0)
         return R, mask
+
+    def forward(self, q: torch.Tensor, R: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Apply instrument effects.
+
+        R: (B, Q) linear -> returns (R, mask):
+          R    : (B, Q) linear, instrument effects applied (still > 0)
+          mask : (B, Q) in {0, 1}; 0 marks angles that were NOT measured
+                 (low/high-angle cutoff). The generator uses this to fill the
+                 masked region with the log-floor (-15) consistently, exactly
+                 like the offline exp07 pipeline.
+        """
+        R = R.to(torch.float32)
+        q = q.to(R.dtype).to(R.device)
+        d = self.draw(R.shape[0], R.device)
+        return self.noise_and_mask(self.apply(q, R, d), d)

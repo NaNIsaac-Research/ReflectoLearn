@@ -47,6 +47,22 @@ Then instrument effects, each switched on for a batch with probability `prob` (0
 The curve is then normalized to its maximum and taken as log10; the masked points are set to a fixed
 floor so the network sees one consistent "no data" value.
 
+## Engine
+
+`simulation.engine` picks how the curves are computed from the same draws. `legacy` (the default)
+is the Abeles engine above in complex64 with the augmentor's convolution on the q grid.
+`reflectofit` computes them with [ReflectoFit](https://github.com/NaNIsaac/ReflectoFit) in float64,
+with footprint and resolution inside the forward model at `simulation.resolution_nodes` nodes per
+point; `reflectolearn train` writes the engine and the error of that node count to
+`data_engine.json` in the run directory. Without resolution the two engines differ only by the
+precision of the legacy engine (up to 7 % in deep minima of thick films, median 5e-5).
+With resolution, a fixed node count is not yet accurate at the critical edges of non-absorbing
+films (0.26 relative at 27 nodes, 0.037 at 61), so do not train on it until ReflectoFit#6 is fixed.
+
+A seed reproduces a batch only on the same engine and settings: torch.poisson draws a number of
+random numbers that depends on the expected counts, so any change to the curves moves every draw
+made after the counts (the mask, and the following batches).
+
 ## The network
 
 `XRRPhysicsModel` takes two channels, the log10 curve and its mask, adds random Fourier features of q,
