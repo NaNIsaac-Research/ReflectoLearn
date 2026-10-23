@@ -50,11 +50,15 @@ def input_contract(cfg: Config) -> dict:
                 "unit": "1/Angstrom",
             },
             "preprocess": [
-                "interpolate the intensity linearly onto q_grid; points outside the measured q "
-                "range are unmeasured (mask 0)",
+                (
+                    "interpolate the intensity linearly onto q_grid; points outside the measured q "
+                    "range are unmeasured (mask 0)"
+                ),
                 "clip the intensity at 0 and divide by its maximum over the measured points",
-                "R = max(that, 1e-15); channel 0 = min(log10 R, 0) where measured, log_floor "
-                "elsewhere",
+                (
+                    "R = max(that, 1e-15); channel 0 = min(log10 R, 0) where measured, log_floor "
+                    "elsewhere"
+                ),
             ],
             "log_floor": float(LOG_FLOOR),
         },
