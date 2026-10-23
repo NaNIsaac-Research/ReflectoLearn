@@ -21,7 +21,10 @@ Pre-registered (written before the reflectofit engine existed; seeds differ from
      legacy erf factor within 1e-10.
   6. Same seed twice gives the same batch, bit for bit, for both engines.
 A failure is reported as a failure; the tolerances are not widened after the run.
-First run: all held except 2 with the augmentor (see test_with_the_augmentor_only_the_draws_before_the_counts_match).
+First run: all held except 2 with the augmentor (see test_with_the_augmentor_the_draws_before_the_counts_match).
+Added after the review on ReflectoLearn#37, before running them: each branch of the draws (no oxide,
+oxide always, no Kα2, no offset) for 1-3; the augmentor draws and the RNG state at the counts for 2;
+the augmented curve against the frozen augmentor, bounded as 4 (test_augmented_curve_against_the_frozen_augmentor).
 """
 
 import math
@@ -65,9 +68,38 @@ def _film(cfg, n=B):
     return u(pr.thickness), u(pr.roughness), u(pr.sld), u(sub.sld), u(sub.roughness)
 
 
+# Each branch of draw_media on its own (review on ReflectoLearn#37): no oxide, oxide always
+# (with the inert-oxide rows of the default only by chance), no Kα2, no offset.
+BRANCHES = {
+    "default": {},
+    "no oxide": {"oxide_prob": 0.0},
+    "oxide always": {"oxide_prob": 1.0},
+    "no Kalpha2": {"kalpha2_ratio": 0.0},
+    "no offset": {"tth_offset": [0.0, 0.0]},
+}
+
+
+class Recording(XRRAugmentor):
+    """An augmentor that keeps its draws and the RNG state at the start of the counts."""
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.draws, self.states = [], []
+
+    def draw(self, B, device):
+        d = super().draw(B, device)
+        self.draws.append(d)
+        return d
+
+    def noise_and_mask(self, R, d):
+        self.states.append(torch.get_rng_state())
+        return super().noise_and_mask(R, d)
+
+
+@pytest.mark.parametrize("branch", BRANCHES)
 @pytest.mark.parametrize("augment", [False, True])
-def test_legacy_engine_is_the_frozen_generator(augment):
-    cfg = _config("legacy")
+def test_legacy_engine_is_the_frozen_generator(augment, branch):
+    cfg = _config("legacy", **BRANCHES[branch])
     q = cfg.q_grid
     new, state_new = _batch(
         lambda: generate_synthetic_batch(cfg, B, XRRAugmentor(cfg, q) if augment else None)
@@ -82,24 +114,33 @@ def test_legacy_engine_is_the_frozen_generator(augment):
     assert torch.equal(state_new, state_old)
 
 
-def test_reflectofit_engine_draws_what_the_legacy_one_draws():
-    legacy, fit = _config("legacy"), _config("reflectofit")
-    (x_old, y_old), state_old = _batch(lambda: generate_synthetic_batch(legacy, B))
-    (x_new, y_new), state_new = _batch(lambda: generate_synthetic_batch(fit, B))
+@pytest.mark.parametrize("branch", BRANCHES)
+def test_reflectofit_engine_draws_what_the_legacy_one_draws(branch):
+    legacy, fit = _config("legacy", **BRANCHES[branch]), _config("reflectofit", **BRANCHES[branch])
+    (_, y_old), state_old = _batch(lambda: generate_synthetic_batch(legacy, B))
+    (_, y_new), state_new = _batch(lambda: generate_synthetic_batch(fit, B))
+    # without the augmentor the mask is all ones: the targets and the RNG state carry the check
     assert torch.equal(y_new, y_old)
-    assert torch.equal(x_new[:, 1], x_old[:, 1])  # mask channel
     assert torch.equal(state_new, state_old)
 
 
-def test_with_the_augmentor_only_the_draws_before_the_counts_match():
+def test_with_the_augmentor_the_draws_before_the_counts_match():
     # Criterion 2 with the augmentor was falsified on the first run: torch.poisson draws a number
     # of uniforms that depends on lambda, so a different curve leaves the RNG elsewhere and the
-    # mask, drawn after the counts, differs. The targets are drawn before the counts and match.
+    # mask, drawn after the counts, differs. Everything drawn before the counts matches: the
+    # targets, the augmentor's draws and the RNG state at the start of the counts.
     legacy, fit = _config("legacy"), _config("reflectofit")
     q = legacy.q_grid
-    (_, y_old), _ = _batch(lambda: generate_synthetic_batch(legacy, B, XRRAugmentor(legacy, q)))
-    (_, y_new), _ = _batch(lambda: generate_synthetic_batch(fit, B, XRRAugmentor(fit, q)))
+    aug_old, aug_new = Recording(legacy, q), Recording(fit, q)
+    (_, y_old), _ = _batch(lambda: generate_synthetic_batch(legacy, B, aug_old))
+    (_, y_new), _ = _batch(lambda: generate_synthetic_batch(fit, B, aug_new))
     assert torch.equal(y_new, y_old)
+    (d_old,), (d_new,) = aug_old.draws, aug_new.draws
+    for name in ("beam_width", "sample_len", "sigma", "i0", "bkg", "poisson_scale"):
+        a, b = getattr(d_old, name), getattr(d_new, name)
+        assert (a is None) == (b is None), name
+        assert a is None or (torch.equal(a, b) if isinstance(a, torch.Tensor) else a == b), name
+    assert torch.equal(aug_new.states[0], aug_old.states[0])
 
 
 def _legacy_model_c128(cfg, q, media):
@@ -126,11 +167,15 @@ def _legacy_model_c128(cfg, q, media):
     return out
 
 
-def test_reflectofit_curve_is_the_legacy_model_in_double_precision():
-    cfg = _config("reflectofit")
+@pytest.mark.parametrize("branch", BRANCHES)
+def test_reflectofit_curve_is_the_legacy_model_in_double_precision(branch):
+    cfg = _config("reflectofit", **BRANCHES[branch])
     q = cfg.q_grid
     torch.manual_seed(SEED)
     media = draw_media(cfg, *_film(cfg), "cpu")
+    inert = media.thickness[:, 1] == 0
+    if branch == "default":  # both oxide branches occur in this batch
+        assert 0 < int(inert.sum()) < B
     got = reflectofit_curve(cfg, q, media)
     np.testing.assert_allclose(got.numpy(), _legacy_model_c128(cfg, q, media).numpy(), rtol=1e-10)
 
@@ -155,6 +200,29 @@ def test_precision_change_against_the_shipped_legacy_generator():
     new, _ = _batch(lambda: simulate_reflectivity(fit, q, *_film(fit), "cpu"))
     old, _ = _batch(lambda: ref_gen.simulate_reflectivity(legacy, q, *_film(legacy), "cpu"))
     rel = (new.double() / old.double() - 1).abs()
+    assert rel.max() <= 0.1
+    assert rel.median() <= 1e-3
+
+
+def test_augmented_curve_against_the_frozen_augmentor(monkeypatch):
+    # Added after the review on ReflectoLearn#37, before running it: with resolution and offset
+    # off, the reflectofit engine's curve before noise against the frozen augmentor on the frozen
+    # legacy curve (footprint, i0, background in its order and units), bounded as criterion 4.
+    # The frozen augmentor cannot skip its counts, so its torch.poisson returns the expected counts
+    # here (first attempt, 1e30 counts at R = 1, gave zeros: float32 torch.poisson overflows).
+    aug = {"prob": 1.0, "tth_offset": [0.0, 0.0], "res_sigma_range": [0.0, 0.0]}
+    monkeypatch.setattr(ref_aug.torch, "poisson", lambda lam: lam)
+    fit, legacy = _config("reflectofit", **aug), _config("legacy", **aug)
+    q = fit.q_grid
+    torch.manual_seed(SEED)
+    film = _film(fit)
+    media = draw_media(fit, *film, "cpu")
+    new = reflectofit_curve(fit, q, media, XRRAugmentor(fit, q).draw(B, "cpu"))
+    torch.manual_seed(SEED)
+    film = _film(legacy)
+    r = ref_gen.simulate_reflectivity(legacy, q, *film, "cpu")
+    old, _ = ref_aug.XRRAugmentor(legacy, q).forward(q, r)
+    rel = (new / old.double() - 1).abs()
     assert rel.max() <= 0.1
     assert rel.median() <= 1e-3
 
