@@ -319,8 +319,9 @@ A cell is one (layer class, noise level); there are 6 cells of 16 truths × 4 st
 
 1. A1 wins on BIC on at least 25 % of truths (4 of 16);
 2. a one-sided sign test of truth wins against truth losses (ties dropped) gives p < 0.01. Without
-   ties that needs 14 of 16 (13–3 gives 0.011); with ties fewer wins can pass (7–0 gives 0.0078), and
-   rule 1 then still asks for 4 wins. With M = 8 truths (6.6), 7–0 or 8–0;
+   ties that needs 14 of 16 (13–3 gives 0.011). With ties the fewest wins that pass are 7–0
+   (p = 0.0078; 6–0 gives 0.016), so whenever rule 2 holds rule 1 holds too; rule 1 is kept as stated
+   but never decides. With M = 8 truths (6.6), 7–0 or 8–0;
 3. A1 loses on held-out on at most 10 % of truths (1 of 16; 0 of 8).
 
 The two noise cells of a class share their truths and starts, so "two of four cells" below can be the
