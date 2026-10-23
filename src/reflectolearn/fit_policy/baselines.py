@@ -52,22 +52,30 @@ def full_fit(
     y_ho=None,
     budget: int = BUDGET,
 ) -> dict:
-    """C: for L = 1..L_MAX, the start's layer over extra[:L-1], every parameter free, Poisson
-    deviance, budget / L_MAX evaluations each; the lowest BIC is returned."""
+    """C: the start's layer after A1 steps 2–3 (estimate_rho, estimate_d) over extra[:L-1] for
+    L = 1..L_MAX, every parameter free, Poisson deviance, budget / L_MAX evaluations each; the lowest
+    BIC is returned. "capped" is whether the returned fit stopped at its evaluation cap (6.5)."""
+    top = data_start(start, q, y, scale)
     fits = []
     for L in range(1, L_MAX + 1):
-        stack = Stack(np.vstack([start.layers, extra[: L - 1]]), start.instr.copy())
-        fitted, used, status = st.fit(
-            stack, np.ones(stack.n_params, bool), q, y, scale, "poisson", budget // L_MAX
+        stack = Stack(np.vstack([top.layers, extra[: L - 1]]), top.instr.copy())
+        fits.append(
+            st.fit(stack, np.ones(stack.n_params, bool), q, y, scale, "poisson", budget // L_MAX)
         )
-        fits.append((fitted, used, status))
-    scores = [_score(f, q, y, scale, q_ho, y_ho) for f, _, _ in fits]
+    scores = [_score(f[0], q, y, scale, q_ho, y_ho) for f in fits]
     best = int(np.argmin([s["bic"] for s in scores]))
     return scores[best] | {
-        "evaluations": sum(u for _, u, _ in fits),
-        "capped": [status == 0 for _, _, status in fits],
+        "evaluations": sum(f[1] for f in fits),
+        "jacobians": sum(f[2] for f in fits),
+        "capped": fits[best][3] == 0,
+        "capped_by_L": [f[3] == 0 for f in fits],
         "bic_by_L": [s["bic"] for s in scores],
     }
+
+
+def data_start(start: Stack, q: np.ndarray, y: np.ndarray, scale: float) -> Stack:
+    """A one-layer start after A1 steps 2–3, as C and C_oracle use it (amendment 3)."""
+    return st.estimate_d(st.estimate_rho(start, q, y), q, y, scale)
 
 
 def oracle_fit(
@@ -82,13 +90,18 @@ def oracle_fit(
     y_ho=None,
     budget: int = BUDGET,
 ) -> dict:
-    """C_oracle: the true layer count, every parameter free, Poisson, the whole budget. Uses the
-    truth; reported, never in a verdict."""
-    stack = Stack(np.vstack([start.layers, extra[: n_true - 1]]), start.instr.copy())
-    fitted, used, status = st.fit(
+    """C_oracle: C's start, the true layer count, every parameter free, Poisson, the whole budget.
+    Uses the truth; reported, never in a verdict."""
+    top = data_start(start, q, y, scale)
+    stack = Stack(np.vstack([top.layers, extra[: n_true - 1]]), top.instr.copy())
+    fitted, nfev, njev, status = st.fit(
         stack, np.ones(stack.n_params, bool), q, y, scale, "poisson", budget
     )
-    return _score(fitted, q, y, scale, q_ho, y_ho) | {"evaluations": used, "capped": [status == 0]}
+    return _score(fitted, q, y, scale, q_ho, y_ho) | {
+        "evaluations": nfev,
+        "jacobians": njev,
+        "capped": status == 0,
+    }
 
 
 REFINE_RANGES = SimpleNamespace(thickness=(10.0, 1200.0), roughness=(0.0, 15.0), sld=(5.0, 100.0))

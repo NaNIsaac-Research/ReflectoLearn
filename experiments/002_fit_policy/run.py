@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import subprocess
 import time
 from multiprocessing import Pool
 from pathlib import Path
@@ -40,7 +41,7 @@ CLASSES = (1, 2, 3)
 N_TRUTHS = 16
 N_NOISE_REALISATIONS = 20
 METHODS = (*VARIANTS, "B", "C", "Co", "Cr", "C2E")
-TIMING_CLASS = 9  # unregistered seed (20261024, 9, 0) for the timing pilot (section 6.6)
+TIMING_CLASS = 9  # timing pilot (6.6): truths (n, 1000 + n), starts and random seeds of class 9
 
 
 def units(n_truths: int = N_TRUTHS) -> list[tuple[int, int, int, int]]:
@@ -50,18 +51,34 @@ def units(n_truths: int = N_TRUTHS) -> list[tuple[int, int, int, int]]:
 
 
 def data(n: int, j: int, s: int):
-    """Training and held-out (q, y) of truth (n, j) at noise level s, and the truth."""
-    truth = st.sample_truth(n, j)
+    """Training and held-out (q, y) of truth (n, j) at noise level s."""
     q = st.q_grid()
     held = st.held_out_mask(q)
-    y = st.noisy_counts(st.counts(truth, q, st.NOISE_SCALES[s]), n, j, s)
-    return truth, q[~held], y[~held], q[held], y[held]
+    y = st.noisy_counts(st.counts(st.sample_truth(n, j), q, st.NOISE_SCALES[s]), n, j, s)
+    return q[~held], y[~held], q[held], y[held]
+
+
+def frozen_commit() -> str:
+    """The commit the registered episodes run at (DESIGN.md section 6, freeze). Refuses to run with
+    uncommitted changes outside the run records."""
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", ".", ":(exclude)docs/fit_policy/runs"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    if dirty:
+        raise SystemExit(f"uncommitted changes, not a frozen commit:\n{dirty}")
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.strip()
 
 
 def episode(method: str, n: int, j: int, s: int, k: int, seed_class: int | None = None) -> dict:
     """One episode. seed_class replaces n in the start and random seeds (timing pilot only)."""
     torch.set_num_threads(1)
-    truth, q, y, q_ho, y_ho = data(n, j, s)
+    q, y, q_ho, y_ho = data(n, j, s)
     sc = n if seed_class is None else seed_class
     start = st.starts(sc, j)[k]
     extra = st.extra_layers(sc, j)[k]
@@ -104,6 +121,8 @@ def _done(path: Path) -> set[tuple[int, int, int, int]]:
 
 
 def run_episodes(methods: list[str], workers: int, n_truths: int, classes: list[int]) -> None:
+    commit = frozen_commit()
+    print(f"commit {commit}")
     RUNS.mkdir(parents=True, exist_ok=True)
     jobs = []
     for m in methods:
@@ -116,7 +135,7 @@ def run_episodes(methods: list[str], workers: int, n_truths: int, classes: list[
     with Pool(workers) as pool:
         for i, rec in enumerate(pool.imap_unordered(_episode, jobs), 1):
             with (RUNS / f"{rec['method']}.jsonl").open("a", encoding="utf-8") as f:
-                f.write(json.dumps(rec) + "\n")
+                f.write(json.dumps(rec | {"commit": commit}) + "\n")
             if i % 20 == 0 or i == len(jobs):
                 print(
                     f"{i}/{len(jobs)} {rec['method']} n{rec['n']} j{rec['j']} {rec['seconds']:.0f}s",

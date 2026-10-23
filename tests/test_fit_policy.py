@@ -10,6 +10,7 @@ import torch
 from reflectolearn.benchmark import parratt
 from reflectolearn.fit_policy import A1, FitEnv, Stack, run_protocol
 from reflectolearn.fit_policy import stack as st
+from reflectolearn.fit_policy.baselines import data_start
 from reflectolearn.refine import RefineConfig, make_forward
 
 TRILAYER = Stack(
@@ -126,6 +127,30 @@ def test_add_and_budget():
     env.step(("fit", 100))
     assert env.episode.used <= 30
     assert env.done
+
+
+def test_c_starts_where_a1_steps_2_3_leave_the_start():
+    """Amendment 3: C's start is the one-layer start after estimate_rho and estimate_d."""
+    start = st.starts(2, 0)[0]
+    env = _env(start)
+    env.step(("estimate_rho",))
+    env.step(("estimate_d",))
+    np.testing.assert_array_equal(
+        data_start(start, env.q, env.y, env.scale).vector(), env.state.stack.vector()
+    )
+
+
+def test_rewards_sum_to_the_returned_model():
+    """Section 4.6 with gamma = 1: the step rewards telescope to the best BIC visited, so the sum is
+    -(BIC of the returned model - BIC of the start) / n plus the held-out term."""
+    env = _env(st.starts(1, 1)[0], budget=200)
+    bic0 = env.bic
+    total = 0.0
+    for a in [("open_all", "d"), ("fit", 20), ("add", 1), ("fit", 100), ("split", 0), ("stop",)]:
+        if env.valid(a):
+            total += env.step(a)[0]
+    expected = -(env.episode.best_bic - bic0) / len(env.q) + env.terminal_reward()
+    assert total == pytest.approx(expected, rel=1e-9, abs=1e-9)
 
 
 def test_protocol_episode_is_reproducible():

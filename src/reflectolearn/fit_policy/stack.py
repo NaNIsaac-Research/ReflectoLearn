@@ -40,6 +40,9 @@ TTH_HELD_MIN = 0.5  # deg; below it every point stays in training
 HELD_BLOCKS = (2, 6)
 N_BLOCKS = 10
 
+QC_MARGIN = 1.05  # estimate_rho acts only if q_c exceeds the substrate's by this factor
+KIESSIG_RANGE = (20.0, 800.0)  # Å; three-layer truths reach 750 Å (amendment 2)
+
 LOSSES = ("log", "raw", "poisson")
 LOG_FLOOR_COUNTS = 0.5
 
@@ -199,12 +202,13 @@ def fit(
     scale: float,
     loss: str,
     max_nfev: int,
-) -> tuple[Stack, int, int]:
+) -> tuple[Stack, int, int, int]:
     """Trust-region least squares over the parameters where `free` (bool, Stack.vector() order) is
-    set, at most max_nfev evaluations. Returns (stack, evaluations used, least_squares status)."""
+    set, at most max_nfev evaluations. Returns (stack, nfev, njev, least_squares status); status 0
+    means nfev reached max_nfev. Every residual evaluation also computes the Jacobian at that point."""
     idx = np.flatnonzero(free)
     if idx.size == 0 or max_nfev <= 0:
-        return stack, 0, 0
+        return stack, 0, 0, 0
     lo_all, hi_all = stack.bounds()
     lo, hi = lo_all[idx], hi_all[idx]
     x_all = stack.vector()
@@ -250,7 +254,7 @@ def fit(
     )
     x_new = x_all.copy()
     x_new[idx] = res.x
-    return stack.with_vector(x_new), int(res.nfev), int(res.status)
+    return stack.with_vector(x_new), int(res.nfev), int(res.njev or 0), int(res.status)
 
 
 # ------------------------------------------------------------------ estimators
@@ -284,6 +288,28 @@ def kiessig_thickness(
         d_min=d_range[0],
     )
     return float(d[0])
+
+
+def estimate_rho(stack: Stack, q: np.ndarray, y: np.ndarray) -> Stack:
+    """Protocol A step 2 (`estimate_rho`): top-layer rho = q_c^2 / 16 pi from the data's critical q,
+    unless q_c is within QC_MARGIN of the substrate's."""
+    qc = critical_q(q, y)
+    if not (math.isfinite(qc) and qc > QC_MARGIN * 4 * math.sqrt(math.pi * SUB_SLD * 1e-6)):
+        return stack
+    layers = stack.layers.copy()
+    layers[0, 2] = qc**2 / (16 * math.pi) * 1e6
+    return Stack(layers, stack.instr.copy()).clipped()
+
+
+def estimate_d(stack: Stack, q: np.ndarray, y: np.ndarray, scale: float) -> Stack:
+    """Protocol A step 3 (`estimate_d`): scale every layer's d so that their sum is the Kiessig
+    thickness (computed with the top layer's rho); unchanged if there is none."""
+    total = kiessig_thickness(q, y, scale, stack.layers[0, 2], KIESSIG_RANGE)
+    if not math.isfinite(total):
+        return stack
+    layers = stack.layers.copy()
+    layers[:, 0] *= total / layers[:, 0].sum()
+    return Stack(layers, stack.instr.copy()).clipped()
 
 
 def fringe_spectrum(

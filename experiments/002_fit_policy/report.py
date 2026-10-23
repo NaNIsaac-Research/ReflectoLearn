@@ -52,34 +52,52 @@ def recovered(rec: dict, truth: st.Stack) -> bool:
     return bool(np.all(rel <= RECOVERY_TOL))
 
 
-def outcomes(x: dict, ref: dict, s_ho: float) -> tuple[int, int]:
-    """(BIC outcome, held-out outcome) of x against ref: +1 win, 0 tie, -1 loss (section 6.2)."""
-    d_bic = x["bic"] - ref["bic"]
-    d_ho = x["deviance_ho"] - ref["deviance_ho"]
-    o_bic = 1 if d_bic <= -BIC_BAND else -1 if d_bic >= BIC_BAND else 0
-    o_ho = 1 if d_ho <= -HO_BAND * s_ho else -1 if d_ho >= HO_BAND * s_ho else 0
-    return o_bic, o_ho
+def classify(d: float, band: float) -> int:
+    """+1 win (d <= -band), -1 loss (d >= band), 0 tie."""
+    return 1 if d <= -band else -1 if d >= band else 0
+
+
+def truth_outcomes(xs: dict, refs: dict, keys: list, noise: dict) -> list[tuple[int, int]]:
+    """Per truth of the cell: (BIC outcome, held-out outcome) of the medians over its starts of
+    ΔBIC and ΔD_ho (section 6.2, truth level). Truths with a missing episode are skipped."""
+    out = []
+    for truth_key in sorted({k[:3] for k in keys}):
+        ks = [k for k in keys if k[:3] == truth_key]
+        if not all(k in xs and k in refs for k in ks):
+            continue
+        d_bic = float(np.median([xs[k]["bic"] - refs[k]["bic"] for k in ks]))
+        d_ho = float(np.median([xs[k]["deviance_ho"] - refs[k]["deviance_ho"] for k in ks]))
+        s_ho = noise[f"{truth_key[0]},{truth_key[1]},{truth_key[2]}"]["s_ho"]
+        out.append((classify(d_bic, BIC_BAND), classify(d_ho, HO_BAND * s_ho)))
+    return out
 
 
 def beats(xs: dict, refs: dict, keys: list, noise: dict) -> dict:
-    """Section 6.3 for one cell."""
-    pairs = [k for k in keys if k in xs and k in refs]
-    res = [outcomes(xs[k], refs[k], noise[f"{k[0]},{k[1]},{k[2]}"]["s_ho"]) for k in pairs]
+    """Section 6.3 for one cell, at the truth level."""
+    res = truth_outcomes(xs, refs, keys, noise)
     n = len(res)
     wins = sum(b == 1 for b, _ in res)
     losses = sum(b == -1 for b, _ in res)
     ho_losses = sum(h == -1 for _, h in res)
     p = binomtest(wins, wins + losses, 0.5, alternative="greater").pvalue if wins + losses else 1.0
     ok = n > 0 and wins / n >= WIN_FRAC and p < SIGN_P and ho_losses / n <= HO_LOSS_FRAC
+    pairs = [k for k in keys if k in xs and k in refs]
+    episode_wins = [k for k in pairs if xs[k]["bic"] - refs[k]["bic"] <= -BIC_BAND]
     return {
-        "episodes": n,
+        "truths": n,
         "bic_wins": wins,
         "bic_losses": losses,
         "bic_ties": n - wins - losses,
-        "sign_p": p,
+        "sign_p": float(p),
         "ho_wins": sum(h == 1 for _, h in res),
         "ho_losses": ho_losses,
         "beats": bool(ok),
+        "episodes": len(pairs),
+        "episode_bic_wins": len(episode_wins),
+        # wins with the same layer count as the reference: convergence inside one basin (6.2)
+        "episode_bic_wins_same_L": sum(
+            xs[k]["n_layers"] == refs[k]["n_layers"] for k in episode_wins
+        ),
     }
 
 
@@ -98,12 +116,22 @@ def learning_room(variants: dict[str, dict], keys: list) -> dict:
     oracle_frac = float(np.mean(oracle - bics[:, single] <= -BIC_BAND))
     best = bics <= oracle[:, None] + TIE_BIC
     best_frac = best.mean(0)
+    # the same two fractions over truths (median over starts), for reference only (6.4)
+    truth_ids = sorted({k[:3] for k in keys})
+    tb = np.array(
+        [np.median(bics[[i for i, k in enumerate(keys) if k[:3] == t]], axis=0) for t in truth_ids]
+    )
+    t_oracle = tb.min(1)
     return {
         "episodes": len(keys),
         "best_single": VARIANT_NAMES[single],
         "oracle_win_frac": oracle_frac,
         "best_frac": dict(zip(VARIANT_NAMES, best_frac.tolist(), strict=True)),
         "room": bool(oracle_frac >= ORACLE_FRAC and best_frac.max() <= SINGLE_MAX),
+        "truth_oracle_win_frac": float(np.mean(t_oracle - tb[:, single] <= -BIC_BAND)),
+        "truth_best_frac": dict(
+            zip(VARIANT_NAMES, (tb <= t_oracle[:, None] + TIE_BIC).mean(0).tolist(), strict=True)
+        ),
     }
 
 
@@ -122,7 +150,8 @@ def mcnemar_less(a: dict, c: dict, keys: list, truths: dict) -> dict:
 
 
 def capped_frac(c: dict, keys: list) -> float:
-    flags = [f for k in keys if k in c for f in c[k]["capped"]]
+    """Fraction of the cell's returned C fits that stopped at their evaluation cap (6.5)."""
+    flags = [c[k]["capped"] for k in keys if k in c]
     return float(np.mean(flags)) if flags else float("nan")
 
 
@@ -209,15 +238,20 @@ def write_markdown(summary: dict, cells: dict) -> None:
         "",
         "## A1 against C, per cell",
         "",
-        "| cell | C capped | reference | BIC win / tie / loss | sign p | held-out win / loss | beats |",
-        "|---|---:|---|---|---:|---|---|",
+        "Outcomes are per truth (median over its starts). The last column counts episode-level BIC",
+        "wins and how many of them have the same layer count as C.",
+        "",
+        "| cell | C capped | reference | truth BIC win / tie / loss | sign p | "
+        "truth held-out win / loss | beats | episode wins (same L) |",
+        "|---|---:|---|---|---:|---|---|---|",
     ]
     for name, c in cells.items():
         b = c["A1_vs_C"]
         lines.append(
             f"| {name} | {c['c_capped_frac']:.2f} | {c['reference']} | "
             f"{b['bic_wins']} / {b['bic_ties']} / {b['bic_losses']} | {b['sign_p']:.2g} | "
-            f"{b['ho_wins']} / {b['ho_losses']} | {b['beats']} |"
+            f"{b['ho_wins']} / {b['ho_losses']} | {b['beats']} | "
+            f"{b['episode_bic_wins']} ({b['episode_bic_wins_same_L']}) |"
         )
     lines += ["", "## A1 against B (random floor)", ""]
     lines += [

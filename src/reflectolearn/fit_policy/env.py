@@ -30,8 +30,6 @@ N_BANDS = 8
 NEW_LAYER_SIGMA = 3.0
 NEW_LAYER_D = 50.0
 SPLIT_CONTRAST = 0.05
-QC_MARGIN = 1.05  # estimate_rho acts only if q_c exceeds the substrate's by this factor
-KIESSIG_RANGE = (20.0, 800.0)
 RESIDUAL_Z = np.arange(20.0, 401.0, 1.0)
 
 
@@ -78,7 +76,8 @@ class Episode:
     q_ho: np.ndarray | None
     y_ho: np.ndarray | None
     budget: int
-    used: int = 0
+    used: int = 0  # nfev, the budget unit
+    jacobians: int = 0  # njev, reported
     best: FitState | None = None
     best_bic: float = math.inf
     kiessig: float = field(default=math.nan)
@@ -105,7 +104,7 @@ class FitEnv:
             start.clipped(), np.zeros((start.n_layers, 3), bool), np.zeros(len(INSTR_GROUPS), bool)
         )
         top_rho = start.layers[0, 2]
-        self.episode.kiessig = st.kiessig_thickness(q, y, scale, top_rho, KIESSIG_RANGE)
+        self.episode.kiessig = st.kiessig_thickness(q, y, scale, top_rho, st.KIESSIG_RANGE)
         self.trace: list[Action] = []
         self.layer_changes = 0
         self.done = False
@@ -202,13 +201,13 @@ class FitEnv:
         """Apply an action. Returns (reward, done)."""
         if not self.valid(action):
             raise ValueError(f"invalid action {action}")
-        phi = -self.bic / len(self.q)
+        phi = -self.episode.best_bic / len(self.q)
         self._apply(action)
         self.trace.append(action)
         if action[0] in LAYER_CHANGES:
             self.layer_changes += 1
         self._evaluate()
-        reward = -self.bic / len(self.q) - phi
+        reward = -self.episode.best_bic / len(self.q) - phi  # gamma = 1 until X2c sets it
         if action == ("stop",) or self.budget_left <= 0 or len(self.trace) >= self.max_actions:
             self.done = True
             reward += self.terminal_reward()
@@ -246,7 +245,7 @@ class FitEnv:
             case ("loss", name):
                 s.loss = name
             case ("fit", k):
-                stack, used, _ = st.fit(
+                stack, nfev, njev, _ = st.fit(
                     s.stack,
                     s.free_mask(),
                     self.q,
@@ -255,17 +254,16 @@ class FitEnv:
                     s.loss,
                     min(k, self.budget_left),
                 )
-                self.episode.used += used
+                self.episode.used += nfev
+                self.episode.jacobians += njev
                 s.stack = stack
                 return
             case ("estimate_rho",):
-                qc, qc_sub = self.episode.qc_data, 4 * math.sqrt(math.pi * st.SUB_SLD * 1e-6)
-                if math.isfinite(qc) and qc > QC_MARGIN * qc_sub:
-                    lay[0, 2] = qc**2 / (16 * math.pi) * 1e6
+                s.stack = st.estimate_rho(s.stack, self.q, self.y)
+                return
             case ("estimate_d",):
-                total = st.kiessig_thickness(self.q, self.y, self.scale, lay[0, 2], KIESSIG_RANGE)
-                if math.isfinite(total):
-                    lay[:, 0] *= total / lay[:, 0].sum()
+                s.stack = st.estimate_d(s.stack, self.q, self.y, self.scale)
+                return
             case ("revert",):
                 self.state = self.best.copy()
                 return
@@ -298,6 +296,7 @@ class FitEnv:
             "aic": st.aic(dev, best.n_layers),
             "deviance": dev,
             "evaluations": self.episode.used,
+            "jacobians": self.episode.jacobians,
             "actions": len(self.trace),
             "trace": [list(a) for a in self.trace],
         }
@@ -337,7 +336,7 @@ class FitEnv:
             s.stack.n_layers / L_MAX,
             np.nan_to_num(period / RESIDUAL_Z[-1]),
             amp,
-            np.nan_to_num(self.episode.kiessig / KIESSIG_RANGE[1]),
+            np.nan_to_num(self.episode.kiessig / st.KIESSIG_RANGE[1]),
             np.nan_to_num(self.episode.qc_data / qmax),
             np.nan_to_num(st.critical_q(self.q, self.lam) / qmax),
             self.dev / n,
