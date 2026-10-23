@@ -49,9 +49,7 @@ TIMING_CLASS = 9  # timing pilot: truths (n, 1000 + n), starts and random seeds 
 
 def units(arm: str, n_truths: int = N_TRUTHS) -> list[tuple[int, int, int, int]]:
     starts = (0,) if arm in PER_TRUTH else range(st.N_STARTS)
-    return list(
-        itertools.product(CLASSES, range(n_truths), range(len(st.NOISE_SCALES)), starts)
-    )
+    return list(itertools.product(CLASSES, range(n_truths), range(len(st.NOISE_SCALES)), starts))
 
 
 def data(n: int, j: int, s: int, root: int):
@@ -118,15 +116,19 @@ def episode(
         res = truth_fit(truth, q, y, scale, q_ho=q_ho, y_ho=y_ho)
     else:
         raise ValueError(arm)
-    return {
-        "arm": arm,
-        "n": n,
-        "j": j,
-        "s": s,
-        "k": k,
-        "root": root,
-        "seconds": time.perf_counter() - t0,
-    } | res | extra_fields
+    return (
+        {
+            "arm": arm,
+            "n": n,
+            "j": j,
+            "s": s,
+            "k": k,
+            "root": root,
+            "seconds": time.perf_counter() - t0,
+        }
+        | res
+        | extra_fields
+    )
 
 
 def _episode(args) -> dict:
@@ -154,8 +156,10 @@ def run_episodes(arms: list[str], workers: int, classes: list[int]) -> None:
             with (RUNS / f"{rec['arm']}.jsonl").open("a", encoding="utf-8") as f:
                 f.write(json.dumps(rec | {"commit": commit}) + "\n")
             if i % 20 == 0 or i == len(jobs):
-                print(f"{i}/{len(jobs)} {rec['arm']} n{rec['n']} j{rec['j']} {rec['seconds']:.0f}s",
-                      flush=True)
+                print(
+                    f"{i}/{len(jobs)} {rec['arm']} n{rec['n']} j{rec['j']} {rec['seconds']:.0f}s",
+                    flush=True,
+                )
 
 
 def noise_scale() -> None:
@@ -182,8 +186,10 @@ def timing() -> None:
             if arm == "C2E":
                 continue
             rec = episode(arm, n, 1000 + n, 1, 0, seed_class=TIMING_CLASS)
-            print(f"n{n} {arm:4s} {rec['seconds']:6.1f} s  evaluations {rec['evaluations']}",
-                  flush=True)
+            print(
+                f"n{n} {arm:4s} {rec['seconds']:6.1f} s  evaluations {rec['evaluations']}",
+                flush=True,
+            )
 
 
 def main() -> None:

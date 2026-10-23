@@ -186,9 +186,7 @@ class FitEnv:
             self.lam = lam_all[self.fit_mask]
             self.dev = st.deviance(self.lam, self.y)
             self.dev_all = st.deviance(lam_all, self.episode.y)
-            self.dev_inner = st.deviance(
-                lam_all[~self.fit_mask], self.episode.y[~self.fit_mask]
-            )
+            self.dev_inner = st.deviance(lam_all[~self.fit_mask], self.episode.y[~self.fit_mask])
         self.bic = st.bic(self.dev, s.n_layers, len(self.q))
         self.bic_all = st.bic(self.dev_all, s.n_layers, len(self.episode.q))
         if self.bic < self.episode.best_bic:

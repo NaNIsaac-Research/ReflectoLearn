@@ -104,12 +104,15 @@ def inner_full_fit(
     for L in range(1, L_MAX + 1):
         stack = Stack(np.vstack([top.layers, extra[: L - 1]]), top.instr.copy())
         fits.append(st.fit(stack, np.ones(stack.n_params, bool), qf, yf, scale, "poisson", per_l))
-    inner = [
-        st.deviance(st.counts(f[0], q[~fit_mask], scale), y[~fit_mask]) for f in fits
-    ]
+    inner = [st.deviance(st.counts(f[0], q[~fit_mask], scale), y[~fit_mask]) for f in fits]
     chosen = int(np.argmin(inner))
     final = st.fit(
-        fits[chosen][0], np.ones(fits[chosen][0].n_params, bool), q, y, scale, "poisson",
+        fits[chosen][0],
+        np.ones(fits[chosen][0].n_params, bool),
+        q,
+        y,
+        scale,
+        "poisson",
         CV_FINAL_FIT,
     )
     return _score(final[0], q, y, scale, q_ho, y_ho) | {
@@ -122,7 +125,13 @@ def inner_full_fit(
 
 
 def truth_fit(
-    truth: Stack, q: np.ndarray, y: np.ndarray, scale: float, *, q_ho=None, y_ho=None,
+    truth: Stack,
+    q: np.ndarray,
+    y: np.ndarray,
+    scale: float,
+    *,
+    q_ho=None,
+    y_ho=None,
     budget: int = BUDGET,
 ) -> dict:
     """TF (X2D.md section 4, diagnostic): the truth as the start, every parameter free, Poisson,
