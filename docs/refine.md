@@ -84,6 +84,13 @@ The options below have no command-line flag.
 - `refine_multistart` is what `--alias-check` calls. `fft_thickness` alone gives the thickness of the
   Kiessig fringe period, independent of the network.
 - `reflectolearn.refine.mcmc.sample_posterior` is what `--mcmc-steps` calls.
+- `reflectolearn.staged_refine.refine` takes the same arguments and runs the same strategy on
+  [ReflectoFit](https://github.com/NaNIsaac/ReflectoFit)'s staged optimiser and float64 forward
+  model. Given `forward=make_forward` it reproduces `refine` (tests to 1e-6). Its own forward model
+  computes the resolution term with a fixed number of nodes per point, which is not yet accurate at
+  the critical edges of non-absorbing films
+  ([ReflectoFit#6](https://github.com/NaNIsaac/ReflectoFit/issues/6)). The command line still calls
+  `refine`.
 
 ## Known limits
 
