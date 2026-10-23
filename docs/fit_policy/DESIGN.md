@@ -246,9 +246,9 @@ Two references that do not enter the decision:
 
 ### 5.4 Starts and paired episodes
 
-For each truth and noise level there are N = 4 starts: (d, σ, ρ) of a one-layer model from a Latin
-hypercube over d [20, 250], σ [2, 10], ρ [5, 80] (`scipy.stats.qmc.LatinHypercube`, seed
-`(20261024, n, j)`), instrument at i0 1, b −7, offset 0, σ_q 0.002. C's extra layers for L > 1 are the
+For each truth there are N = 4 starts, the same for both noise levels: (d, σ, ρ) of a one-layer model
+from a Latin hypercube over d [20, 250], σ [2, 10], ρ [5, 80] (`scipy.stats.qmc.LatinHypercube`, seed
+`(20261024, n, j, 2)`, amendment 1), instrument at i0 1, b −7, offset 0, σ_q 0.002. C's extra layers for L > 1 are the
 layers of a second hypercube over the same box (12 points, 3 per start, seed `(20261024, n, j, 1)`),
 in order. Every method sees the same truth, noise realisation and start; the
 comparison is paired. 3 classes × 16 truths × 2 noise levels × 4 starts = 384 episodes per method.
@@ -403,3 +403,10 @@ xrr-kit (what X2b needs from the shared package, so that switching is an import 
 - `block_split(q, n_blocks, held, q_min)` for contiguous held-out blocks.
 - A seeded stack generator with the constraints of 3.1 (adjacent contrast, σ ≤ d/4).
 - Estimators `critical_q(q, y)` and `kiessig_thickness(q, y)` (the latter a port of `fft_thickness`).
+
+## Amendments
+
+1. 2026-10-24, before any code ran or any result existed. The starts' hypercube seed was
+   `(20261024, n, j)`, the same seed as the truth's generator, so the starts would have been drawn from
+   the same random stream as the truth parameters. It is now `(20261024, n, j, 2)`. Found while writing
+   the generator for X2b.
