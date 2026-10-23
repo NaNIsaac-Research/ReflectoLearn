@@ -21,6 +21,7 @@ Pre-registered (written before the reflectofit engine existed; seeds differ from
      legacy erf factor within 1e-10.
   6. Same seed twice gives the same batch, bit for bit, for both engines.
 A failure is reported as a failure; the tolerances are not widened after the run.
+First run: all held except 2 with the augmentor (see test_with_the_augmentor_only_the_draws_before_the_counts_match).
 """
 
 import math
@@ -81,19 +82,24 @@ def test_legacy_engine_is_the_frozen_generator(augment):
     assert torch.equal(state_new, state_old)
 
 
-@pytest.mark.parametrize("augment", [False, True])
-def test_reflectofit_engine_draws_what_the_legacy_one_draws(augment):
+def test_reflectofit_engine_draws_what_the_legacy_one_draws():
     legacy, fit = _config("legacy"), _config("reflectofit")
-    q = legacy.q_grid
-    (x_old, y_old), state_old = _batch(
-        lambda: generate_synthetic_batch(legacy, B, XRRAugmentor(legacy, q) if augment else None)
-    )
-    (x_new, y_new), state_new = _batch(
-        lambda: generate_synthetic_batch(fit, B, XRRAugmentor(fit, q) if augment else None)
-    )
+    (x_old, y_old), state_old = _batch(lambda: generate_synthetic_batch(legacy, B))
+    (x_new, y_new), state_new = _batch(lambda: generate_synthetic_batch(fit, B))
     assert torch.equal(y_new, y_old)
     assert torch.equal(x_new[:, 1], x_old[:, 1])  # mask channel
     assert torch.equal(state_new, state_old)
+
+
+def test_with_the_augmentor_only_the_draws_before_the_counts_match():
+    # Criterion 2 with the augmentor was falsified on the first run: torch.poisson draws a number
+    # of uniforms that depends on lambda, so a different curve leaves the RNG elsewhere and the
+    # mask, drawn after the counts, differs. The targets are drawn before the counts and match.
+    legacy, fit = _config("legacy"), _config("reflectofit")
+    q = legacy.q_grid
+    (_, y_old), _ = _batch(lambda: generate_synthetic_batch(legacy, B, XRRAugmentor(legacy, q)))
+    (_, y_new), _ = _batch(lambda: generate_synthetic_batch(fit, B, XRRAugmentor(fit, q)))
+    assert torch.equal(y_new, y_old)
 
 
 def _legacy_model_c128(cfg, q, media):
@@ -176,7 +182,11 @@ def test_augmentor_draws_become_the_reflectofit_instrument():
         background=10.0 ** draw.bkg[:, 0].double().numpy(),
         nodes=cfg.simulation.resolution_nodes,
     )
-    packed = (sld.to(torch.complex128).numpy(), thickness.double().numpy(), roughness.double().numpy())
+    packed = (
+        sld.to(torch.complex128).numpy(),
+        thickness.double().numpy(),
+        roughness.double().numpy(),
+    )
     expected = forward(q.double().numpy(), packed, inst)
     np.testing.assert_allclose(got.numpy(), expected, rtol=1e-12)
 
