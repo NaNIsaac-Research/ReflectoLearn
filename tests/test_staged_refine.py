@@ -17,6 +17,7 @@ Pre-registered (written before staged_refine existed):
 A failure is reported as a failure; the criteria are not changed after the run.
 """
 
+from dataclasses import replace
 from types import SimpleNamespace
 
 import numpy as np
@@ -62,15 +63,55 @@ def _observed(counts: bool):
     return torch.log10(r)
 
 
+def _windowed_stages():
+    """The default stages with q windows whose ends sit exactly on grid points (excluded: the
+    window is q_min < q < q_max)."""
+    scale, structure, fine = RefineConfig().stages
+    return [
+        scale,
+        replace(structure, q_min=float(Q[50])),
+        replace(fine, q_max=float(Q[350])),
+    ]
+
+
+# (config, counts, masked); the last three added after the review on ReflectoLearn#38
 CASES = {
-    "default": (RefineConfig(), False),
-    "offset last stage": (RefineConfig(tth_offset_last_stage=True), False),
-    "two-term resolution": (RefineConfig(fit_dq_rel=True), False),
+    "default": (RefineConfig(), False, False),
+    "offset last stage": (RefineConfig(tth_offset_last_stage=True), False, False),
+    "two-term resolution": (RefineConfig(fit_dq_rel=True), False, False),
     "likelihood, budget 1": (
         RefineConfig(counts_scale=S, stages=likelihood_stages(budget=1)),
         True,
+        False,
     ),
+    "mask and stage q windows": (RefineConfig(stages=_windowed_stages()), False, True),
+    "no oxide": (RefineConfig(fit_oxide=False), False, False),
+    "no Kalpha2": (RefineConfig(fit_kalpha2=False), False, False),
 }
+
+
+def _mask(log_y, masked: bool):
+    mask = torch.ones_like(log_y)
+    if masked:
+        mask[0, :20] = 0.0
+        mask[0, -30:] = 0.0
+        mask[1, :5] = 0.0
+    return mask
+
+
+def _recording(dtypes: set):
+    """make_forward, noting the dtype of every value the optimiser passes in."""
+
+    def build(*args, **kwargs):
+        simulate = make_forward(*args, **kwargs)
+
+        def recorded(vals, active):
+            dtypes.update(v.dtype for v in vals.values())
+            return simulate(vals, active)
+
+        return recorded
+
+    return build
 
 
 def _close(a, b, what):
@@ -80,22 +121,26 @@ def _close(a, b, what):
 
 @pytest.mark.parametrize("case", CASES)
 def test_port_equals_refine_with_its_own_forward_model(case):
-    config, counts = CASES[case]
+    config, counts, masked = CASES[case]
     log_y = _observed(counts)
-    mask = torch.ones_like(log_y)
+    mask = _mask(log_y, masked)
     args = (P_INIT, SUB, Q, log_y, mask, RANGES)
     kw = {"wavelength": WL, "config": config, "device": "cpu"}
     p_old, info_old = refine(*args, **kw)
-    p_new, info_new = staged_refine.refine(*args, **kw, forward=make_forward)
+    dtypes = set()
+    p_new, info_new = staged_refine.refine(*args, **kw, forward=_recording(dtypes))
     _close(p_new, p_old, "p_refined")
     for key in ("fom_before", "fom_after", "r_fit"):
         _close(info_new[key], info_old[key], key)
     for key in info_old["fitted"]:
         if key in info_old:
             _close(info_new[key], info_old[key], key)
-    # added after the physics review of ReflectoFit#7: the optimiser runs in refine's float32 (it
-    # takes its dtype from log_y), and its keys map to refine's effect names
+    # added after the reviews of ReflectoFit#7 and #38: the optimiser runs in refine's float32 (it
+    # takes its dtype from log_y) in every model call, not only in the state it returns, and its
+    # keys map to refine's effect names
+    assert dtypes == {torch.float32}
     assert all(v.dtype == torch.float32 for v in info_new["state"].values())
+    assert info_new["r_fit"].dtype == info_old["r_fit"].dtype == torch.float32
     assert info_new["active"] == info_old["active"]
     assert info_new["fitted"] == info_old["fitted"]
     if "offset_off" in info_old:
