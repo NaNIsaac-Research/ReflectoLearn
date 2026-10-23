@@ -6,6 +6,7 @@ Run via:  uv run -m reflectolearn   (or)  reflectolearn  (installed script)
 from __future__ import annotations
 
 import ast
+import json
 from pathlib import Path
 
 import torch
@@ -14,6 +15,7 @@ from loguru import logger
 
 from reflectolearn.config import Config
 from reflectolearn.data import XRRAugmentor, get_xrr_dataloader, param_stats
+from reflectolearn.data.generator import engine_metadata
 from reflectolearn.model import XRRPhysicsModel
 from reflectolearn.train import Trainer
 
@@ -98,6 +100,8 @@ def train(
     save_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"save_dir = {save_dir}")
     cfg.save_yaml(save_dir / "config.yaml")  # back up the config actually used
+    # the data engine, and for reflectofit the error of its fixed resolution node count
+    (save_dir / "data_engine.json").write_text(json.dumps(engine_metadata(cfg), indent=1))
 
     model = _build_model(cfg)
     augmentor = XRRAugmentor(cfg, cfg.q_grid)
