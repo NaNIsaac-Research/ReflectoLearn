@@ -6,7 +6,7 @@ Abeles data generation.
 """
 
 from pathlib import Path
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 import torch
 import yaml
@@ -42,6 +42,12 @@ class SimulationConfig(BaseModel):
     q_max_tth: float = 15.0
     q_points: int = 2000  # [verified] encoder 6x MaxPool -> len 31
     n_samples: int = 50_000  # reference only for streaming (offline compatibility)
+    # "legacy": AbelesMatrix (complex64) and the augmentor's grid convolution. "reflectofit": the
+    # same draws through reflectofit.forward in float64, footprint and resolution inside the forward
+    # model with a fixed node count (its error is in engine_metadata). The default stays legacy until
+    # ReflectoFit's resolution rule is fast on real-SLD edges (ReflectoFit#6).
+    engine: Literal["legacy", "reflectofit"] = "legacy"
+    resolution_nodes: int = 61
 
 
 class ModelConfig(BaseModel):
