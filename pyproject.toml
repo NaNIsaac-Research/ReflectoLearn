@@ -56,8 +56,8 @@ explicit = true
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32'" }]
-# not on PyPI yet: pinned to the ReflectoFit main commit ReflectoSim also pins, until the first release
-reflectofit = { git = "https://github.com/NaNIsaac/ReflectoFit", rev = "4d31fcce0616d7aab8c32e71d0a80ed786c7aead" }
+# not on PyPI yet: pinned to a ReflectoFit main commit until its first release
+reflectofit = { git = "https://github.com/NaNIsaac/ReflectoFit", rev = "59802ae13b9823f870dcad67898d9a18712799ab" }
 
 [tool.ruff]
 line-length = 100
