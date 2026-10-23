@@ -2347,7 +2347,7 @@ wheels = [
 [[package]]
 name = "reflectofit"
 version = "0.1.0.dev0"
-source = { git = "https://github.com/NaNIsaac/ReflectoFit?rev=4d31fcce0616d7aab8c32e71d0a80ed786c7aead#4d31fcce0616d7aab8c32e71d0a80ed786c7aead" }
+source = { git = "https://github.com/NaNIsaac/ReflectoFit?rev=89a890ee458c08bfaa4c06552277e2c3ae244bd7#89a890ee458c08bfaa4c06552277e2c3ae244bd7" }
 dependencies = [
     { name = "numba" },
     { name = "numpy" },
@@ -2402,7 +2402,7 @@ requires-dist = [
     { name = "pandas" },
     { name = "pydantic" },
     { name = "pyyaml" },
-    { name = "reflectofit", git = "https://github.com/NaNIsaac/ReflectoFit?rev=4d31fcce0616d7aab8c32e71d0a80ed786c7aead" },
+    { name = "reflectofit", git = "https://github.com/NaNIsaac/ReflectoFit?rev=89a890ee458c08bfaa4c06552277e2c3ae244bd7" },
     { name = "scipy" },
     { name = "seaborn" },
     { name = "tensorboard" },
