@@ -93,6 +93,9 @@ def test_port_equals_refine_with_its_own_forward_model(case):
     for key in info_old["fitted"]:
         if key in info_old:
             _close(info_new[key], info_old[key], key)
+    # added after the physics review of ReflectoFit#7: the optimiser runs in refine's float32 (it
+    # takes its dtype from log_y), and its keys map to refine's effect names
+    assert all(v.dtype == torch.float32 for v in info_new["state"].values())
     assert info_new["active"] == info_old["active"]
     assert info_new["fitted"] == info_old["fitted"]
     if "offset_off" in info_old:
