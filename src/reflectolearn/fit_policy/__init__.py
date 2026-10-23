@@ -7,19 +7,19 @@ from reflectolearn.fit_policy.protocol import run as run_protocol
 from reflectolearn.fit_policy.stack import Stack
 
 __all__ = [
-    "ACTIONS",
-    "FitEnv",
-    "FitState",
-    "Stack",
-    "Protocol",
     "A1",
     "A2",
     "A3",
     "A4",
+    "ACTIONS",
     "VARIANTS",
-    "run_protocol",
-    "random_policy",
+    "FitEnv",
+    "FitState",
+    "Protocol",
+    "Stack",
     "full_fit",
     "oracle_fit",
+    "random_policy",
     "refine_fit",
+    "run_protocol",
 ]

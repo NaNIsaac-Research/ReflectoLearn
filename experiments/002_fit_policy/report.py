@@ -241,8 +241,10 @@ def write_markdown(summary: dict, cells: dict) -> None:
         "Outcomes are per truth (median over its starts). The last column counts episode-level BIC",
         "wins and how many of them have the same layer count as C.",
         "",
-        "| cell | C capped | reference | truth BIC win / tie / loss | sign p | "
-        "truth held-out win / loss | beats | episode wins (same L) |",
+        (
+            "| cell | C capped | reference | truth BIC win / tie / loss | sign p | "
+            "truth held-out win / loss | beats | episode wins (same L) |"
+        ),
         "|---|---:|---|---|---:|---|---|---|",
     ]
     for name, c in cells.items():
@@ -266,8 +268,10 @@ def write_markdown(summary: dict, cells: dict) -> None:
         )
     lines += ["", "## Methods per cell (M3, M4; C_oracle and C_refine are references only)", ""]
     lines += [
-        "| cell | method | episodes | layer count right | recovered | median ΔBIC vs C | "
-        "median evaluations | median s |",
+        (
+            "| cell | method | episodes | layer count right | recovered | median ΔBIC vs C | "
+            "median evaluations | median s |"
+        ),
         "|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     for name, c in cells.items():
