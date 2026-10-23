@@ -142,3 +142,31 @@ the guard requires it. [unverified] The matched refits add about a third to A1's
 run is about 1.2–1.5 times X2b's (3.75 h with 4–6 processes). Order: implement (arms, kept-path
 tracking, inner block, instrumentation, `report_x2d.py` applying sections 5–7 mechanically), tests,
 timing pilot on unregistered seeds, then the registered run in a [HEAVY] slot.
+
+## Amendments
+
+1. 2026-10-24, before any registered episode and before the implementation was complete; nothing
+   had run on registered seeds. From the physics check of 157f2f2 (#39, comment 6374226323), items
+   (a)–(e), and from writing the code, items (f)–(h). No X2b record was used.
+   - (a) **A1v is secondary.** If A1v beats C and Cv while A1mk fails, the result is
+     "inconclusive, confirm with new seeds" (section 7).
+   - (b) **A1v and Cv end the same way.** Cv refits its chosen L on all training points with A1v's
+     step-9 refit (open all, `loss(poisson)`, `fit(100)`), charged to E. Each of its four L fits gets
+     (E − 100) / 4 = 725 evaluations instead of 750. C itself is unchanged.
+   - (c) **Replication, the unclassified case.** A1 fails rule 3 in ≥ 3 cells but E_A1 < 4 in at
+     least one of them: "partial", graded as the two-cell case.
+   - (d) **H1 (ii) and H4 compare overshoot, not returned L.** Per truth, the overshoot of an arm is
+     max(median returned L − true L, 0). The sign test counts truths where the arm's overshoot is
+     below A1's as for and above as against; ties, including both 0, drop out. One-sided, p < 0.01,
+     in ≥ 2 of 4 multilayer cells.
+   - (e) **A1m step 8.** When a merge is rejected, the protocol continues from the refit state, as in
+     step 7. This applies to A1mk and A1v too.
+   - (f) **H2 (i) where A1 never reached the true L on its kept path.** For each truth where A1
+     overshoots, the per-truth value is the median over the starts that have a kept-path state at the
+     true L. Truths with no such start are left out of the fraction and counted in the report.
+   - (g) **Grading order.** A hypothesis whose refutation condition holds is refuted. Otherwise it is
+     supported if all its predictions hold, and unresolved otherwise.
+   - (h) **Inner block everywhere in A1v and Cv.** The inner block is left out of every quantity
+     computed in steps 1–8: the fits, BIC, step-7 trigger, residual features, and the critical-edge
+     and Kiessig estimates. Cv's start estimates (section 4, as C's) also use the training points
+     minus the inner block.
