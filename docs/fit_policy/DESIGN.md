@@ -91,10 +91,11 @@ one layer. Noise levels S ∈ {10⁸, 10⁶}. Seeds: truth j of class n uses
 
 ### 3.2 Held-out points
 
-Points with 2θ < 0.5° (the critical edge and the plateau) always stay in the training set. The rest
-are split into 10 contiguous blocks of equal size (`np.array_split`); blocks 2 and 6 (0-based,
-q 0.117–0.155 and 0.275–0.312 Å⁻¹) are held out: 55 of 291 points, 236 for training. Block 2 lies
-above the critical edge of the densest truth (ρ = 80, q_c = 0.063 Å⁻¹). Contiguous blocks are used because a single held-out point is almost determined by its
+Points with 2θ < 0.5° (16 points on the q-uniform grid: the plateau, and the critical edge of films
+with ρ ≲ 25) always stay in the training set. The rest are split into 10 contiguous blocks of equal
+size (`np.array_split`, which governs); blocks 2 and 6 (0-based, q 0.1167–0.1551 and
+0.2746–0.3116 Å⁻¹) are held out: 55 of 291 points, 236 for training. The critical edge of denser
+films (up to 2θ 0.885° for ρ = 80) falls in block 0, which is training. Contiguous blocks are used because a single held-out point is almost determined by its
 neighbours and would not test anything the training fit does not already see. Held-out points are never
 used by the policy: not in the state, not in the loss, not in the choice of the returned model.
 
@@ -169,9 +170,13 @@ seen, and BIC needs no held-out data or truth, so this is allowed on measured da
 
 ### 4.5 Termination and budget
 
-An episode ends on `stop`, after 60 actions, or when the evaluation budget E = 3000 is used. One
-evaluation is one forward model plus Jacobian at one parameter vector (`nfev` of `least_squares`). FFT
-and residual summaries are not counted; they cost less than one evaluation.
+An episode ends on `stop`, after 60 actions, or when the evaluation budget E = 3000 is used. E counts
+`nfev` of `least_squares`, the residual evaluations; rejected trust-region steps evaluate the residual
+without the Jacobian, so `nfev` is not exactly "forward plus Jacobian". Jacobian evaluations (`njev`)
+and wall time are reported. A `fit(k)` with fewer than k evaluations left runs with `max_nfev` equal
+to what is left. The Jacobian cost grows with the number of open parameters, so at equal `nfev` C
+(everything open) spends more compute than A1's staged fits; this is against A1, not for it. FFT,
+residual summaries and the BIC of a state are not counted.
 
 ### 4.6 Reward
 
@@ -181,10 +186,13 @@ Defined now for X2c; the baselines do not use it.
   n the number of training points and k = 3L + 4 (every layer parameter and every instrument
   parameter, whether or not it was opened). AIC = D + 2k is reported. With n = 236, one more layer
   costs 3 ln n = 16.4, so a layer kept at ΔBIC ≤ −10 must lower the deviance by at least 26.4.
-- Per step: r_t = Φ(s_{t+1}) − Φ(s_t) with Φ(s) = −BIC(s)/n. A potential difference does not change
-  which policy is optimal; it only gives credit earlier.
+- Per step: r_t = γΦ(s_{t+1}) − Φ(s_t) with Φ(s) = −BIC_best(s)/n, the best BIC visited so far
+  (amendment 3), so that with γ = 1 the rewards sum to the BIC of the returned model, not of the state
+  the episode stops in. A potential-based term does not change which policy is optimal; it only gives
+  credit earlier. γ is set when X2c is registered.
 - At the end: r_T += −D_ho(ŝ)/n_ho for the returned model ŝ, D_ho the Poisson deviance on held-out
-  points.
+  points. A policy trained with this reward has seen the held-out blocks of its training curves, so
+  for X2c, M2 is measured on new truths.
 - The distance to the truth never enters the reward, because it cannot be computed on a measurement.
   It is used only in evaluation (6.1, M3).
 
@@ -198,13 +206,18 @@ A1 is the primary script. Each rule has a stated source.
 2. Critical edge → SLD. The critical q of the data q_c is where the counts first fall to half the
    plateau. If q_c exceeds the substrate's by more than 5 %, set the top layer's ρ = q_c² / (16π)
    (×10⁶), from q_c = 4√(πρ) (Als-Nielsen and McMorrow, *Elements of Modern X-ray Physics*, ch. 3);
-   otherwise keep the start's ρ.
+   otherwise keep the start's ρ. The half-plateau point is not exactly the film's q_c and its error
+   depends on d (physics review of #35): about 9 % high for 250 Å films, up to three times low for
+   20–40 Å dense films whose edge tunnels. The rule gives ρ to about 10 % only for d ≳ 100 Å; it is a
+   start value that step 4 frees.
 3. Kiessig fringes → thickness. Set the total thickness to `fft_thickness` with ρ from step 2 and
    `d_min = 20` (its default 60 Å would miss the thinnest truths): the strongest real-space peak of the
    detrended log R transformed over the film wavevector √(q² − q_c²). Kiessig fringe period
    Δq ≈ 2π/d; Fourier analysis of the fringes: Sakurai and Iida, Jpn. J. Appl. Phys. 31, L113 (1992),
    reference unchecked. If it returns NaN, the start's d is kept. This step also removes the d × 1.2
-   start failures of R2f by construction.
+   start failures of R2f by construction. In a stack the strongest real-space peak belongs to the
+   interface pair with the largest contrast product, not necessarily to the total thickness, so for
+   L > 1 `estimate_d` (amendment 2) can scale the total to a sub-layer thickness. At step 3 L = 1.
 4. Structure. Open d and ρ of every layer, `fit(100)` twice.
 5. Roughness last. Open σ, `fit(100)`.
 6. Instrument last, likelihood finish. Open σ_q and the offset, `loss(poisson)`, `fit(100)` twice.
@@ -212,8 +225,10 @@ A1 is the primary script. Each rule has a stated source.
    is Poisson because the log optimum is not the ML point (R2b, DECISIONS #17).
 7. Layers only when a residual remains. If the deviance exceeds its expectation under the current
    model by three standard deviations, D > E[D] + 3 SD[D], with E and SD from 200 Poisson draws at the
-   current λ (no forward evaluations; the χ² rule D/n ≈ 1 fails at the low counts of high q), try from
-   the current best state: `add(0)`, `add(L)`
+   current λ (no forward evaluations; the χ² rule D/n ≈ 1 fails at the low counts of high q;
+   the draws use `np.random.default_rng((20261024, 99, 0))` every time), try from the current best
+   state. D at a fitted λ sits below D at the generating λ by about the number of open parameters, so
+   the trigger is effectively 3.3–3.7 SD for 6–16 open parameters (physics review). Candidates: `add(0)`, `add(L)`
    (above the substrate), and `split` of the thickest layer. For each: open the new parameters,
    `loss(log)`, `fit(100)`, open all, `loss(poisson)`, `fit(100)`. Keep the best candidate if it
    lowers BIC by at least 10; otherwise go to 9.
@@ -223,8 +238,10 @@ A1 is the primary script. Each rule has a stated source.
 
 Three variants, used only for the learning-room test (6.4):
 
-- A2 no staging: after steps 1–3, open everything and fit with the Poisson loss only.
-- A3 log only: A1 with the log loss throughout (no likelihood finish).
+- A2 no staging: steps 1–3 with `loss(poisson)` in step 1; then open everything, `loss(poisson)`,
+  `fit(100)` five times (the number of fits in steps 4–6); then steps 7–9, where every refit of a
+  candidate is: open everything, `fit(100)`, open everything, `fit(100)`, all with the Poisson loss.
+- A3 log only: A1 with every `loss(poisson)` replaced by `loss(log)` (no likelihood finish).
 - A4 different layer search: A1, but step 7 tries only `add(L)` and accepts at ΔBIC ≤ −2.
 
 ### 5.2 B: random actions
@@ -235,12 +252,15 @@ comes from the budget and the best-BIC return alone.
 
 ### 5.3 C: everything at once, with model selection
 
-For L = 1, 2, 3, 4: start from the episode's start (5.4), open every parameter, `loss(poisson)`, one fit
-with `max_nfev` = E/4 = 750. Return the L with the lowest BIC.
+C first applies A1 steps 2–3 (`estimate_rho`, `estimate_d`) to the episode's one-layer start (5.4),
+as a person fitting everything at once would also start from the edge and the fringes (amendment 3).
+Then, for L = 1, 2, 3, 4: that layer over the first L − 1 extra layers, every parameter open,
+`loss(poisson)`, one fit with `max_nfev` = E/4 = 750. Return the L with the lowest BIC. A win of A1
+over C is then about the order of decisions, the question of section 1, not about the start.
 
 Two references that do not enter the decision:
 
-- C_oracle: the true L, everything open, Poisson, the whole budget E. It uses the truth.
+- C_oracle: C's start, the true L, everything open, Poisson, the whole budget E. It uses the truth.
 - C_refine, single-layer class only: `refine` with `RefineConfig()` (the current default named in the
   brief) from the episode's start, film + oxide model as it is. It cannot represent two or three layers.
 
@@ -259,6 +279,11 @@ Registered 2026-10-24 before any implementation or run. If a result crosses a th
 is not moved; the result is recorded as a refutation (rule 20). Amendments, if any, are dated and
 appended at the end of this note with the reason and whether results had been seen.
 
+**Freeze (amendment 3).** The registration is frozen at the commit that runs the first registered
+episode; every episode record carries that commit, and the results name it. After it, nothing in
+sections 3–6 or in the definitions of 5.1–5.4 changes, in the note or in the code. A change there is
+a new registration with new seeds.
+
 ### 6.1 Metrics
 
 - M1 BIC of the returned model (training points).
@@ -274,16 +299,33 @@ over the 20 extra noise realisations (3.1). For a method X against C on a paired
 
 - BIC: win if ΔBIC = BIC_X − BIC_C ≤ −10, loss if ≥ +10, otherwise tie. A difference of 10 is "very
   strong" on the Kass and Raftery scale (J. Am. Stat. Assoc. 90, 773 (1995)).
-- Held-out: win if ΔD_ho ≤ −2 s_ho, loss if ≥ +2 s_ho, otherwise tie (within noise).
+- Held-out: win if ΔD_ho ≤ −2 s_ho, loss if ≥ +2 s_ho, otherwise tie.
+
+s_ho is the spread of one model's held-out deviance (≈ √(2 n_ho) ≈ 10.5 at high counts), not the
+noise of the paired difference ΔD_ho, which goes to zero as two models coincide. The ±2 s_ho band is
+therefore a fixed materiality threshold of about 21 deviance units, set by the truth before any
+result, not a "within noise" band (wording corrected in amendment 3). At S = 10⁸ a BIC difference of
+10 between fits with the same L can be a convergence difference inside one basin; under equal compute
+that counts, and the report says how many wins are of that kind (same L as C).
+
+**Truth-level outcome (amendment 3).** The four starts of a truth share its curve and noise, so the
+unit of the tests is the truth. For a truth, the median over its four starts of ΔBIC and of ΔD_ho is
+classified by the two rules above; that is the truth's BIC outcome and held-out outcome.
 
 ### 6.3 Does the procedure matter
 
-A cell is one (layer class, noise level); there are 6 cells of 64 episodes. In a cell, **A1 beats C**
-when all three hold:
+A cell is one (layer class, noise level); there are 6 cells of 16 truths × 4 starts. In a cell,
+**A1 beats C** when all three hold at the truth level:
 
-1. A1 wins on BIC in at least 25 % of episodes;
-2. a one-sided sign test of BIC wins against BIC losses (ties dropped) gives p < 0.01;
-3. A1 loses on held-out in at most 10 % of episodes.
+1. A1 wins on BIC on at least 25 % of truths (4 of 16);
+2. a one-sided sign test of truth wins against truth losses (ties dropped) gives p < 0.01. Without
+   ties that needs 14 of 16 (13–3 gives 0.011). With ties the fewest wins that pass are 7–0
+   (p = 0.0078; 6–0 gives 0.016), so whenever rule 2 holds rule 1 holds too; rule 1 is kept as stated
+   but never decides. With M = 8 truths (6.6), 7–0 or 8–0;
+3. A1 loses on held-out on at most 10 % of truths (1 of 16; 0 of 8).
+
+The two noise cells of a class share their truths and starts, so "two of four cells" below can be the
+same truths at two noise levels; the result names the cells.
 
 Verdict over the four multilayer cells (2 and 3 layers, both noise levels):
 
@@ -306,28 +348,35 @@ both hold in at least one such cell:
 - no single variant is the per-episode best (ties within ΔBIC 2 count for every tied variant) in more
   than 70 % of episodes.
 
+These are fractions of episodes, not tests; episodes of one truth are not independent, and the result
+also gives both fractions over truths (median over starts) for reference.
+
 X2c is proposed to Isaac only for "procedure matters" with room to learn. "Procedure matters" without
 room to learn is reported as "use the script" (it then becomes a `refine` option candidate, not RL).
 
 ### 6.5 Guards
 
-- **Budget.** If more than half of C's fits in a cell end at the evaluation cap, the cell is
-  budget-limited: C is rerun there with 2E and the verdict for that cell uses C(2E). Otherwise A's
-  advantage could just be C running out of evaluations.
-- **Reward alignment.** In a cell where A1 beats C on BIC, compare truth recovery (M3) of A1 and C by
-  McNemar's test on the paired episodes. If A1 recovers the truth significantly less often (p < 0.05),
-  the reward rewards the wrong thing: X2c is not registered until the reward is redefined and
-  re-registered.
-- **Random floor.** A1 against B uses the same rules (6.3). If A1 does not beat B in the multilayer
+- **Budget (defined in amendment 3).** If more than half of the 64 returned C fits in a cell (the fit
+  of the L that C returns) end with `least_squares` status 0, i.e. `nfev` reached `max_nfev`, the cell
+  is budget-limited: C is rerun there with 2E and the verdict for that cell uses C(2E). Otherwise A's
+  advantage could just be C running out of evaluations. A1, B and the A1–B comparison stay at E.
+- **Reward alignment.** In a cell where A1 beats C, compare truth recovery (M3) of A1 and C by an
+  exact one-sided McNemar test on the paired episodes. If A1 recovers the truth significantly less
+  often (p < 0.05), the reward rewards the wrong thing: X2c is not registered until the reward is
+  redefined and re-registered. Episodes of one truth are not independent, which makes this test flag
+  misalignment more easily, the conservative direction for registering X2c.
+- **Random floor.** A1 against B uses the same truth-level rules (6.3). If A1 does not beat B in the multilayer
   cells, the report says that an advantage over C comes from the budget and the best-BIC return, not
   from the order of decisions.
 - With 6 cells, p < 0.01 per cell keeps the family-wise error near 0.05.
 
 ### 6.6 Pilot and cost
 
-No pilot has been run. Before the registered run, X2b times one episode per method on a seed outside
-the registered set (truth seed `(20261024, 9, 0)`), recording only wall time and peak memory, not the
-metrics. [inference, unverified] A `scan.py` bilayer fit took 4–9 s per 200 evaluations at 6° with Kα2
+No pilot has been run. Before the registered run, X2b times one episode per method on truths outside
+the registered set, recording only wall time and peak memory, not the metrics. (The seed first
+written here, `(20261024, 9, 0)`, would have been a nine-layer truth; the timing uses truth
+`(20261024, n, 1000 + n)` of each class, noise level 1, and the starts of `(20261024, 9, 0, 2)`.
+Amendment 3.) [inference, unverified] A `scan.py` bilayer fit took 4–9 s per 200 evaluations at 6° with Kα2
 (twice the forward cost of this model), so an episode of 3000 evaluations may take 30–70 s and the
 2688 episodes of A1–A4, B, C and C_oracle 20–50 CPU-hours. If the timing projects more than 6 hours
 wall at 8 processes, M is reduced from 16 to 8 truths per class before the run, decided from timing
@@ -422,3 +471,19 @@ xrr-kit (what X2b needs from the shared package, so that switching is an import 
      60-action cap counts the actions on the kept path. A policy limited to the action space can only
      go back through `revert`; this asymmetry favours A and is reported with the results.
    - The Kiessig search range is 20–800 Å, since three-layer truths reach 750 Å in total.
+3. 2026-10-24, after the physics review of #35 (review 5631065066, FORUM T11), before any registered
+   episode ran; the only runs were the timing pilot of 6.6 (time and memory, no metrics) and debugging
+   runs on unregistered truths. Changes, each in the section it concerns:
+   - Truth-level tests (6.2, 6.3): the four starts of a truth are not independent; outcomes and the
+     sign test are per truth (median over starts). Thresholds for M = 8 stated.
+   - Budget guard defined on the 64 returned C fits (6.5).
+   - C applies `estimate_rho` and `estimate_d` to its start (5.3, also C_oracle), so that A1 against C
+     tests the order of decisions, not the start.
+   - Freeze at the first registered episode (6); A2 written out step by step (5.1); the Monte Carlo
+     seed of step 7 registered; `nfev` as the budget unit, `njev` and wall time reported, the last fit
+     truncated to the remaining budget (4.5).
+   - Wording: the ±2 s_ho band is a materiality threshold, not a noise band (6.2); held-out block
+     ranges and the 2θ < 0.5° description (3.2); the q_c rule bias, the `estimate_d` caveat for L > 1
+     and the trigger conservatism (5.1).
+   - Reward for X2c (4.6): Φ on the best BIC so far, γ stated at X2c, M2 on new truths for X2c.
+   - Timing truths (6.6): the seed first written would have been a nine-layer truth.
