@@ -12,6 +12,12 @@ would shrink by about sqrt(grid points / measured points).
 
 Priors are flat within the same bounds refine used (trust region for the film, global ranges for
 the nuisances). All walkers are evaluated in one batch on the refine device.
+
+The kept half of the chain is checked against its integrated autocorrelation time tau: estimates are
+usable when it spans at least 50 tau. The check is necessary, not sufficient: on a short chain tau
+itself is underestimated, so a flag set near the boundary can be optimistic; "tau_margin" (kept steps
+/ max tau) shows how far from the boundary the chain is. With refine's twelve parameters free a 2000-step chain is often
+several times shorter than that (ReflectoLearn#29); the result reports tau and a warning is logged.
 """
 
 from __future__ import annotations
@@ -20,11 +26,13 @@ import math
 
 import numpy as np
 import torch
+from loguru import logger
 from torch import Tensor
 
 from reflectolearn.refine.pipeline import PARAM_KEYS, RefineConfig, make_forward
 
 LNSIGMA_BOUNDS = (-8.0, 1.0)  # spread of log10 R residuals: e^-8 to e^1
+TAU_FACTOR = 50  # kept steps per integrated autocorrelation time for a usable estimate
 
 
 def sample_posterior(
@@ -52,7 +60,9 @@ def sample_posterior(
     Returns:
         {"params": {key: {"median", "lo", "hi"}}, "lnsigma": {...}, "acceptance", "steps", "walkers",
          "samples": (N, K) array of the kept samples, "keys": list, "log_prob_start", "log_prob_max",
-         "best": the highest-probability point visited}.
+         "best": the highest-probability point visited, "tau": integrated autocorrelation time of
+         each key and of lnsigma over the kept half, "tau_margin": kept steps / max(tau),
+         "converged": tau_margin >= 50}.
         lo/hi are the 16th/84th percentiles (68 % interval).
     """
     import emcee  # optional dependency: pip install reflectolearn[mcmc]
@@ -120,6 +130,15 @@ def sample_posterior(
     sampler.random_state = np.random.RandomState(seed)
     sampler.run_mcmc(p0, steps, progress=False)
     chain = sampler.get_chain(discard=steps // 2, flat=True)
+    tau = emcee.autocorr.integrated_time(sampler.get_chain(discard=steps // 2), quiet=True)
+    kept = steps - steps // 2
+    tau_margin = float(kept / tau.max())
+    converged = tau_margin >= TAU_FACTOR
+    if not converged:
+        logger.warning(
+            f"MCMC: {kept} kept steps < {TAU_FACTOR} x max autocorrelation time {tau.max():.0f};"
+            " the intervals are not converged, run a longer chain"
+        )
     lp = sampler.get_log_prob(flat=True)
     best = sampler.get_chain(flat=True)[int(np.argmax(lp))]
 
@@ -140,6 +159,9 @@ def sample_posterior(
         "log_prob_start": float(log_prob(x0[None])[0]),
         "log_prob_max": float(lp.max()),
         "best": dict(zip(keys, best[:-1].tolist(), strict=True)),
+        "tau": dict(zip([*keys, "lnsigma"], tau.tolist(), strict=True)),
+        "tau_margin": tau_margin,
+        "converged": converged,
     }
 
 

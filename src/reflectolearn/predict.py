@@ -16,6 +16,7 @@ real measurements, so it is fixed to the midpoint of the config.substrate range.
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import matplotlib
@@ -117,6 +118,61 @@ def load_measured_curve(
     return q[order], intensity[order]
 
 
+#: q of an XRR scan spans at most about three decades; a reflectivity curve spans many more.
+MAX_Q_SPAN = 1e4
+
+
+def _checked_curve(
+    q_meas: np.ndarray, intensity: np.ndarray, q_grid: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Sort the curve by q and refuse what np.interp would silently get wrong.
+
+    np.interp needs increasing q and does not check it, so a scan written from high to low angle
+    used to come out empty. Sorting keeps such scans, and points at equal q (overlapping segments
+    of a multi-range scan) are averaged.
+    """
+    q_meas = np.asarray(q_meas, dtype=float)
+    intensity = np.asarray(intensity, dtype=float)
+    if q_meas.shape != intensity.shape or q_meas.ndim != 1:
+        raise ValueError(
+            f"q and intensity must be 1D arrays of the same length, got {q_meas.shape} and "
+            f"{intensity.shape}"
+        )
+    if np.all(q_meas > 0) and q_meas.max() / q_meas.min() > MAX_Q_SPAN:
+        raise ValueError(
+            f"q spans {np.log10(q_meas.max() / q_meas.min()):.0f} decades, like a reflectivity "
+            "curve; check the argument order (q first, then intensity)"
+        )
+    order = np.argsort(q_meas, kind="stable")
+    q_meas, intensity = q_meas[order], intensity[order]
+    # Multi-range scans repeat q where segments overlap: average the points at equal q.
+    q_unique, index, repeats = np.unique(q_meas, return_inverse=True, return_counts=True)
+    if q_unique.size < q_meas.size:
+        warnings.warn(
+            f"{q_meas.size - q_unique.size} points share a q value with another point and are "
+            "averaged with it",
+            UserWarning,
+            stacklevel=3,
+        )
+        intensity = np.bincount(index, weights=intensity) / repeats
+        q_meas = q_unique
+    if q_meas[-1] < q_grid[0] or q_meas[0] > q_grid[-1]:
+        raise ValueError(
+            f"measured q {q_meas[0]:.4g} to {q_meas[-1]:.4g} does not overlap the model grid "
+            f"{q_grid[0]:.4g} to {q_grid[-1]:.4g} (1/Angstrom); check the unit and the argument "
+            "order (q first, then intensity)"
+        )
+    negative = int(np.sum(intensity < 0))
+    if negative:
+        warnings.warn(
+            f"{negative} of {intensity.size} intensity points are negative and are clipped to 0; "
+            "check the background subtraction",
+            UserWarning,
+            stacklevel=3,
+        )
+    return q_meas, intensity
+
+
 def preprocess_measured(
     q_meas: np.ndarray, intensity: np.ndarray, cfg: Config, device: torch.device
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -128,6 +184,7 @@ def preprocess_measured(
         mask   : (1, Q)     {0,1} valid-q mask
     """
     q_grid = cfg.q_grid.cpu().numpy()
+    q_meas, intensity = _checked_curve(q_meas, intensity, q_grid)
     # Interpolate only within the measured q range; outside is NaN -> unmeasured (mask=0).
     i_grid = np.interp(q_grid, q_meas, intensity, left=np.nan, right=np.nan)
     mask = np.isfinite(i_grid)

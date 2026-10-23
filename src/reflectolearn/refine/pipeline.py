@@ -41,7 +41,7 @@ from torch import Tensor
 from torch.utils.checkpoint import checkpoint
 
 from reflectolearn.physics import AbelesMatrix, apply_tth_offset
-from reflectolearn.refine.losses import LOSS_PRESETS, log_mse_loss
+from reflectolearn.refine.losses import LOSS_PRESETS, log_mse_loss, poisson_deviance_loss
 
 # Predicted/fitted film parameters (same order as config.param_ranges).
 PARAM_KEYS = ("thickness", "roughness", "sld")
@@ -80,7 +80,7 @@ class RefineStage:
 
     name: str
     optimize: tuple[str, ...]  # subset of PARAM_KEYS + nuisance keys
-    loss: str = "log_mse"  # key into LOSS_PRESETS
+    loss: str = "log_mse"  # key into LOSS_PRESETS, or "poisson" (needs RefineConfig.counts_scale)
     steps: int = 200
     lr: float = 0.03
     q_min: float | None = None  # [Å^-1] lower q bound seen in this stage
@@ -129,6 +129,31 @@ def _default_stages() -> list[RefineStage]:
             loss="log_mse",
             steps=300,
             lr=0.01,
+        ),
+    ]
+
+
+def likelihood_stages(budget: int = 10) -> list[RefineStage]:
+    """Stages that fit counting data to its Poisson maximum likelihood (ReflectoLearn#25).
+
+    Changes to the default strategy, each found necessary in the R2b cause separation (removing any
+    one of them stops refine short of the optimum on curves from its own forward model):
+      * every stage runs `budget` times as many steps;
+      * no correlation stage: its loss ignores the level of the curve and accepts other fringe orders;
+      * the fine stage minimizes the Poisson deviance instead of the log10 MSE, whose optimum is not
+        the maximum-likelihood point;
+      * the fine stage is followed by two stages over the same keys at lr 1e-3 and 1e-4, so that
+        Adam settles instead of jittering around the optimum.
+    About 30 times the default number of steps.
+    """
+    scale, _, fine = _default_stages()
+    fine = RefineStage(fine.name, fine.optimize, "poisson", fine.steps * budget, fine.lr)
+    return [
+        RefineStage(scale.name, scale.optimize, scale.loss, scale.steps * budget, scale.lr),
+        fine,
+        *(
+            RefineStage(f"4.polish{lr:g}", fine.optimize, "poisson", 300 * budget, lr)
+            for lr in (1e-3, 1e-4)
         ),
     ]
 
@@ -187,7 +212,20 @@ class RefineConfig:
     oxide_thickness_init: float = 5.0
     oxide_sld_init: float = 18.0
     oxide_roughness_init: float = 3.0
+    # Counts at R = 1, for stages with loss="poisson" (the likelihood preset). None: not counting data.
+    counts_scale: float | None = None
     stages: list[RefineStage] = field(default_factory=_default_stages)
+
+    @classmethod
+    def likelihood(cls, counts_scale: float, **overrides) -> RefineConfig:
+        """The configuration that reaches the Poisson maximum-likelihood fit (ReflectoLearn#25):
+        likelihood_stages() with the count scale of the data. Other fields keep their defaults
+        unless overridden.
+
+        Use it on raw counts on the measured q points (refine's q_grid = the measured q,
+        log_r_obs = log10(counts / counts_scale)), not on a curve interpolated onto the model grid:
+        see `poisson_deviance_loss`."""
+        return cls(counts_scale=counts_scale, stages=likelihood_stages(), **overrides)
 
 
 def _film_bounds(param_ranges, p_init: Tensor, margin: float) -> dict[str, tuple[Tensor, Tensor]]:
@@ -511,7 +549,14 @@ def refine(
                 continue
             active_set |= _stage_effects(opt_keys)
 
-            loss_fn = LOSS_PRESETS[stage.loss]
+            if stage.loss == "poisson":
+                if config.counts_scale is None:
+                    raise ValueError(
+                        f"stage {stage.name!r} uses loss='poisson' but counts_scale is None"
+                    )
+                loss_fn = poisson_deviance_loss(config.counts_scale)
+            else:
+                loss_fn = LOSS_PRESETS[stage.loss]
             stage_mask = mask
             if stage.q_min is not None:
                 stage_mask = stage_mask * (q_grid > stage.q_min)
@@ -760,6 +805,7 @@ def refine_multistart(
 __all__ = [
     "RefineStage",
     "RefineConfig",
+    "likelihood_stages",
     "refine",
     "refine_multistart",
     "make_forward",
