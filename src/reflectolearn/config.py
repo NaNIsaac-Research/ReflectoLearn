@@ -18,9 +18,6 @@ from reflectolearn.physics import tth2q
 Range = Annotated[list[float], Field(min_length=2, max_length=2)]
 
 
-# ==============================================================================
-# Sub-configs
-# ==============================================================================
 class ParamRanges(BaseModel):
     """Range [min, max] of the film parameters to predict."""
 
@@ -93,7 +90,7 @@ class AugmentationConfig(BaseModel):
     beam_width_range: Range = [0.005, 0.015]  # [mm]
     sample_len_range: Range = [5.0, 30.0]  # [mm]
 
-    # --- Forward-model randomization (read by generator; for sim-to-real robustness) ---
+    # Forward-model randomization, read by the generator for sim-to-real robustness.
     # q-axis zero-point error: alignment offset [deg] added to measured 2theta. [0, 0] disables it.
     tth_offset: Range = [-0.02, 0.02]
     # Native oxide / surface contamination layer (nuisance: used only in simulation, not predicted).
@@ -106,9 +103,6 @@ class AugmentationConfig(BaseModel):
     kalpha2_wavelength: float = 1.54439  # [A] Cu Kα2 (Kα1 = simulation.wavelength)
 
 
-# ==============================================================================
-# Root config
-# ==============================================================================
 class Config(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="ignore")
 
