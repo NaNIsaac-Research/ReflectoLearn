@@ -12,7 +12,11 @@ and frozen records at a14041f). From the repository root:
     .venv/Scripts/python.exe -I experiments/005_fisher_global/basin.py run --source r2a --set pilot
     <x2e>/.venv/Scripts/python.exe -I experiments/005_fisher_global/basin.py run --source x2e \
         --set pilot --x2e <x2e>
-    .venv/Scripts/python.exe -I experiments/005_fisher_global/basin.py pilot-report
+    .venv/Scripts/python.exe -I experiments/005_fisher_global/basin_pilot_report.py
+
+The full run (one result file per candidate and objective in docs/fisher_global/basin_full/, resumable,
+several workers per source) adds `--set full --worker <k> --control <file>`; `basin_report.py` then
+applies the registered verdict rules.
 """
 
 from __future__ import annotations
@@ -36,6 +40,7 @@ from torch.func import jacfwd
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "docs" / "fisher_global"
 CANDIDATES = OUT / "basin_candidates.json"
+FULL_DIR = OUT / "basin_full"
 
 D_MAX = 1e5  # R2a candidates: 4 < ΔD ≤ D_MAX
 REACH = 4.0
@@ -551,6 +556,71 @@ def refine(prob: Problem) -> dict:
     return row
 
 
+def result_path(cid: str, objective: str) -> Path:
+    return FULL_DIR / f"{cid.replace(':', '_')}__{objective}.json"
+
+
+def full_run(
+    source: str,
+    wt: Path | None,
+    objectives: tuple[str, ...],
+    only_pilot: bool,
+    worker: int,
+    control: Path | None,
+) -> None:
+    """The full run: one file per candidate and objective under basin_full/, written once.
+
+    Several workers share the list; a candidate is claimed by creating its lock file, so a restart
+    skips finished candidates and a crashed worker's lock (removed by the wrapper before a restart)
+    is the only state left behind. A worker stops before its next claim when its index is not below
+    the worker count in the control file, which is how the run is narrowed from 4 to 2 processes.
+    """
+    torch.set_num_threads(1)
+    FULL_DIR.mkdir(exist_ok=True)
+    cand = json.loads(CANDIDATES.read_text(encoding="utf-8"))
+    ids = cand["pilot"] if only_pilot else [c["id"] for c in cand[source]]
+    ids = [i for i in ids if i.startswith(source + ":")]
+    for cid in ids:
+        for objective in objectives:
+            if control is not None and control.exists():
+                if worker >= json.loads(control.read_text(encoding="utf-8"))["workers"]:
+                    print(f"worker {worker}: stopped by {control}", flush=True)
+                    return
+            path = result_path(cid, objective)
+            err = path.with_suffix(".error.json")
+            lock = path.with_suffix(".lock")
+            if path.exists() or err.exists():
+                continue
+            try:
+                lock.open("x").close()
+            except FileExistsError:
+                continue
+            try:
+                if path.exists() or err.exists():
+                    continue
+                if source == "r2a":
+                    prob = r2a_problems([cid])[0]
+                else:
+                    prob = x2e_problems([cid], wt, (objective,))[0]
+                row = refine(prob) | {"lo": prob.lo.tolist(), "hi": prob.hi.tolist()}
+                tmp = path.with_suffix(".tmp")
+                tmp.write_text(json.dumps(row), encoding="utf-8")
+                tmp.replace(path)
+                print(
+                    f"{row['id']} {row['objective']}: {row['outcome']}, nfev {row['nfev_total']},"
+                    f" {row['seconds']:.0f} s, peak {row['peak_mb']:.0f} MB",
+                    flush=True,
+                )
+            except Exception as exc:
+                err.write_text(
+                    json.dumps({"id": cid, "objective": objective, "error": repr(exc)}),
+                    encoding="utf-8",
+                )
+                print(f"{cid} {objective}: error {exc!r}", flush=True)
+            finally:
+                lock.unlink(missing_ok=True)
+
+
 def run(source: str, which: str, wt: Path | None, objectives: tuple[str, ...], out: Path) -> None:
     torch.set_num_threads(1)
     cand = json.loads(CANDIDATES.read_text(encoding="utf-8"))
@@ -617,6 +687,9 @@ def main() -> None:
     ap.add_argument("--set", choices=["pilot", "full"], default="pilot")
     ap.add_argument("--x2e", type=Path)
     ap.add_argument("--objectives", nargs="+", default=["nf", "tr"])
+    ap.add_argument("--only-pilot", action="store_true", help="full run, pilot candidates only")
+    ap.add_argument("--worker", type=int, default=0)
+    ap.add_argument("--control", type=Path, help="JSON file {'workers': n}, read between claims")
     args = ap.parse_args()
     if args.source == "x2e" and args.x2e is None:
         ap.error("--source x2e needs --x2e <X2e worktree>")
@@ -624,6 +697,9 @@ def main() -> None:
         candidates(args.task_a)
     elif args.part == "smoke":
         smoke(args.source, args.x2e, args.objectives[0])
+    elif args.set == "full":
+        objectives = tuple(args.objectives) if args.source == "x2e" else ("nf",)
+        full_run(args.source, args.x2e, objectives, args.only_pilot, args.worker, args.control)
     else:
         out = OUT / f"basin_{args.set}.jsonl"
         objectives = tuple(args.objectives) if args.source == "x2e" else ("nf",)
