@@ -6,7 +6,7 @@ Abeles data generation.
 """
 
 from pathlib import Path
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 import torch
 import yaml
@@ -18,9 +18,6 @@ from reflectolearn.physics import tth2q
 Range = Annotated[list[float], Field(min_length=2, max_length=2)]
 
 
-# ==============================================================================
-# Sub-configs
-# ==============================================================================
 class ParamRanges(BaseModel):
     """Range [min, max] of the film parameters to predict."""
 
@@ -42,6 +39,12 @@ class SimulationConfig(BaseModel):
     q_max_tth: float = 15.0
     q_points: int = 2000  # [verified] encoder 6x MaxPool -> len 31
     n_samples: int = 50_000  # reference only for streaming (offline compatibility)
+    # "legacy": AbelesMatrix (complex64) and the augmentor's grid convolution. "reflectofit": the
+    # same draws through reflectofit.forward in float64, footprint and resolution inside the forward
+    # model with a fixed node count (its error is in engine_metadata). The default stays legacy until
+    # ReflectoFit's resolution rule is fast on real-SLD edges (ReflectoFit#6).
+    engine: Literal["legacy", "reflectofit"] = "legacy"
+    resolution_nodes: int = 61
 
 
 class ModelConfig(BaseModel):
@@ -87,7 +90,7 @@ class AugmentationConfig(BaseModel):
     beam_width_range: Range = [0.005, 0.015]  # [mm]
     sample_len_range: Range = [5.0, 30.0]  # [mm]
 
-    # --- Forward-model randomization (read by generator; for sim-to-real robustness) ---
+    # Forward-model randomization, read by the generator for sim-to-real robustness.
     # q-axis zero-point error: alignment offset [deg] added to measured 2theta. [0, 0] disables it.
     tth_offset: Range = [-0.02, 0.02]
     # Native oxide / surface contamination layer (nuisance: used only in simulation, not predicted).
@@ -100,9 +103,6 @@ class AugmentationConfig(BaseModel):
     kalpha2_wavelength: float = 1.54439  # [A] Cu Kα2 (Kα1 = simulation.wavelength)
 
 
-# ==============================================================================
-# Root config
-# ==============================================================================
 class Config(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="ignore")
 

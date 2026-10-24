@@ -114,9 +114,13 @@ uv run pytest
 
 The two GenX tests are skipped without the `genx` extra and the emcee test without the `mcmc` extra.
 
-## History
+## Validation
 
-This repository supersedes [Reflecto](https://github.com/NaNIsaac/Reflecto) (GenX fitting, now `genx_fit.py`), [XRefine](https://github.com/NaNIsaac/XRefine) and [xrr_combine](https://github.com/NaNIsaac/xrr_combine) (scan stitching, now `stitch.py`). The earlier experiments are in [ReflectoExp](https://github.com/NaNIsaac/ReflectoExp).
+The validation so far is **synthetic only**. No measured data ships with the repository.
+
+- `examples/synthetic_film_fit/` simulates counts from a known film with an independent Parratt engine. It then runs them through the fit path that `reflectolearn predict` uses after its network, and compares the result with the known film. `expected.json` keeps the truth (with tolerances) apart from a regression snapshot, and `tests/test_example_synthetic_film_fit.py` checks both.
+- Known limit found by the example: on data with no angular offset, the default `refine` moves the 2θ offset towards its bound and the film SLD comes out about 30% low ([#14](https://github.com/NaNIsaac/ReflectoLearn/issues/14)). The SLD and roughness checks are strict expected failures until that is fixed. The thickness is right.
+- Measured XRR curves have not been validated yet.
 
 ## Citation
 
