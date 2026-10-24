@@ -61,7 +61,7 @@ def _abeles(q: Tensor, film: FilmCase, wl: float, *, with_oxide: bool = False) -
     return R.squeeze(0).clamp_min(1e-15)
 
 
-# --- individual effects: each takes the clean curve / q and returns a modified R (Q,) ---
+# Individual effects: each takes the clean curve / q and returns a modified R (Q,).
 
 
 def _eff_tth_offset(q: Tensor, film: FilmCase, wl: float, offset_deg: float = 0.02) -> Tensor:

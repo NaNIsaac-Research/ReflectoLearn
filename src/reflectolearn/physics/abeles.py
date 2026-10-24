@@ -116,7 +116,6 @@ class AbelesMatrix(nn.Module):
         # Python scalar into a 0-d tensor so it participates on-device.
         wl_tensor = torch.tensor(wavelength, device=self.device, dtype=torch.float32)
 
-        # 1. Input Preparation
         q_f = q.float()
 
         # SLD & Complex handling (Strict Complex Mode)
@@ -138,10 +137,8 @@ class AbelesMatrix(nn.Module):
         t_in = thickness.float().unsqueeze(1)  # (B, 1, N-1)
         r_in = roughness.float().unsqueeze(1)  # (B, 1, N-1)
 
-        # 2. Physics Core
         reflectivity = abeles_core(q_in, t_in, r_in, sld_in)
 
-        # 3. Footprint Correction
         # R_corr = R * erf((L * sin(alpha)) / (2*sqrt(2) * sigma_beam))
         if sample_length is not None and beam_width is not None:
             sl = sample_length.float()

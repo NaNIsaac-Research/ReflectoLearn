@@ -97,30 +97,25 @@ class XRRAugmentor:
         q = q.to(R.dtype).to(device)
         mask = torch.ones(B, Q, device=device, dtype=R.dtype)
 
-        # 1. Footprint attenuation (low-angle geometric correction)
         if self.do_footprint and self._maybe():
             beam_width = self._u(*self.beam_width_range)
             sample_len = self._u(*self.sample_len_range)
             R = self._footprint(q, R, beam_width, sample_len)
 
-        # 2. Resolution smearing (Gaussian convolution in q)
         if self._maybe():
             sigma = self._u(*self.res_sigma_range)
             R = self._smear(q, R, sigma)
 
-        # 3. Intensity scale i0 (per-sample multiplicative)
         if self._maybe():
             i0 = torch.empty(B, 1, device=device).uniform_(*self.i0_range)
             R = R * i0
 
-        # 4. Additive background (per-sample, 10**bkg with bkg in log10)
         if self._maybe():
             bkg_log = torch.empty(B, 1, device=device).uniform_(*self.bkg_range)
             R = R + torch.pow(torch.tensor(10.0), bkg_log)
 
-        # 5. Poisson counting noise (counts = R*s -> sample -> rescale).
-        #    s must be large (1e5~1e8); otherwise R(~1e-6) gives lam~0 and the
-        #    high-q signal is destroyed. s is per-sample (signal-dependent SNR).
+        # s must be large (1e5-1e8): at R~1e-6 a small s gives lam~0 and destroys the high-q signal.
+        # s is per-sample, so the SNR depends on the signal.
         if self._maybe():
             s = torch.pow(
                 torch.tensor(10.0),
@@ -129,7 +124,7 @@ class XRRAugmentor:
             lam = (R * s).clamp_min(0.0)
             R = torch.poisson(lam) / s
 
-        # 6. Low/high angle masking -> recorded in `mask`, NOT zeroed in R.
+        # Masked points are recorded in `mask`, not zeroed in R.
         #    The generator fills mask==0 with the log-floor so the network sees
         #    a *consistent* "no data" signal instead of random -15 cliffs.
         if self._maybe():
