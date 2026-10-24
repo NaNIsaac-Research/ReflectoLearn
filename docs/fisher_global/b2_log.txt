@@ -1,0 +1,7 @@
+truth-start fit: D 2.67e-10, nfev 14, 2 s
+thickness: half-width 5.376 (2.24%), Fisher 12.65, at bound False, lowest 0, 110 s
+sld: half-width 0.0639 (0.27%), Fisher 0.07784, at bound False, lowest 0, 114 s
+thickness2: half-width 0.1492 (0.12%), Fisher 0.3067, at bound False, lowest 0, 102 s
+sld2: half-width 0.05625 (0.19%), Fisher 0.08791, at bound False, lowest 0, 118 s
+total 446 s, forward calls 16000
+END exit=0 wall_s=451 peak_MB=5 stopped=
