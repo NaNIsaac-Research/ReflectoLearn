@@ -28,6 +28,10 @@ genx = [
 mcmc = [
     "emcee",
 ]
+onnx = [
+    "onnxruntime",
+    "onnxscript",
+]
 
 [project.urls]
 Homepage = "https://github.com/NaNIsaac/ReflectoLearn"
