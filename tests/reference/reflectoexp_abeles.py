@@ -1,5 +1,5 @@
 # Verbatim copy of src/reflecto_exp/simulate/torch_engine/abeles.py from NaNIsaac/ReflectoExp at
-# 029a6f0 (archived), kept only as a numerical reference for tests/test_engine_parity.py. Do not edit.
+# 029a6f0, kept only as a numerical reference for tests/test_engine_parity.py. Do not edit.
 from __future__ import annotations
 
 import math

@@ -122,9 +122,9 @@ The validation so far is **synthetic only**. No measured data ships with the rep
 - Known limit found by the example: on data with no angular offset, the default `refine` moves the 2θ offset towards its bound and the film SLD comes out about 30% low ([#14](https://github.com/NaNIsaac/ReflectoLearn/issues/14)). The SLD and roughness checks are strict expected failures until that is fixed. The thickness is right.
 - Measured XRR curves have not been validated yet.
 
-## History
+## Related repositories
 
-This repository supersedes [Reflecto](https://github.com/NaNIsaac/Reflecto) (GenX fitting, now `genx_fit.py`), [XRefine](https://github.com/NaNIsaac/XRefine) and [xrr_combine](https://github.com/NaNIsaac/xrr_combine) (scan stitching, now `stitch.py`). The earlier experiments are in [ReflectoExp](https://github.com/NaNIsaac/ReflectoExp).
+[Reflecto](https://github.com/NaNIsaac/Reflecto), [ReflectoExp](https://github.com/NaNIsaac/ReflectoExp) and [XRefine](https://github.com/NaNIsaac/XRefine) are competing implementations with a different approach: Reflecto refines a CNN guess with GenX differential evolution, ReflectoExp is a series of network regressors trained on GenX and refnx simulations, and XRefine trains through a differentiable Abeles simulator in the loss and refines in differential-evolution stages. Code was copied between them: the model and training loop come from ReflectoExp exp07, the Abeles engine and refinement losses from XRefine, and `genx_fit.py` from Reflecto's GenX fit. `stitch.py` is a NumPy port of [xrr_combine](https://github.com/NaNIsaac/xrr_combine), a standalone beamline tool. The approaches have not been compared on a common dataset. Methods, code relations and recorded results: [docs/xrr-research-index.md](docs/xrr-research-index.md).
 
 ## Citation
 
