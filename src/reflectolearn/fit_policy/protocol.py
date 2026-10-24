@@ -10,8 +10,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from reflectolearn.fit_policy.env import FitEnv
-from reflectolearn.fit_policy.stack import LAYER_KEYS
+from reflectolearn.fit_policy import stack as st
+from reflectolearn.fit_policy.env import NEW_LAYER_SIGMA, RESIDUAL_Z, FitEnv
+from reflectolearn.fit_policy.stack import LAYER_KEYS, Stack
 
 EXCESS_SIGMAS = 3.0
 MERGE_CONTRAST = 2.0
@@ -29,6 +30,9 @@ class Protocol:
     kept_path: bool = False  # revert to and return the best state of the kept path
     inner: bool = False  # also require a lower deviance on the env's inner (unfitted) points
     estimate: bool = True  # False (A1o): skip steps 2-3, the start is the truth
+    # X2e (X2E.md section 4); both off is A1
+    s1: bool = False  # several screened starts for every added layer
+    s2: bool = False  # screened stack starts from the data's fringe peaks before step 4
 
     def first_loss(self) -> str:
         return "log" if self.staged else "poisson"
@@ -46,6 +50,17 @@ A1mk = Protocol("A1mk", matched=True, kept_path=True)
 A1v = Protocol("A1v", matched=True, kept_path=True, inner=True)  # env needs a fit_mask
 A1o = Protocol("A1o", estimate=False)  # started at the truth
 X2D_ARMS = {p.name: p for p in (A1, A1m, A1k, A1mk, A1v, A1o)}
+
+S1 = Protocol("S1", s1=True)
+S2 = Protocol("S2", s2=True)
+S12 = Protocol("S12", s1=True, s2=True)  # primary
+D3 = Protocol("D3", estimate=False)  # started at the true-L data start
+X2E_ARMS = {p.name: p for p in (A1, S1, S2, S12, A1o, D3)}
+
+S1_FACTORS = (1.0, 0.75, 1.25)  # rho of a new layer relative to A1's neighbour mean
+S1_PEAKS = 3
+SCREEN_STEPS = 20
+S2_Z = np.arange(20.0, 801.0, 1.0)
 
 
 def _do(env: FitEnv, *actions) -> None:
@@ -90,10 +105,77 @@ def _candidates(env: FitEnv, p: Protocol) -> list[tuple]:
 def _try(env: FitEnv, action: tuple, p: Protocol) -> FitEnv | None:
     if not env.valid(action):
         return None
-    fork = env.fork()
-    fork.step(action)
+    if p.s1 and action[0] == "add":
+        fork = _s1_add(env, action)
+    else:
+        fork = env.fork()
+        fork.step(action)
     _refit(fork, p)
     return fork
+
+
+def _screen(env: FitEnv) -> None:
+    _do(env, ("loss", "log"), ("fit", SCREEN_STEPS))
+
+
+def _s1_add(env: FitEnv, action: tuple) -> FitEnv:
+    """X2E.md 4.1: the new layer at each of the residual's three strongest peaks and three SLDs,
+    each screened with fit(20); the best one is returned (refit by the caller as A1 refits)."""
+    resid = np.log10(np.maximum(env.y, st.LOG_FLOOR_COUNTS)) - np.log10(env.lam)
+    peaks = st.fringe_peaks(env.q, resid, 1.1 * env._qc(), RESIDUAL_Z, k=S1_PEAKS)
+    starts = [(z, f) for z in peaks for f in S1_FACTORS] or [(None, 1.0)]
+    pos = action[1]
+    tried = []
+    for z, factor in starts:
+        fork = env.fork()
+        fork.step(action)  # A1's new layer: strongest peak (or 50 Å), neighbour-mean SLD, σ 3 Å
+        layers = fork.state.stack.layers.copy()
+        if z is not None:
+            layers[pos, 0] = z
+        layers[pos, 1] = NEW_LAYER_SIGMA
+        layers[pos, 2] *= factor
+        fork.set_stack(Stack(layers, fork.state.stack.instr.copy()), fork.state.open_layers)
+        _screen(fork)
+        tried.append(fork)
+    best = int(np.argmin([f.bic for f in tried]))
+    env.episode.s1_changed.append(best != 0)
+    return tried[best]
+
+
+def _s2_stacks(env: FitEnv) -> list[Stack]:
+    """X2E.md 4.2: stacks from the data's fringe peaks, read as interface depths in both orders."""
+    base = env.state.stack
+    values = np.log10(np.maximum(env.y, st.LOG_FLOOR_COUNTS))
+    peaks = st.fringe_peaks(env.q, values, 1.1 * env._qc(), S2_Z)
+    stacks = []
+    for m in range(1, len(peaks) + 1):
+        thickness = np.diff([0.0, *sorted(peaks[:m])])
+        for order in (thickness, thickness[::-1]) if m > 1 else (thickness,):
+            if order.min() < st.LAYER_BOUNDS["d"][0]:
+                continue
+            rho = [base.layers[0, 2]]
+            for _ in range(m - 1):
+                rho.append(0.5 * (rho[-1] + st.SUB_SLD))
+            sigma = [base.layers[0, 1], *[NEW_LAYER_SIGMA] * (m - 1)]
+            stacks.append(Stack(np.column_stack([order, sigma, rho]), base.instr.copy()))
+    return stacks
+
+
+def _s2_start(env: FitEnv) -> FitEnv:
+    """X2E.md 4.2: screen A1's step-3 state and the peak stacks with fit(20) (d and rho open),
+    keep the lowest BIC."""
+    candidates = [env.state.stack, *_s2_stacks(env)]
+    tried = []
+    for stack in candidates:
+        fork = env.fork()
+        open_layers = np.zeros((stack.n_layers, 3), bool)
+        open_layers[:, [LAYER_KEYS.index("d"), LAYER_KEYS.index("rho")]] = True
+        fork.set_stack(stack, open_layers)
+        _screen(fork)
+        tried.append(fork)
+    best = int(np.argmin([f.bic for f in tried]))
+    env.episode.s2_changed = best != 0
+    return tried[best]
 
 
 def run(env: FitEnv, p: Protocol = A1) -> FitEnv:
@@ -105,6 +187,8 @@ def run(env: FitEnv, p: Protocol = A1) -> FitEnv:
     # 2–3. critical edge -> SLD, Kiessig fringes -> thickness
     if p.estimate:
         _do(env, ("estimate_rho",), ("estimate_d",))
+    if p.s2:
+        env = _s2_start(env)
     if p.staged:
         # 4. structure, 5. roughness last, 6. instrument last with the finishing loss
         _do(env, ("open_all", "d"), ("open_all", "rho"), ("fit", 100), ("fit", 100))
