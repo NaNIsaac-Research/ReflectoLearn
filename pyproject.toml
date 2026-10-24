@@ -15,7 +15,6 @@ dependencies = [
     "pydantic",
     "pyyaml",
     "loguru",
-    "tensorboard",
     "typer",
     "optuna",
     "reflectofit",
