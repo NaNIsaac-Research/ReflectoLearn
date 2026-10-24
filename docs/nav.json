@@ -1,0 +1,20 @@
+{
+  "sidebar": [
+    {
+      "text": "Getting Started",
+      "items": [{ "text": "Overview", "link": "index.md" }]
+    },
+    {
+      "text": "Guides",
+      "items": [{ "text": "Refinement", "link": "refine.md" }]
+    },
+    {
+      "text": "Theory",
+      "items": [{ "text": "Training data and network", "link": "training.md" }]
+    },
+    {
+      "text": "Research",
+      "items": [{ "text": "XRR research index", "link": "xrr-research-index.md" }]
+    }
+  ]
+}

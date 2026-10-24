@@ -13,12 +13,14 @@ from reflectolearn.refine.losses import (
     linear_mse_loss,
     log_gradient_loss,
     log_mse_loss,
+    poisson_deviance_loss,
 )
 from reflectolearn.refine.pipeline import (
     PARAM_KEYS,
     RefineConfig,
     RefineStage,
     fft_thickness,
+    likelihood_stages,
     make_forward,
     per_curve_log_mse,
     refine,
@@ -34,6 +36,7 @@ __all__ = [
     "per_curve_log_mse",
     "RefineConfig",
     "RefineStage",
+    "likelihood_stages",
     "PARAM_KEYS",
     # losses
     "LossFn",
@@ -43,6 +46,7 @@ __all__ = [
     "correlation_loss",
     "log_gradient_loss",
     "hybrid_linear_log_loss",
+    "poisson_deviance_loss",
     "LOG_MSE",
     "LINEAR_MSE",
     "CORRELATION",
