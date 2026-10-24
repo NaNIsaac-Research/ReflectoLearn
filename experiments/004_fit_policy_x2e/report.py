@@ -49,7 +49,11 @@ def load(arm: str) -> dict[tuple, dict]:
 
 
 def check(arms: dict) -> None:
-    """Refuse mixed commits, missing episodes, and a budget-limited cell without C(2E)."""
+    """Refuse error records, mixed commits, missing episodes, and a budget-limited cell without
+    C(2E)."""
+    errors = RUNS / "errors.jsonl"
+    if errors.exists() and errors.read_text(encoding="utf-8").strip():
+        raise SystemExit(f"{errors.name} has error records: no verdict (amendment 2)")
     commits = {r["commit"] for recs in arms.values() for r in recs.values()}
     if len(commits) != 1:
         raise SystemExit(f"records from more than one commit: {sorted(commits)}")

@@ -163,3 +163,46 @@ Episodes: A1, S1, S2, S12, B, C at 384 each (2304). A1o, D2 and D3 at 96 each. D
 A1's 384 episodes. [unverified] S1's screening adds up to 9 × `fit(20)` per `add` candidate.
 D2 costs about 10⁴ forward evaluations per episode. The timing pilot on unregistered seeds comes
 first, then the registered run in a [HEAVY] slot.
+
+## Amendment 2: full re-run after #43 (before any outcome is read)
+
+Physics points from the #41 comment of 2026-10-24 11:08 UTC and the #44 review. There is no X2e
+amendment 1; the number follows the name used in #41 and #44.
+
+1. **Frozen commit.** The commit that adds this amendment. Its hash is in the #41 description and in
+   every record. Against 1c38e61, the only change under `src/reflectolearn/fit_policy` is
+   `stack.deviance_terms`, clamped at 0 (#44, fixes #43), and `tests/test_fit_policy.py` gains its two
+   tests. The merge of #44 also brings #42 (b214ac4) into this branch: comment and docstring edits
+   to ten files outside `fit_policy` (`config.py`, `data/augmentations.py`, `evaluate.py`,
+   `physics/abeles.py`, `predict.py`, `refine/pipeline.py`, `report/figures.py` and three test
+   files). With docstrings removed, each of them has the same AST before and after. Outside the
+   measured code: `run.py` writes error records (item 4), `report.py` refuses them, and the run
+   wrapper (not in the repository) now writes the exit code and the last stderr line.
+2. **The aborted run.** At 1c38e61, started 2026-10-24 13:09 KST, it stopped at 18:02:05 when A1o
+   unit (3, 13, 0, 0) raised `ValueError: Residuals are not finite in the initial point.` (#43). That
+   was before the machine's 18:07 bugcheck. 2392 of 2592 records, all at 1c38e61, no duplicate
+   units: A1, S1, S2, S12, B and C 384 each, A1o 88 of 96 (missing n = 3, j = 12–15), D2 and D3 none.
+   What was looked at: per-arm unit keys, commits and duplicates; C's `capped` flag per cell, for the
+   C(2E) guard (at most 0.172, so C(2E) is not needed); the traceback; and a re-run of the 8 missing
+   A1o units at 1c38e61, printing only whether each raised (only (3, 13, 0, 0) did). No outcome
+   metric was read. The records are kept in `x2e_runs_aborted_1c38e61/` and are not read for any
+   result. `report.py` does not read that directory. The re-run starts from an empty `x2e_runs/`.
+   The stop was forced by an exception, so it is not optional stopping.
+3. **Everything else unchanged.** Root 20261027, the units, the arms, every threshold, the grading
+   order, the rules in `report.py`, and the confirmation root 20261028. A1o (3, 13, 0, 0) is re-run
+   like every other unit and gets no special handling.
+4. **The next exception.** A unit that raises is written to `x2e_runs/errors.jsonl` with its error
+   and commit, and the run goes on. It does not count as done. `report.py` refuses a verdict while
+   that file has a record, as it does for a missing episode. A fix then goes in as a further
+   amendment with a full re-run, the same path as this one.
+5. **Comparability with X2b and X2d.** X2e's A1 is the A1 of X2b and X2d plus the clamp. The "third
+   sample of the X2b question" (section 6) is reported with that difference named. It does not say
+   that X2b or X2d would have come out the same. The 26-episode check in #44 does not show that: its
+   counter did not separate least-squares trials, returned deviances and the `deviance_excess`
+   draws.
+6. **Clamp exposure.** Not counted (physics item 6 is optional). So the run cannot say in how many
+   episodes the clamp acted. That is a stated limitation of every X2e comparison with X2b or X2d,
+   and it does not affect comparisons inside X2e, where every arm runs the same code.
+
+Cost: all 2592 episodes again. The aborted run did 2392 in 4.9 h on 4 processes; the remaining 200,
+mostly D2, add about 0.2 h. [HEAVY] slot: 4 processes, BelowNormal, 6 GB, 8 h.

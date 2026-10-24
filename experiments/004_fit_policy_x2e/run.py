@@ -4,7 +4,8 @@ Seed root 20261027 for every data stream (X2E.md section 3). Episodes are paired
 truth j, noise level s, start k), 3 × 16 × 2 × 4 = 384 per arm; A1o, D2 and D3 run once per truth
 and noise level (k = 0). D1 runs inside every A1 episode. Each finished episode is one JSON line in
 docs/fit_policy/x2e_runs/<arm>.jsonl; every line carries its commit, and episodes refuse to start
-with uncommitted changes (freeze).
+with uncommitted changes (freeze). An episode that raises goes to x2e_runs/errors.jsonl instead, is
+not counted as done, and makes report.py refuse a verdict (amendment 2).
 
 Run:  uv run python experiments/004_fit_policy_x2e/run.py noise
       uv run python experiments/004_fit_policy_x2e/run.py episodes --arms A1 S12 C --workers 4
@@ -39,6 +40,7 @@ from reflectolearn.fit_policy.protocol import run as run_protocol
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 RUNS = ROOT_DIR / "docs" / "fit_policy" / "x2e_runs"
+ERRORS = RUNS / "errors.jsonl"
 SEED_ROOT = 20261027
 CLASSES = (1, 2, 3)
 N_TRUTHS = 16
@@ -142,7 +144,12 @@ def episode(
 
 
 def _episode(args) -> dict:
-    return episode(*args)
+    """An episode that raises becomes an error record and the run goes on (amendment 2, rule 4)."""
+    try:
+        return episode(*args)
+    except Exception as exc:  # noqa: BLE001 - the rule covers any exception an episode raises
+        arm, n, j, s, k = args
+        return {"arm": arm, "n": n, "j": j, "s": s, "k": k, "error": f"{type(exc).__name__}: {exc}"}
 
 
 def _done(path: Path) -> set[tuple[int, int, int, int]]:
@@ -161,15 +168,24 @@ def run_episodes(arms: list[str], workers: int, classes: list[int]) -> None:
         done = _done(RUNS / f"{arm}.jsonl")
         jobs += [(arm, *u) for u in units(arm) if u[0] in classes and u not in done]
     print(f"{len(jobs)} episodes to run")
+    errors = 0
     with Pool(workers) as pool:
         for i, rec in enumerate(pool.imap_unordered(_episode, jobs), 1):
-            with (RUNS / f"{rec['arm']}.jsonl").open("a", encoding="utf-8") as f:
+            path = ERRORS if "error" in rec else RUNS / f"{rec['arm']}.jsonl"
+            with path.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(rec | {"commit": commit}) + "\n")
-            if i % 20 == 0 or i == len(jobs):
+            if "error" in rec:
+                errors += 1
+                print(
+                    f"error {rec['arm']} n{rec['n']} j{rec['j']} s{rec['s']} k{rec['k']}: {rec['error']}",
+                    flush=True,
+                )
+            elif i % 20 == 0 or i == len(jobs):
                 print(
                     f"{i}/{len(jobs)} {rec['arm']} n{rec['n']} j{rec['j']} {rec['seconds']:.0f}s",
                     flush=True,
                 )
+    print(f"done, {errors} error records", flush=True)
 
 
 def noise_scale() -> None:
