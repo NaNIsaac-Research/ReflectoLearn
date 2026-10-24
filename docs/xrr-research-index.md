@@ -58,7 +58,7 @@ Related, not research branches:
 | 2026-10-22/23 | ReflectoLearn `research/identifiability` | 55e96f8 … | Experiment 001 (PR #24) |
 | 2026-10-23 | ReflectoLearn | #31 | Poisson objective preset (opt-in) |
 
-The "supersedes" / "superseded by ReflectoLearn" sentences in the READMEs were all added on 2026-10-16 in one documentation pass (ReflectoLearn 96b29cf, Reflecto ee408d4, XRefine 748de20, xrr_combine 5c3a584, ReflectoExp d964243). They describe where code was copied, not a comparison of results; the ones outside this repository are being corrected in their own PRs.
+The "supersedes" / "superseded by ReflectoLearn" sentences in the READMEs were all added on 2026-10-16 in one documentation pass (ReflectoLearn 96b29cf, Reflecto ee408d4, XRefine 748de20, xrr_combine 5c3a584, ReflectoExp d964243). They describe where code was copied, not a comparison of results; they have since been rewritten to describe the repositories as competing implementations with different approaches.
 
 ## Methods by branch
 

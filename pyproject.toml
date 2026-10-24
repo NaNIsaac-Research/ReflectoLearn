@@ -61,7 +61,7 @@ reflectofit = { git = "https://github.com/NaNIsaac/ReflectoFit", rev = "59802ae1
 
 [tool.ruff]
 line-length = 100
-# verbatim copies of archived engines, compared against in tests/test_engine_parity.py
+# verbatim copies of the XRefine and ReflectoExp engines, compared against in tests/test_engine_parity.py
 extend-exclude = ["tests/reference"]
 
 [tool.ruff.lint]
