@@ -177,3 +177,24 @@ B-1: minutes of CPU, one process, no HEAVY slot. B-2: the boss slot above. H-cal
 download, no fit. Order a → b → c; c may run beside a. Results: `RESULTS-B1.md`, `RESULTS-B2.md`,
 `RESULTS-HCAL2.md` in `docs/xrr/GEN-PHASE1/`, generated tables and JSON in `docs/fisher_global/`
 on this branch. No result file of R2a, X2e or any other experiment is overwritten.
+
+## Amendment 1: H-cal2 pre-check 3 (after the pre-checks, before any per-point dispersion)
+
+Written after `hcal2.py precheck` (`docs/fisher_global/hcal2_precheck.json`) and before
+`hcal2.py dispersion` was run. B-1's outcome was known; B-2 was running. Nothing else changes.
+
+- Pre-check outcomes: 100 sets of 839 points; `raw` integer, minimum 1; Q identical across scans at
+  every index; `af` and `etfp` the same across scans at every index; `N` constant within each scan
+  and different between scans (relative SD 5.8 %), correlated with the scan's first-10-point raw sum
+  at r = 0.9998. Drift: slope of the scan totals 7.7 ± 7.2 counts per scan (0.7 % over 100 scans),
+  lag-1 autocorrelation 0.05; dispersion index of the 100 totals 37.
+- Literal reading of pre-check 3: `N` differs across scans at every point, so every point would be
+  left out and the primary statistic would be not testable. This is reported as the literal outcome.
+- Change: pre-check 3 excludes points only where `af` or `etfp` differ. Reason: by the file's header
+  (R "normalized to square mean of the first 10 data points") and the 0.9998 correlation, `N` is
+  computed from each scan's own counts; it is not an exposure or attenuation applied to `raw`, so it
+  does not change the expected raw count at a point. `bg` also varies across scans; it is a separate
+  measurement and `raw` is used without subtracting it, as registered.
+- The total-count dispersion (37) means the incident intensity varies from scan to scan beyond
+  Poisson. The registered secondary statistic (Pearson with a per-scan factor from the totals) is the
+  one that removes it; it stays secondary and does not enter the verdict.
