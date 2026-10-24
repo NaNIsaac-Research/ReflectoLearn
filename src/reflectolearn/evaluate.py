@@ -121,7 +121,6 @@ class XRREvaluator:
         self.summary_ai: dict = {}  # pre-refine AI prediction metrics (for comparison)
         self.refine_fom: dict | None = None  # {"before", "after"} mean LogMSE
 
-    # ------------------------------------------------------------------ setup
     def setup(self):
         logger.info(f"Evaluator init: {self.checkpoint_path}")
         ckpt = torch.load(self.checkpoint_path, map_location=self.device, weights_only=False)
@@ -146,7 +145,6 @@ class XRREvaluator:
         self.std = st["std"].to(self.device)
         logger.info("Setup complete.")
 
-    # ------------------------------------------------------------- inference
     @torch.no_grad()
     def _gen_eval_batch(self, bs: int):
         """Mirror the generator logic but also return the raw data needed for evaluation."""
@@ -249,7 +247,6 @@ class XRREvaluator:
         lp = np.log10(np.clip(self.r_pred, 1e-15, None))
         self.curve_logmse = np.mean((lt - lp) ** 2, axis=1)
 
-    # --------------------------------------------------------------- metrics
     @staticmethod
     def _param_summary(p_true: np.ndarray, p_pred: np.ndarray) -> dict:
         """Per-parameter MAE/MAPE/RMSE/R2 summary."""
@@ -294,7 +291,6 @@ class XRREvaluator:
         self.results_df.to_csv(self.exp_dir / "eval_metrics_full.csv", index=False)
         pd.DataFrame(self.summary).T.to_csv(self.exp_dir / "eval_summary.csv")
 
-    # ----------------------------------------------------------------- plots
     def plot_best_worst(self, n: int = 3):
         order = np.argsort(self.curve_logmse)
         idxs = np.concatenate([order[:n], order[-n:][::-1]])

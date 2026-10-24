@@ -258,7 +258,6 @@ def predict_curve(
         f"Å⁻¹, grid coverage {coverage:.0f}%"
     )
 
-    # --- AI prediction ---
     with torch.no_grad():
         pred_ai = model(x) * std + mean  # (1, 3) physical values
 
@@ -292,7 +291,7 @@ def predict_curve(
     r_ai = XRRAugmentor._smear(q, info_ai["r_fit"], AI_RES_SIGMA)
     fom_ai = _log_mse(r_ai, r_obs, mask)
 
-    # --- Red "Refined": full refine that also fits the film parameters ---
+    # Red "Refined" curve: full refine that also fits the film parameters.
     p_final, info = pred_ai, None
     rcfg = refine_config or RefineConfig()
     if refine_enabled:
@@ -320,7 +319,6 @@ def predict_curve(
                 f"  [alias] FFT d={a['fft_thickness'][0]:.0f} Å; starts {starts} -> {a['chosen'][0]}"
             )
 
-    # --- Posterior: emcee around the refined state ---
     posterior = None
     if refine_enabled and mcmc_steps > 0:
         from reflectolearn.refine.mcmc import sample_posterior
