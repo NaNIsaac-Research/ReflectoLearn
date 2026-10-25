@@ -43,6 +43,7 @@ uv run reflectolearn predict measured.txt -k path/to/best.pt       # real curve,
 uv run reflectolearn tune --config config.yaml --trials 30         # Optuna search -> config_best.yaml
 uv run reflectolearn stitch scan1.dat scan2.dat scan3.dat -o combined.dat  # join attenuator segments
 uv run reflectolearn benchmark -k path/to/best.pt                # scores predict on synthetic curves with known truth
+uv run --extra onnx reflectolearn export-onnx path/to/best.pt -o model.onnx  # CNN for browsers and other runtimes
 ```
 
 Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to `save_root/experiment_name` (set both in the config). `evaluate` simulates fresh test curves and writes `eval_summary.csv`, `eval_metrics_full.csv` and `eval_*.png` (parity, error-vs-value, best/worst fits, learning curves) next to the checkpoint. With `--refine` it also reports AI-vs-refined metrics and the log-MSE before and after fitting.
@@ -52,6 +53,8 @@ Training writes `best.pt`, `last.pt`, `stats.pt` and a copy of `config.yaml` to 
 `benchmark` runs `predict` on synthetic curves with known parameters and writes `benchmark.json` and `benchmark.csv` to `--out-dir`: random films from an independent numpy Parratt code (`--n`, `--seed`) and three fixed example films from the training forward model (`FIXED_CASES` in `benchmark.py`). No measured data is bundled.
 
 `stitch` joins scans taken in consecutive 2θ ranges with different attenuators (3 columns `2θ intensity error`, no header, given in increasing 2θ order). The last scan is the intensity reference; each earlier scan is scaled so its last point matches the first point of the next one, and that shared boundary point is dropped. The same function is `reflectolearn.stitch.stitch_scans`.
+
+`export-onnx` writes the CNN as ONNX with the target de-normalisation inside the graph, so its output is thickness, roughness and SLD in physical units. Next to it, `model.json` (the same name with `.json`) holds what the graph does not: the q grid, the input preprocessing of `predict` (the two input channels, normalisation and floor value), and the parameter order and units. It needs the `onnx` extra (`onnxruntime`, `onnxscript`). Refinement is not part of the export.
 
 `uv run python -m reflectolearn.report.figures` regenerates the figures in [`docs/`](docs) in the current directory; `refine.png` also needs a trained checkpoint (`save_dir/best.pt`) and uses the synthetic `fixed_mid` curve of the benchmark unless `REFLECTOLEARN_REFINE_DATA` points to a 2θ/intensity file.
 
@@ -89,7 +92,7 @@ The model is film + oxide layer on a fixed substrate (`sub_sld`, `sub_rough`), w
 
 ```
 src/reflectolearn/
-├── cli.py          Typer CLI: config / train / tune / evaluate / predict / stitch / benchmark
+├── cli.py          Typer CLI: config / train / tune / evaluate / predict / stitch / benchmark / export-onnx
 ├── config.py       config schema and YAML I/O
 ├── model.py        XRRPhysicsModel (1D CNN + optional Fourier features of q)
 ├── train.py        Trainer (AdamW, ReduceLROnPlateau, early stopping, checkpoints)
@@ -99,6 +102,7 @@ src/reflectolearn/
 ├── stitch.py       joining attenuator-segmented scans
 ├── benchmark.py    synthetic benchmark of predict
 ├── genx_fit.py     optional GenX/bumps fit (genx extra)
+├── export.py       ONNX export and its input contract (onnx extra)
 ├── physics/        abeles.py (AbelesMatrix), utils.py (2θ → q)
 ├── data/           generator.py (streaming dataset), augmentations.py (XRRAugmentor)
 ├── refine/         pipeline.py (refine), losses.py (log/linear MSE, correlation, Sobolev)
@@ -108,15 +112,19 @@ src/reflectolearn/
 ## Tests
 
 ```bash
-uv sync --extra genx --extra mcmc
+uv sync --extra genx --extra mcmc --extra onnx
 uv run pytest
 ```
 
-The two GenX tests are skipped without the `genx` extra and the emcee test without the `mcmc` extra.
+The two GenX tests are skipped without the `genx` extra, the emcee test without the `mcmc` extra, and the ONNX tests without the `onnx` extra.
 
-## History
+## Validation
 
-This repository supersedes [Reflecto](https://github.com/NaNIsaac/Reflecto) (GenX fitting, now `genx_fit.py`), [XRefine](https://github.com/NaNIsaac/XRefine) and [xrr_combine](https://github.com/NaNIsaac/xrr_combine) (scan stitching, now `stitch.py`). The earlier experiments are in [ReflectoExp](https://github.com/NaNIsaac/ReflectoExp).
+The validation so far is **synthetic only**. No measured data ships with the repository.
+
+- `examples/synthetic_film_fit/` simulates counts from a known film with an independent Parratt engine. It then runs them through the fit path that `reflectolearn predict` uses after its network, and compares the result with the known film. `expected.json` keeps the truth (with tolerances) apart from a regression snapshot, and `tests/test_example_synthetic_film_fit.py` checks both.
+- Known limit found by the example: on data with no angular offset, the default `refine` moves the 2θ offset towards its bound and the film SLD comes out about 30% low ([#14](https://github.com/NaNIsaac/ReflectoLearn/issues/14)). The SLD and roughness checks are strict expected failures until that is fixed. The thickness is right.
+- Measured XRR curves have not been validated yet.
 
 ## Citation
 

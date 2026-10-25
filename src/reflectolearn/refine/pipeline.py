@@ -18,6 +18,7 @@ forward-model mismatch from leaking into the parameters of interest (thickness e
   * i0  : intensity scale,  bkg : background (log10)
   * tth_offset : q-axis zero (alignment) offset
   * dq         : resolution (Gaussian q-smearing) — disentangles from roughness
+  * dq_rel     : q-proportional resolution term, sigma(q) = sqrt(dq² + (dq_rel·q)²); off by default
   * footprint  : low-angle beam footprint attenuation (beam > sample) —
                  disentangles from low-angle amplitude
   * oxide      : native oxide / surface layer (nuisance layer between ambient and film)
@@ -37,9 +38,10 @@ import torch
 import torch.nn.functional as F
 from loguru import logger
 from torch import Tensor
+from torch.utils.checkpoint import checkpoint
 
 from reflectolearn.physics import AbelesMatrix, apply_tth_offset
-from reflectolearn.refine.losses import LOSS_PRESETS, log_mse_loss
+from reflectolearn.refine.losses import LOSS_PRESETS, log_mse_loss, poisson_deviance_loss
 
 # Predicted/fitted film parameters (same order as config.param_ranges).
 PARAM_KEYS = ("thickness", "roughness", "sld")
@@ -51,8 +53,11 @@ OXIDE_KEYS = ("oxide_thickness", "oxide_sld", "oxide_roughness")
 # value (= effect off) so they only turn on "when truly needed". {key: neutral}.
 #   oxide_thickness=0 -> no oxide layer, dq=0 -> no smearing.
 # tth_offset is excluded: it is well identified by fringe positions, so its
-# degeneracy risk is low.
+# degeneracy risk is low. With the two-term resolution (fit_dq_rel) dq is excluded too, see there.
 _PENALIZE_NEUTRAL = {"oxide_thickness": 0.0, "dq": 0.0}
+
+# Curves per checkpointed chunk in the q-dependent smearing (bounds its (chunk, Q, K) weights).
+_SMEAR_CHUNK = 4
 
 # nuisance key -> RefineConfig active-flag name
 _NUISANCE_FLAG = {
@@ -60,6 +65,7 @@ _NUISANCE_FLAG = {
     "bkg": "fit_bkg",
     "tth_offset": "fit_tth_offset",
     "dq": "fit_dq",
+    "dq_rel": "fit_dq_rel",
     "kalpha2_ratio": "fit_kalpha2",
     "footprint": "fit_footprint",
     "oxide_thickness": "fit_oxide",
@@ -74,7 +80,7 @@ class RefineStage:
 
     name: str
     optimize: tuple[str, ...]  # subset of PARAM_KEYS + nuisance keys
-    loss: str = "log_mse"  # key into LOSS_PRESETS
+    loss: str = "log_mse"  # key into LOSS_PRESETS, or "poisson" (needs RefineConfig.counts_scale)
     steps: int = 200
     lr: float = 0.03
     q_min: float | None = None  # [Å^-1] lower q bound seen in this stage
@@ -84,7 +90,7 @@ class RefineStage:
 def _default_stages() -> list[RefineStage]:
     """Three-stage default strategy adapted to the simple film model."""
     return [
-        # 1) Intensity/background/alignment: fit i0, bkg, tth_offset + footprint
+        # Fit intensity, background and alignment (i0, bkg, tth_offset, footprint)
         #    with a linear loss (low-angle amplitude/critical angle; footprint's
         #    low-angle rolloff is captured here too).
         RefineStage(
@@ -94,7 +100,7 @@ def _default_stages() -> list[RefineStage]:
             steps=120,
             lr=0.05,
         ),
-        # 2) Film structure (period): fit thickness/SLD + q-zero with a correlation
+        # Fit film structure (period): thickness/SLD and q-zero with a correlation
         #    loss (invariant to scale and attenuation).
         RefineStage(
             "2.structure",
@@ -103,7 +109,7 @@ def _default_stages() -> list[RefineStage]:
             steps=200,
             lr=0.03,
         ),
-        # 3) Fine tuning: refine everything (roughness/resolution/Kα2/footprint/oxide)
+        # Fine tuning: refine everything (roughness/resolution/Kα2/footprint/oxide)
         #    with a log loss.
         RefineStage(
             "3.fine",
@@ -115,6 +121,7 @@ def _default_stages() -> list[RefineStage]:
                 "bkg",
                 "tth_offset",
                 "dq",
+                "dq_rel",
                 "kalpha2_ratio",
                 "footprint",
                 *OXIDE_KEYS,
@@ -126,6 +133,31 @@ def _default_stages() -> list[RefineStage]:
     ]
 
 
+def likelihood_stages(budget: int = 10) -> list[RefineStage]:
+    """Stages that fit counting data to its Poisson maximum likelihood (ReflectoLearn#25).
+
+    Changes to the default strategy, each found necessary in the R2b cause separation (removing any
+    one of them stops refine short of the optimum on curves from its own forward model):
+      * every stage runs `budget` times as many steps;
+      * no correlation stage: its loss ignores the level of the curve and accepts other fringe orders;
+      * the fine stage minimizes the Poisson deviance instead of the log10 MSE, whose optimum is not
+        the maximum-likelihood point;
+      * the fine stage is followed by two stages over the same keys at lr 1e-3 and 1e-4, so that
+        Adam settles instead of jittering around the optimum.
+    About 30 times the default number of steps.
+    """
+    scale, _, fine = _default_stages()
+    fine = RefineStage(fine.name, fine.optimize, "poisson", fine.steps * budget, fine.lr)
+    return [
+        RefineStage(scale.name, scale.optimize, scale.loss, scale.steps * budget, scale.lr),
+        fine,
+        *(
+            RefineStage(f"4.polish{lr:g}", fine.optimize, "poisson", 300 * budget, lr)
+            for lr in (1e-3, 1e-4)
+        ),
+    ]
+
+
 @dataclass
 class RefineConfig:
     trust_margin: float = 0.4  # trust-region half-width ratio about the AI estimate
@@ -133,7 +165,17 @@ class RefineConfig:
     fit_i0: bool = True  # intensity scale
     fit_bkg: bool = True  # background (log10)
     fit_tth_offset: bool = True  # q-axis zero offset
+    # Fit tth_offset only in the last log_mse stage that lists it, starting from 0, and refit from
+    # that stage on with the offset fixed at 0 for comparison (info["offset_off"]). Off keeps the
+    # original path, where stages 1-2 move the offset too: their scale-insensitive losses let it
+    # slide along the offset-SLD valley of a dense film (ReflectoLearn#14).
+    tth_offset_last_stage: bool = False
     fit_dq: bool = True  # resolution (q-smearing)
+    # q-proportional resolution, sigma(q) = sqrt(dq² + (dq_rel·q)²): angular divergence gives the
+    # constant part, the wavelength spread the proportional one. Off keeps the constant-only model.
+    # On, neither term gets the Occam prior: the q dependence of the smearing tells them apart, and
+    # at dq/q = 2 % the pull, 0.2·(0.02/0.05)², is three times the log-MSE and held dq_rel near 0.009.
+    fit_dq_rel: bool = False
     fit_kalpha2: bool = True  # Cu Kα2 doublet (matches generator)
     fit_footprint: bool = True  # low-angle footprint attenuation (beam > sample)
     fit_oxide: bool = True  # native oxide (nuisance layer)
@@ -145,7 +187,13 @@ class RefineConfig:
     i0_bounds: tuple[float, float] = (0.5, 2.0)
     bkg_bounds: tuple[float, float] = (-10.0, -4.0)
     tth_offset_bounds: tuple[float, float] = (-0.08, 0.08)  # [deg]
+    # tth_offset within this fraction of the bound range from either end counts as at the bound
+    tth_offset_bound_tol: float = 0.01
+    # offset-off refit counts as better when its log-MSE is lower by more than this fraction. A tie
+    # only says the data do not need an offset; the two fits differed by up to 1.2 % that way.
+    offset_off_margin: float = 0.05
     dq_bounds: tuple[float, float] = (0.0, 0.012)  # [Å^-1] resolution sigma
+    dq_rel_bounds: tuple[float, float] = (0.0, 0.05)  # relative resolution dq/q
     kalpha2_ratio_bounds: tuple[float, float] = (0.0, 0.6)  # Kα2/Kα1 intensity ratio
     kalpha2_wavelength: float = 1.54439  # [A] Cu Kα2 (same as generator)
     # footprint effective scale s: factor = erf(s·sinθ). Large s -> erf≈1 -> attenuation off.
@@ -158,12 +206,26 @@ class RefineConfig:
     # Initial values
     bkg_init: float = -7.0
     dq_init: float = 0.002
+    dq_rel_init: float = 0.01  # mid lab range (Cu + Göbel mirror ~0.5-2 % dq/q)
     kalpha2_ratio_init: float = 0.5  # start near the Cu physical value
     footprint_init: float = 2000.0  # start at weak attenuation (data shrinks it if needed)
     oxide_thickness_init: float = 5.0
     oxide_sld_init: float = 18.0
     oxide_roughness_init: float = 3.0
+    # Counts at R = 1, for stages with loss="poisson" (the likelihood preset). None: not counting data.
+    counts_scale: float | None = None
     stages: list[RefineStage] = field(default_factory=_default_stages)
+
+    @classmethod
+    def likelihood(cls, counts_scale: float, **overrides) -> RefineConfig:
+        """The configuration that reaches the Poisson maximum-likelihood fit (ReflectoLearn#25):
+        likelihood_stages() with the count scale of the data. Other fields keep their defaults
+        unless overridden.
+
+        Use it on raw counts on the measured q points (refine's q_grid = the measured q,
+        log_r_obs = log10(counts / counts_scale)), not on a curve interpolated onto the model grid:
+        see `poisson_deviance_loss`."""
+        return cls(counts_scale=counts_scale, stages=likelihood_stages(), **overrides)
 
 
 def _film_bounds(param_ranges, p_init: Tensor, margin: float) -> dict[str, tuple[Tensor, Tensor]]:
@@ -191,7 +253,7 @@ def _stage_effects(opt_keys: list[str]) -> set[str]:
     eff: set[str] = set()
     if "tth_offset" in opt_keys:
         eff.add("tth_offset")
-    if "dq" in opt_keys:
+    if "dq" in opt_keys or "dq_rel" in opt_keys:
         eff.add("dq")
     if "kalpha2_ratio" in opt_keys:
         eff.add("kalpha2")
@@ -218,9 +280,12 @@ def make_forward(
     substrate = substrate.to(device).float()
     Q = q_grid.shape[0]
     abeles = AbelesMatrix(device=device)
-    # Grid spacing / kernel half-width for resolution smearing (fixed to max dq).
+    # Grid spacing / kernel half-width for resolution smearing (fixed to the largest sigma).
     grid_dq = (q_grid[-1] - q_grid[0]).abs() / max(Q - 1, 1)
-    max_half = max(int(min(math.ceil(3.0 * config.dq_bounds[1] / grid_dq.item()), Q // 4)), 1)
+    sigma_max = config.dq_bounds[1]
+    if config.fit_dq_rel:
+        sigma_max = math.hypot(sigma_max, config.dq_rel_bounds[1] * q_grid.abs().max().item())
+    max_half = max(int(min(math.ceil(3.0 * sigma_max / grid_dq.item()), Q // 4)), 1)
 
     def _smear(R: Tensor, dq: Tensor) -> Tensor:
         """Differentiable Gaussian q-smearing. dq(B,) = sigma in q units. Kernel width is fixed."""
@@ -232,6 +297,35 @@ def make_forward(
         inp = F.pad(R.unsqueeze(0), (max_half, max_half), mode="replicate")  # (1, B, Q+2h)
         out = F.conv1d(inp, kernel.unsqueeze(1), groups=B)  # (1, B, Q)
         return out.squeeze(0)
+
+    def _smear_varying(R: Tensor, sigma: Tensor) -> Tensor:
+        """Gaussian q-smearing with a sigma(B, Q) [Å^-1] that varies along q, evaluated at each
+        output q like ``benchmark.smeared``. With a constant sigma it equals ``_smear``.
+
+        The weights are (B, Q, K), so the kernel reaches only 5 sigma of the current largest sigma
+        (the tail beyond is below 1e-6) and chunks of curves are checkpointed: their weights are
+        recomputed in backward instead of being kept for the whole batch.
+        """
+        half = max(1, min(max_half, math.ceil(5.0 * float(sigma.detach().max()) / grid_dq.item())))
+        xs = torch.arange(-half, half + 1, device=device, dtype=R.dtype)
+
+        def smear_chunk(r: Tensor, s: Tensor) -> Tensor:
+            sigma_px = (s / grid_dq).clamp_min(1e-3).unsqueeze(-1)  # (b, Q, 1)
+            weights = torch.exp(-0.5 * (xs / sigma_px) ** 2)  # (b, Q, K)
+            weights = weights / weights.sum(-1, keepdim=True)
+            padded = F.pad(r.unsqueeze(0), (half, half), mode="replicate").squeeze(0)
+            return torch.einsum("bqk,bqk->bq", padded.unfold(-1, 2 * half + 1, 1), weights)
+
+        chunks = [
+            checkpoint(
+                smear_chunk,
+                R[i : i + _SMEAR_CHUNK],
+                sigma[i : i + _SMEAR_CHUNK],
+                use_reentrant=False,
+            )
+            for i in range(0, R.shape[0], _SMEAR_CHUNK)
+        ]
+        return torch.cat(chunks)
 
     def simulate(vals: dict[str, Tensor], active: set[str]) -> Tensor:
         """Film+substrate(+oxide) parameters -> reflectivity. Applies only nuisance effects in `active`."""
@@ -278,7 +372,11 @@ def make_forward(
             arg = vals["footprint"].unsqueeze(-1) * sin_theta.clamp_min(0.0)
             R = R * torch.erf(arg)
 
-        if config.fit_dq and "dq" in active:
+        if config.fit_dq_rel and "dq" in active:
+            dq = vals["dq"] if config.fit_dq else torch.zeros_like(vals["dq_rel"])
+            sigma = torch.sqrt(dq.unsqueeze(1) ** 2 + (vals["dq_rel"].unsqueeze(1) * q_grid) ** 2)
+            R = _smear_varying(R, sigma)
+        elif config.fit_dq and "dq" in active:
             R = _smear(R, vals["dq"])
 
         return R * vals["i0"].unsqueeze(-1) + torch.pow(10.0, vals["bkg"]).unsqueeze(-1)
@@ -337,6 +435,7 @@ def refine(
     bounds["bkg"] = _scalar_bounds(config.bkg_bounds)
     bounds["tth_offset"] = _scalar_bounds(config.tth_offset_bounds)
     bounds["dq"] = _scalar_bounds(config.dq_bounds)
+    bounds["dq_rel"] = _scalar_bounds(config.dq_rel_bounds)
     bounds["kalpha2_ratio"] = _scalar_bounds(config.kalpha2_ratio_bounds)
     bounds["footprint"] = _scalar_bounds(config.footprint_bounds)
     bounds["oxide_thickness"] = _scalar_bounds(config.oxide_thickness_bounds)
@@ -355,6 +454,7 @@ def refine(
         "bkg": _full(config.bkg_init),
         "tth_offset": zeros.clone(),
         "dq": _full(config.dq_init),
+        "dq_rel": _full(config.dq_rel_init),
         "kalpha2_ratio": _full(config.kalpha2_ratio_init),
         "footprint": _full(config.footprint_init),
         "oxide_thickness": _full(config.oxide_thickness_init),
@@ -368,6 +468,10 @@ def refine(
         flag = _NUISANCE_FLAG.get(key)
         return bool(getattr(config, flag)) if flag else False
 
+    penalized = {
+        k: v for k, v in _PENALIZE_NEUTRAL.items() if not (config.fit_dq_rel and k == "dq")
+    }
+
     def _reg(vals: dict[str, Tensor], keys: list[str]) -> Tensor:
         """Occam prior: L2 penalty pulling risky nuisances under optimization toward
         their neutral (off) value.
@@ -378,7 +482,7 @@ def refine(
         total = q_grid.new_zeros(())
         if config.nuisance_reg <= 0.0:
             return total
-        for k, neutral in _PENALIZE_NEUTRAL.items():
+        for k, neutral in penalized.items():
             if k in keys:
                 lo, hi = bounds[k]
                 total = total + (((vals[k] - neutral) / (hi - lo)) ** 2).mean()
@@ -418,6 +522,54 @@ def refine(
 
     active: set[str] = set()  # once enabled, an effect stays on through later stages / final FOM
 
+    # With tth_offset_last_stage, the stage that fits the offset (index), else every stage does.
+    offset_stage = None
+    if config.tth_offset_last_stage and _enabled("tth_offset"):
+        listed = [
+            i
+            for i, st in enumerate(config.stages)
+            if st.loss == "log_mse" and "tth_offset" in st.optimize
+        ]
+        offset_stage = listed[-1] if listed else -1  # -1: no such stage, offset stays at 0
+        if offset_stage < 0:
+            logger.warning(
+                "refine: tth_offset_last_stage is on but no log_mse stage lists tth_offset; "
+                "the offset is not fitted and stays at 0"
+            )
+    offset_off = None  # inputs of the offset-off refit: state and effects before the offset stage
+
+    def _run_stages(stages, active_set: set[str], offset_at: int | None, tag: str = "") -> None:
+        """Run (index, stage) pairs in order, adding their effects to active_set. With offset_at
+        set, tth_offset is optimized only in the stage with that index (-1: in none)."""
+        for i_stage, stage in stages:
+            opt_keys = [k for k in stage.optimize if _enabled(k)]
+            if offset_at is not None and i_stage != offset_at:
+                opt_keys = [k for k in opt_keys if k != "tth_offset"]
+            if not opt_keys:
+                continue
+            active_set |= _stage_effects(opt_keys)
+
+            if stage.loss == "poisson":
+                if config.counts_scale is None:
+                    raise ValueError(
+                        f"stage {stage.name!r} uses loss='poisson' but counts_scale is None"
+                    )
+                loss_fn = poisson_deviance_loss(config.counts_scale)
+            else:
+                loss_fn = LOSS_PRESETS[stage.loss]
+            stage_mask = mask
+            if stage.q_min is not None:
+                stage_mask = stage_mask * (q_grid > stage.q_min)
+            if stage.q_max is not None:
+                stage_mask = stage_mask * (q_grid < stage.q_max)
+
+            _optimize(opt_keys, loss_fn, stage.steps, stage.lr, active_set, stage_mask)
+
+            if verbose:
+                logger.info(
+                    f"  [refine{tag}] {stage.name:<12} ({stage.loss}) FOM={fom(active_set):.5f}"
+                )
+
     # Fair baseline: so that both fom_before/after measure "film-parameter fit
     # quality", before measuring we keep film parameters **fixed** at AI-init and
     # only align the trivial global scale/offset (i0, bkg). (Previously i0=1, bkg=-7
@@ -430,23 +582,14 @@ def refine(
         _optimize(base_keys, log_mse_loss, steps=80, lr=0.05, active_set=active, stage_mask=mask)
     fom_before = fom(active)
 
-    for stage in config.stages:
-        opt_keys = [k for k in stage.optimize if _enabled(k)]
-        if not opt_keys:
-            continue
-        active |= _stage_effects(opt_keys)
-
-        loss_fn = LOSS_PRESETS[stage.loss]
-        stage_mask = mask
-        if stage.q_min is not None:
-            stage_mask = stage_mask * (q_grid > stage.q_min)
-        if stage.q_max is not None:
-            stage_mask = stage_mask * (q_grid < stage.q_max)
-
-        _optimize(opt_keys, loss_fn, stage.steps, stage.lr, active, stage_mask)
-
-        if verbose:
-            logger.info(f"  [refine] {stage.name:<12} ({stage.loss}) FOM={fom(active):.5f}")
+    stages = list(enumerate(config.stages))
+    if offset_stage is None or offset_stage < 0:
+        _run_stages(stages, active, offset_stage)
+    else:
+        _run_stages(stages[:offset_stage], active, offset_stage)
+        cur["tth_offset"] = zeros.clone()
+        offset_off = ({k: v.clone() for k, v in cur.items()}, set(active))
+        _run_stages(stages[offset_stage:], active, offset_stage)
 
     fom_after = fom(active)
     p_refined = torch.stack([cur["thickness"], cur["roughness"], cur["sld"]], dim=1)
@@ -456,7 +599,7 @@ def refine(
     with torch.no_grad():
         info["r_fit"] = simulate(cur, active).detach()
     # Also return the fitted nuisance values (only the active ones).
-    for k in ("i0", "bkg", "tth_offset", "dq", "kalpha2_ratio", "footprint", *OXIDE_KEYS):
+    for k in ("i0", "bkg", "tth_offset", "dq", "dq_rel", "kalpha2_ratio", "footprint", *OXIDE_KEYS):
         if _enabled(k):
             info[k] = cur[k].detach()
     # What a posterior sampler needs to continue from here: the full state, the effects that are on,
@@ -466,6 +609,43 @@ def refine(
     info["bounds"] = bounds
     info["fitted"] = [k for k in cur if _enabled(k)]
     info["forward"] = simulate
+
+    if _enabled("tth_offset") and "tth_offset" in active:
+        lo, hi = bounds["tth_offset"]
+        tol = config.tth_offset_bound_tol * (hi - lo)
+        at_bound = (cur["tth_offset"] - lo < tol) | (hi - cur["tth_offset"] < tol)
+        info["tth_offset_at_bound"] = at_bound
+        if at_bound.any():
+            logger.warning(
+                f"refine: tth_offset at its bound ({float(lo):g}, {float(hi):g}) deg for "
+                f"{int(at_bound.sum())}/{B} curves; the film parameters are likely biased"
+            )
+
+    if offset_off is not None:
+        # The same stages, from the offset's to the last, from the same state with the offset held
+        # at 0: if this fits as well or better, the fitted offset did not earn its place
+        # (ReflectoLearn#14). Rerunning every later stage keeps the two fits nested for any stages.
+        on_state, on_active = dict(cur), set(active)
+        with torch.no_grad():
+            fom_on = per_curve_log_mse(simulate(on_state, on_active), log_r_obs, mask)
+        start, active_off = offset_off
+        cur.update(start)
+        _run_stages(stages[offset_stage:], active_off, -1, tag=" offset 0")
+        with torch.no_grad():
+            fom_off = per_curve_log_mse(simulate(cur, active_off), log_r_obs, mask)
+        info["offset_off"] = {
+            "p": torch.stack([cur["thickness"], cur["roughness"], cur["sld"]], dim=1).detach(),
+            "fom": fom_off,
+            "fom_offset_fitted": fom_on,
+            "better": fom_off < fom_on * (1.0 - config.offset_off_margin),
+        }
+        cur.update(on_state)
+        if info["offset_off"]["better"].any():
+            n = int(info["offset_off"]["better"].sum())
+            logger.warning(
+                f"refine: holding tth_offset at 0 fits better for {n}/{B} curves; "
+                f"compare info['offset_off']"
+            )
     return p_refined, info
 
 
@@ -625,6 +805,7 @@ def refine_multistart(
 __all__ = [
     "RefineStage",
     "RefineConfig",
+    "likelihood_stages",
     "refine",
     "refine_multistart",
     "make_forward",
