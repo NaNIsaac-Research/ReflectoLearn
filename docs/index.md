@@ -60,6 +60,7 @@ covers `evaluate`, `tune`, `stitch` and `benchmark`.
 
 ## On this site
 
+- [Usage](usage.md): every command, the optional GenX fit, the configuration and the package layout.
 - [Refinement](refine.md): the stages, the nuisance parameters, the options of `predict` and of the
   Python API, and what is known not to work.
 - [Training data and network](training.md): how the simulated training curves are made and what the

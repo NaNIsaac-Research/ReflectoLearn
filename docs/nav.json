@@ -6,7 +6,10 @@
     },
     {
       "text": "Guides",
-      "items": [{ "text": "Refinement", "link": "refine.md" }]
+      "items": [
+        { "text": "Usage", "link": "usage.md" },
+        { "text": "Refinement", "link": "refine.md" }
+      ]
     },
     {
       "text": "Theory",
