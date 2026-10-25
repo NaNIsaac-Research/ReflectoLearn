@@ -15,12 +15,15 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import torch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "experiments" / "001_identifiability"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import scan
 from b1 import OUT, counts, deviance_terms
+
+torch.set_default_dtype(scan.fim.DEFAULT_DTYPE)
 
 CONDITION = 25
 data = json.loads(

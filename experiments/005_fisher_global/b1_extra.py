@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import scan
 from b1 import OUT, REACH, SCAN_DIR, W2_CONDITIONS, counts, deviance_terms
 
+torch.set_default_dtype(scan.fim.DEFAULT_DTYPE)
 torch.set_num_threads(1)
 res = json.loads((OUT / "b1.json").read_text(encoding="utf-8"))
 lines = [

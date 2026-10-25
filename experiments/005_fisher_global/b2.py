@@ -37,6 +37,7 @@ scan.expected_counts = counted
 
 
 def main() -> None:
+    torch.set_default_dtype(scan.fim.DEFAULT_DTYPE)
     torch.set_num_threads(1)
     t0 = time.perf_counter()
     data = json.loads(

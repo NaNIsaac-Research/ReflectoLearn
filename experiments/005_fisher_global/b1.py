@@ -351,6 +351,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("part", choices=["run", "report"])
     args = ap.parse_args()
+    torch.set_default_dtype(fim.DEFAULT_DTYPE)
     if args.part == "run":
         run()
     else:
