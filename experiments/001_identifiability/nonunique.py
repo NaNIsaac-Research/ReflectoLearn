@@ -567,6 +567,7 @@ def main() -> None:
     ap.add_argument("--mcmc-steps", type=int, default=2000)
     ap.add_argument("--mcmc-start", choices=["refine", "ml"], default="refine")
     args = ap.parse_args()
+    torch.set_default_dtype(fim.DEFAULT_DTYPE)
     for part in args.parts:
         t = time.perf_counter()
         if part == "report":

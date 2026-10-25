@@ -346,6 +346,7 @@ def main() -> None:
     ap.add_argument("--cases", nargs="+", default=list(CASES), choices=list(CASES))
     ap.add_argument("--threads", type=int, default=4)
     args = ap.parse_args()
+    torch.set_default_dtype(fim.DEFAULT_DTYPE)
     torch.set_num_threads(args.threads)
     for part in args.parts:
         if part == "report":
