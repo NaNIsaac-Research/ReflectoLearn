@@ -55,7 +55,9 @@ from torch.func import jacfwd
 from reflectolearn.benchmark import parratt
 from reflectolearn.physics import abeles_core, apply_tth_offset
 
-torch.set_default_dtype(torch.float64)
+# The experiment scripts ran with float64 as the process default; their main() sets it, not import,
+# so that loading this module (tests, other scripts) leaves the default dtype alone.
+DEFAULT_DTYPE = torch.float64
 
 WAVELENGTH = 1.5406  # Å, Cu Kα1
 WAVELENGTH_KA2 = 1.54439  # Å, Cu Kα2 (RefineConfig.kalpha2_wavelength)
@@ -160,7 +162,7 @@ def expected_counts(
     """Mean Poisson counts at the measured q: offset, [Kα2, footprint,] constant-dq resolution, i0,
     background, in the order refine.make_forward applies them."""
     q_eff = apply_tth_offset(q, p["tth_offset"].reshape(1, 1), WAVELENGTH)[0]
-    u = torch.linspace(-RES_WIDTH, RES_WIDTH, N_RES)
+    u = torch.linspace(-RES_WIDTH, RES_WIDTH, N_RES, dtype=torch.float64)
     w = torch.exp(-0.5 * u**2)
     w = w / w.sum()
     qq = (q_eff[:, None] + p["dq"] * u[None, :]).reshape(-1)
@@ -179,15 +181,15 @@ def jacobian(
     q: np.ndarray, p0: dict[str, float], free: tuple[str, ...], s: float, absorption: float = 1e-9
 ):
     """(counts (Q,), J = d ln counts / d theta (Q, P)) at p0, theta = the `free` parameters."""
-    qt = torch.as_tensor(q)
-    fixed = {k: torch.tensor(v) for k, v in p0.items()}
+    qt = torch.as_tensor(q, dtype=torch.float64)
+    fixed = {k: torch.tensor(v, dtype=torch.float64) for k, v in p0.items()}
     effects = effects_of(p0)
 
     def log_counts(theta: Tensor) -> Tensor:
         p = fixed | dict(zip(free, theta, strict=True))
         return torch.log(expected_counts(qt, p, s, effects, absorption))
 
-    theta0 = torch.tensor([p0[k] for k in free])
+    theta0 = torch.tensor([p0[k] for k in free], dtype=torch.float64)
     lam = torch.exp(log_counts(theta0)).numpy()
     return lam, jacfwd(log_counts)(theta0).numpy()
 
@@ -312,8 +314,10 @@ def check_forward_vs_parratt(film: Film = FILMS[0], absorption: float = 0.0) -> 
     benchmark.parratt has no counterpart of the engine's 1e-9j absorption in the ambient, so the
     physics is compared with absorption=0; the default 1e-9 shows what that term alone changes."""
     q = tth_to_q(tth_grid(12.0))
-    p = {k: torch.tensor(v) for k, v in truth(film, "film").items()}
-    r_torch = reflectivity(torch.as_tensor(q), p, oxide=False, absorption=absorption).numpy()
+    p = {k: torch.tensor(v, dtype=torch.float64) for k, v in truth(film, "film").items()}
+    r_torch = reflectivity(
+        torch.as_tensor(q, dtype=torch.float64), p, oxide=False, absorption=absorption
+    ).numpy()
     layers = [(0j, 0.0, 0.0), (complex(film.sld), film.thickness, film.roughness)]
     r_np = parratt(q, layers + [(complex(SUB_SLD), 0.0, SUB_ROUGH)])
     return float(np.max(np.abs(r_torch / r_np - 1)))
@@ -346,8 +350,8 @@ def check_vs_refine_model(film: Film = FILMS[0]) -> float:
     )
     vals = {k: torch.tensor([v], dtype=torch.float32) for k, v in p0.items()}
     r_refine = fwd(vals, {"tth_offset", "dq"})[0].double().numpy()
-    p = {k: torch.tensor(v) for k, v in p0.items()}
-    r_here = expected_counts(torch.as_tensor(q), p, 1.0, frozenset()).numpy()
+    p = {k: torch.tensor(v, dtype=torch.float64) for k, v in p0.items()}
+    r_here = expected_counts(torch.as_tensor(q, dtype=torch.float64), p, 1.0, frozenset()).numpy()
     edge = math.ceil(3 * cfg.dq_bounds[1] / (q[1] - q[0])) + 1
     d = np.abs(np.log10(r_here) - np.log10(r_refine))[edge:-edge]
     return float(d.max())
@@ -606,7 +610,9 @@ def figure(cache, path: Path) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=Path, default=Path("docs/identifiability"))
-    run(ap.parse_args().out)
+    args = ap.parse_args()
+    torch.set_default_dtype(DEFAULT_DTYPE)
+    run(args.out)
 
 
 if __name__ == "__main__":

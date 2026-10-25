@@ -521,6 +521,7 @@ def main() -> None:
     ap.add_argument("--starts", type=int, default=N_STARTS)
     ap.add_argument("--threads", type=int, default=4)
     args = ap.parse_args()
+    torch.set_default_dtype(fim.DEFAULT_DTYPE)
     torch.set_num_threads(args.threads)
     if args.part == "check":
         print(f"bilayer vs benchmark.parratt, max |ΔR/R|: {check_vs_parratt():.2e}")

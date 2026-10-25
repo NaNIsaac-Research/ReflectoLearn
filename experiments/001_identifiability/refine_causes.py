@@ -48,9 +48,6 @@ from reflectolearn.refine.pipeline import (
     refine,
 )
 
-# fim sets float64 as the default dtype; refine is meant to run in float32 as in the package.
-torch.set_default_dtype(torch.float32)
-
 FACTORS = "ABCDEF"
 SINGLES = ["base", *FACTORS, FACTORS, *(f"all-{f}" for f in FACTORS)]
 RESULTS = OUT / "refine_causes.json"
@@ -327,6 +324,8 @@ def main() -> None:
     ap.add_argument("--cases", nargs="+", default=list(CASES), choices=list(CASES))
     ap.add_argument("--threads", type=int, default=4)
     args = ap.parse_args()
+    # refine runs in float32, as in the package
+    torch.set_default_dtype(torch.float32)
     if args.part == "report":
         report()
         return
