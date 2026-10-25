@@ -19,8 +19,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "experiments" / "001_identifiability"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import scan  # noqa: E402
-from b1 import OUT, counts, deviance_terms  # noqa: E402
+import scan
+from b1 import OUT, counts, deviance_terms
 
 CONDITION = 25
 data = json.loads(

@@ -18,7 +18,7 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "experiments" / "001_identifiability"))
-import scan  # noqa: E402
+import scan
 
 CONDITION = 25
 OUT = ROOT / "docs" / "fisher_global"

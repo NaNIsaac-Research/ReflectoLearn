@@ -18,8 +18,8 @@ import torch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "experiments" / "001_identifiability"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import scan  # noqa: E402
-from b1 import OUT, REACH, SCAN_DIR, W2_CONDITIONS, counts, deviance_terms  # noqa: E402
+import scan
+from b1 import OUT, REACH, SCAN_DIR, W2_CONDITIONS, counts, deviance_terms
 
 torch.set_num_threads(1)
 res = json.loads((OUT / "b1.json").read_text(encoding="utf-8"))
@@ -31,8 +31,10 @@ lines = [
 lines += [
     "## Near endpoints (ΔD ≤ 4) with ρ outside [0.5, 2]",
     "",
-    "Δθ in units of the bound width; the three largest components. Line: ΔD along θ_t + t Δθ,"
-    " t = 0.25, 0.5, 0.75, 1, against the Fisher quadratic t² ΔD_F.",
+    (
+        "Δθ in units of the bound width; the three largest components. Line: ΔD along θ_t + t Δθ,"
+        " t = 0.25, 0.5, 0.75, 1, against the Fisher quadratic t² ΔD_F."
+    ),
     "",
     "| # | start | at cap | ΔD | ΔD_F | ρ | largest \\|Δθ\\|/width | ΔD(t)/ΔD_F(t) at t = 0.25, 0.5, 0.75, 1 |",
     "|---|---|---|---|---|---|---|---|",
@@ -73,17 +75,21 @@ near_ok = [
 ]
 lines += [
     "",
-    f"Near endpoints inside [0.5, 2]: {len(near_ok)}; ΔD median {np.median([r['dD'] for r in near_ok]):.2g},"
-    f" max {max(r['dD'] for r in near_ok):.2g}.",
+    (
+        f"Near endpoints inside [0.5, 2]: {len(near_ok)}; ΔD median {np.median([r['dD'] for r in near_ok]):.2g},"
+        f" max {max(r['dD'] for r in near_ok):.2g}."
+    ),
     "",
 ]
 near_all = [r for c in res["conditions"] for r in c["rows"] if r["dD"] <= REACH]
 wrong_all = [r for c in res["conditions"] for r in c["rows"] if r["dD"] > REACH]
 lines += [
-    "Same side of Δχ² = 4: near endpoints with ΔD_F > 4:"
-    f" {sum(r['dF'] > REACH for r in near_all)} of {len(near_all)}; outside [0.5, 2] with ΔD_F < 1:"
-    f" {sum(not 0.5 <= r['rho'] <= 2 and r['dF'] < 1 for r in near_all)}; wrong endpoints with"
-    f" ΔD_F ≤ 4: {sum(r['dF'] <= REACH for r in wrong_all)} of {len(wrong_all)}.",
+    (
+        "Same side of Δχ² = 4: near endpoints with ΔD_F > 4:"
+        f" {sum(r['dF'] > REACH for r in near_all)} of {len(near_all)}; outside [0.5, 2] with ΔD_F < 1:"
+        f" {sum(not 0.5 <= r['rho'] <= 2 and r['dF'] < 1 for r in near_all)}; wrong endpoints with"
+        f" ΔD_F ≤ 4: {sum(r['dF'] <= REACH for r in wrong_all)} of {len(wrong_all)}."
+    ),
     "",
 ]
 

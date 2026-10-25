@@ -18,7 +18,7 @@ from scipy.optimize import nnls
 from scipy.stats import spearmanr
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from hcal2 import OUT, load, stack  # noqa: E402
+from hcal2 import OUT, load, stack
 
 c = stack(load())
 raw, q = c["raw"], c["Q"][0]

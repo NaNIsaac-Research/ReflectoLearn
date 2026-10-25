@@ -582,10 +582,13 @@ def full_run(
     ids = [i for i in ids if i.startswith(source + ":")]
     for cid in ids:
         for objective in objectives:
-            if control is not None and control.exists():
-                if worker >= json.loads(control.read_text(encoding="utf-8"))["workers"]:
-                    print(f"worker {worker}: stopped by {control}", flush=True)
-                    return
+            if (
+                control is not None
+                and control.exists()
+                and worker >= json.loads(control.read_text(encoding="utf-8"))["workers"]
+            ):
+                print(f"worker {worker}: stopped by {control}", flush=True)
+                return
             path = result_path(cid, objective)
             err = path.with_suffix(".error.json")
             lock = path.with_suffix(".lock")
@@ -611,7 +614,7 @@ def full_run(
                     f" {row['seconds']:.0f} s, peak {row['peak_mb']:.0f} MB",
                     flush=True,
                 )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - a failed candidate is recorded and skipped
                 err.write_text(
                     json.dumps({"id": cid, "objective": objective, "error": repr(exc)}),
                     encoding="utf-8",
