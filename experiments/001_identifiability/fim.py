@@ -348,7 +348,7 @@ def check_vs_refine_model(film: Film = FILMS[0]) -> float:
     r_refine = fwd(vals, {"tth_offset", "dq"})[0].double().numpy()
     p = {k: torch.tensor(v) for k, v in p0.items()}
     r_here = expected_counts(torch.as_tensor(q), p, 1.0, frozenset()).numpy()
-    edge = int(math.ceil(3 * cfg.dq_bounds[1] / (q[1] - q[0]))) + 1
+    edge = math.ceil(3 * cfg.dq_bounds[1] / (q[1] - q[0])) + 1
     d = np.abs(np.log10(r_here) - np.log10(r_refine))[edge:-edge]
     return float(d.max())
 
@@ -441,21 +441,29 @@ def tables(rows, checks, elapsed, cache) -> str:
         "",
         "## Checks",
         "",
-        f"- R(q), abeles_core complex128 vs benchmark.parratt (numpy), 2θ 0.2–12°: "
-        f"max relative difference {checks['forward_vs_parratt']:.1e} without the engine's "
-        f"1e-9j Å^-2 absorption term, {checks['absorption_term']:.1e} with it (the term is kept "
-        "in the model, as in AbelesMatrix)",
-        f"- J, autograd vs central differences of the numpy model (mid film, oxide scenario, "
-        f"q_max 0.43): relative column error {jac}",
-        f"- counts model vs refine.make_forward (float32), offset 0.01°, dq 0.002: max |Δ log10 R| "
-        f"{checks['vs_refine_model']:.1e}",
+        (
+            f"- R(q), abeles_core complex128 vs benchmark.parratt (numpy), 2θ 0.2–12°: "
+            f"max relative difference {checks['forward_vs_parratt']:.1e} without the engine's "
+            f"1e-9j Å^-2 absorption term, {checks['absorption_term']:.1e} with it (the term is kept "
+            "in the model, as in AbelesMatrix)"
+        ),
+        (
+            f"- J, autograd vs central differences of the numpy model (mid film, oxide scenario, "
+            f"q_max 0.43): relative column error {jac}"
+        ),
+        (
+            f"- counts model vs refine.make_forward (float32), offset 0.01°, dq 0.002: max |Δ log10 R| "
+            f"{checks['vs_refine_model']:.1e}"
+        ),
         "",
-        "CRLB in % of the true value, at s = 1e6 counts (CRLB scales exactly as s^-1/2 in this "
-        "model; see the last table). s_min and gamma = 1/s_min are scale-free; weakest is the "
-        "direction of s_min in normalized coordinates (components ≥ 0.25 shown).",
+        (
+            "CRLB in % of the true value, at s = 1e6 counts (CRLB scales exactly as s^-1/2 in this "
+            "model; see the last table). s_min and gamma = 1/s_min are scale-free; weakest is the "
+            "direction of s_min in normalized coordinates (components ≥ 0.25 shown)."
+        ),
     ]
     for film in FILMS:
-        for scenario in SCENARIOS:
+        for scenario, params in SCENARIOS.items():
             sel = [
                 r
                 for r in rows
@@ -463,8 +471,10 @@ def tables(rows, checks, elapsed, cache) -> str:
             ]
             lines += [
                 "",
-                f"## {film.name} (d {film.thickness:g} Å, σ {film.roughness:g} Å, "
-                f"ρ {film.sld:g}), free: {scenario} ({', '.join(SYMBOL[k] for k in SCENARIOS[scenario])})",
+                (
+                    f"## {film.name} (d {film.thickness:g} Å, σ {film.roughness:g} Å, "
+                    f"ρ {film.sld:g}), free: {scenario} ({', '.join(SYMBOL[k] for k in params)})"
+                ),
                 "",
                 head,
                 *(fmt(r, cols) for r in sel),
