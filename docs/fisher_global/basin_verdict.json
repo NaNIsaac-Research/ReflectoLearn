@@ -1,0 +1,5409 @@
+{
+ "rows": 935,
+ "errors": [],
+ "open_choices": [
+  "H-BM1 'half the source's candidates' is half the registered count (749, 93), whatever the start check removes.",
+  "H-BM1 sensitivity adds every unconfirmed O_nf candidate (budget, stalled or numerical) whose \u03ba at its last point exceeds 10; the counts by outcome are listed.",
+  "Hypotheses use O_nf refinements only; O_tr (X2e) is descriptive, as registered in 3.1.",
+  "H-BM3: if no statement fails and at least one is not testable, the overall result is 'unresolved' with the untestable statements named.",
+  "Distance in u between two minima uses the mean of their bound widths (equal within a data set unless the box depends on the state).",
+  "A candidate whose run raised an exception counts as unconfirmed (numerical) for the denominator and is listed."
+ ],
+ "verdicts": {
+  "r2a": {
+   "H-BM1": {
+    "registered": {
+     "E": 656,
+     "registered": 749,
+     "good": 645,
+     "miss": 1,
+     "truth_basin": 1,
+     "kappa_gt_10": 0,
+     "good_frac": 0.9832317073170732,
+     "miss_frac": 0.001524390243902439,
+     "verdict": "supported"
+    },
+    "sensitivity_unconfirmed_drop": {
+     "E": 656,
+     "registered": 749,
+     "good": 645,
+     "miss": 1,
+     "truth_basin": 1,
+     "kappa_gt_10": 0,
+     "good_frac": 0.9832317073170732,
+     "miss_frac": 0.001524390243902439,
+     "verdict": "supported",
+     "added_by_outcome": {}
+    },
+    "without_pilot": {
+     "E": 650,
+     "registered": 749,
+     "good": 639,
+     "miss": 1,
+     "truth_basin": 1,
+     "kappa_gt_10": 0,
+     "good_frac": 0.9830769230769231,
+     "miss_frac": 0.0015384615384615385,
+     "verdict": "supported"
+    },
+    "descriptive_interior_only": {
+     "E": 5,
+     "registered": 749,
+     "good": 4,
+     "miss": 1,
+     "truth_basin": 1,
+     "kappa_gt_10": 0,
+     "good_frac": 0.8,
+     "miss_frac": 0.2,
+     "verdict": "not testable",
+     "note": "descriptive, not a verdict"
+    }
+   },
+   "Q-BM2": {
+    "count": 5,
+    "basins": [
+     {
+      "dataset": "r2a:04",
+      "rep": "r2a:04:36",
+      "S1_min": 233640.62774408617,
+      "meta": {
+       "cond": 4,
+       "tth_max": 3.0,
+       "film_sld": 24.0,
+       "nuisance": "refine",
+       "stack": "single",
+       "capped": false
+      },
+      "members": 1
+     },
+     {
+      "dataset": "r2a:07",
+      "rep": "r2a:07:36",
+      "S1_min": 60488.11744533197,
+      "meta": {
+       "cond": 7,
+       "tth_max": 6.0,
+       "film_sld": 24.0,
+       "nuisance": "refine",
+       "stack": "single",
+       "capped": false
+      },
+      "members": 1
+     },
+     {
+      "dataset": "r2a:13",
+      "rep": "r2a:13:36",
+      "S1_min": 233640.6277441993,
+      "meta": {
+       "cond": 13,
+       "tth_max": 3.0,
+       "film_sld": 24.0,
+       "nuisance": "wide",
+       "stack": "single",
+       "capped": false
+      },
+      "members": 1
+     },
+     {
+      "dataset": "r2a:16",
+      "rep": "r2a:16:36",
+      "S1_min": 85715.76471732245,
+      "meta": {
+       "cond": 16,
+       "tth_max": 6.0,
+       "film_sld": 24.0,
+       "nuisance": "wide",
+       "stack": "single",
+       "capped": false
+      },
+      "members": 1
+     },
+     {
+      "dataset": "r2a:34",
+      "rep": "r2a:34:56",
+      "S1_min": 27438.960780181587,
+      "meta": {
+       "cond": 34,
+       "tth_max": 6.0,
+       "film_sld": 24.0,
+       "nuisance": "wide",
+       "stack": "bilayer",
+       "capped": false
+      },
+      "members": 1
+     }
+    ]
+   },
+   "H-BM3": {
+    "a": {
+     "hits": 396,
+     "n": 399,
+     "frac": 0.9924812030075187,
+     "result": "holds"
+    },
+    "b": {
+     "hits": 138,
+     "n": 141,
+     "frac": 0.9787234042553191,
+     "result": "holds"
+    },
+    "c": {
+     "hits": 138,
+     "n": 141,
+     "frac": 0.9787234042553191,
+     "result": "holds"
+    },
+    "overall": "persists"
+   },
+   "basins": {
+    "wrong_minima": 655,
+    "distinct": 399,
+    "far_pairs": 1
+   }
+  },
+  "x2e": {
+   "H-BM1": {
+    "registered": {
+     "E": 92,
+     "registered": 93,
+     "good": 88,
+     "miss": 1,
+     "truth_basin": 0,
+     "kappa_gt_10": 1,
+     "good_frac": 0.9565217391304348,
+     "miss_frac": 0.010869565217391304,
+     "verdict": "supported"
+    },
+    "sensitivity_unconfirmed_drop": {
+     "E": 92,
+     "registered": 93,
+     "good": 88,
+     "miss": 1,
+     "truth_basin": 0,
+     "kappa_gt_10": 1,
+     "good_frac": 0.9565217391304348,
+     "miss_frac": 0.010869565217391304,
+     "verdict": "supported",
+     "added_by_outcome": {}
+    },
+    "without_pilot": {
+     "E": 90,
+     "registered": 93,
+     "good": 86,
+     "miss": 1,
+     "truth_basin": 0,
+     "kappa_gt_10": 1,
+     "good_frac": 0.9555555555555556,
+     "miss_frac": 0.011111111111111112,
+     "verdict": "supported"
+    },
+    "descriptive_interior_only": {
+     "E": 16,
+     "registered": 93,
+     "good": 14,
+     "miss": 1,
+     "truth_basin": 0,
+     "kappa_gt_10": 1,
+     "good_frac": 0.875,
+     "miss_frac": 0.0625,
+     "verdict": "not testable",
+     "note": "descriptive, not a verdict"
+    }
+   },
+   "Q-BM2": {
+    "count": 1,
+    "basins": [
+     {
+      "dataset": "x2e:2:11:1",
+      "rep": "x2e:S1:2:11:1:1",
+      "S1_min": 20623.308182373847,
+      "meta": {
+       "arm": "S1",
+       "n": 2,
+       "j": 11,
+       "s": 1
+      },
+      "members": 1
+     }
+    ]
+   },
+   "H-BM3": {
+    "a": {
+     "hits": 85,
+     "n": 89,
+     "frac": 0.9550561797752809,
+     "result": "holds"
+    },
+    "b": {
+     "hits": 69,
+     "n": 89,
+     "frac": 0.7752808988764045,
+     "result": "unresolved"
+    },
+    "c": {
+     "hits": 72,
+     "n": 89,
+     "frac": 0.8089887640449438,
+     "result": "holds"
+    },
+    "overall": "unresolved"
+   },
+   "basins": {
+    "wrong_minima": 92,
+    "distinct": 89,
+    "far_pairs": 0
+   }
+  }
+ },
+ "basins": {
+  "r2a": [
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:00",
+    "members": [
+     "r2a:00:00"
+    ],
+    "S1_min": 13.026237899800682,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:01",
+    "members": [
+     "r2a:00:01"
+    ],
+    "S1_min": 13.006547122016299,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:57",
+    "members": [
+     "r2a:00:02",
+     "r2a:00:35",
+     "r2a:00:38",
+     "r2a:00:57",
+     "r2a:00:58",
+     "r2a:00:62"
+    ],
+    "S1_min": 12.464820703228119,
+    "max_u": 3.7932680357529356e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:03",
+    "members": [
+     "r2a:00:03",
+     "r2a:00:10"
+    ],
+    "S1_min": 12.859119743619432,
+    "max_u": 8.061354768903092e-08,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:63",
+    "members": [
+     "r2a:00:04",
+     "r2a:00:43",
+     "r2a:00:63"
+    ],
+    "S1_min": 13.008038171049865,
+    "max_u": 2.487652710949936e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:12",
+    "members": [
+     "r2a:00:05",
+     "r2a:00:11",
+     "r2a:00:12",
+     "r2a:00:34"
+    ],
+    "S1_min": 10.162670853244522,
+    "max_u": 2.7436838195171733e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:39",
+    "members": [
+     "r2a:00:08",
+     "r2a:00:39"
+    ],
+    "S1_min": 12.208615258115945,
+    "max_u": 7.957400202585063e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:14",
+    "members": [
+     "r2a:00:14"
+    ],
+    "S1_min": 13.009562277212389,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:16",
+    "members": [
+     "r2a:00:16"
+    ],
+    "S1_min": 13.040301031687823,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:37",
+    "members": [
+     "r2a:00:17",
+     "r2a:00:37",
+     "r2a:00:61"
+    ],
+    "S1_min": 10.421561489565804,
+    "max_u": 1.345664179361771e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:18",
+    "members": [
+     "r2a:00:18"
+    ],
+    "S1_min": 13.026375769705142,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:19",
+    "members": [
+     "r2a:00:19"
+    ],
+    "S1_min": 11.079318696526602,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:21",
+    "members": [
+     "r2a:00:21"
+    ],
+    "S1_min": 10.609472824593942,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:22",
+    "members": [
+     "r2a:00:22"
+    ],
+    "S1_min": 10.107048249349013,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:46",
+    "members": [
+     "r2a:00:25",
+     "r2a:00:46"
+    ],
+    "S1_min": 10.143658428014382,
+    "max_u": 6.861136039252155e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:36",
+    "members": [
+     "r2a:00:36",
+     "r2a:00:44"
+    ],
+    "S1_min": 21.69802820324681,
+    "max_u": 3.643865492053245e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:42",
+    "members": [
+     "r2a:00:42"
+    ],
+    "S1_min": 10.476946001756865,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:48",
+    "members": [
+     "r2a:00:48",
+     "r2a:00:59"
+    ],
+    "S1_min": 21.452508738932668,
+    "max_u": 0.0005866677283884828,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:50",
+    "members": [
+     "r2a:00:50"
+    ],
+    "S1_min": 12.015432685623118,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:53",
+    "members": [
+     "r2a:00:53"
+    ],
+    "S1_min": 10.191810445803117,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:00",
+    "rep": "r2a:00:54",
+    "members": [
+     "r2a:00:54"
+    ],
+    "S1_min": 11.58441354372504,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:30",
+    "members": [
+     "r2a:01:02",
+     "r2a:01:12",
+     "r2a:01:30"
+    ],
+    "S1_min": 28.04088262325247,
+    "max_u": 5.932437354028153e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:05",
+    "members": [
+     "r2a:01:05",
+     "r2a:01:26",
+     "r2a:01:60"
+    ],
+    "S1_min": 28.218050613656466,
+    "max_u": 5.080605901837861e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:07",
+    "members": [
+     "r2a:01:07",
+     "r2a:01:28"
+    ],
+    "S1_min": 17.383642911888256,
+    "max_u": 0.00011017750198405452,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:08",
+    "members": [
+     "r2a:01:08",
+     "r2a:01:29"
+    ],
+    "S1_min": 124.30741013631547,
+    "max_u": 2.376540851096414e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:10",
+    "members": [
+     "r2a:01:10"
+    ],
+    "S1_min": 26.265229804064603,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:13",
+    "members": [
+     "r2a:01:13"
+    ],
+    "S1_min": 36.42343389906576,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:14",
+    "members": [
+     "r2a:01:14"
+    ],
+    "S1_min": 25.46968975643518,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:39",
+    "members": [
+     "r2a:01:16",
+     "r2a:01:39"
+    ],
+    "S1_min": 26.37236993130605,
+    "max_u": 5.736507071354055e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:18",
+    "members": [
+     "r2a:01:18"
+    ],
+    "S1_min": 15.26223149633779,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:22",
+    "members": [
+     "r2a:01:22"
+    ],
+    "S1_min": 31.355305804056865,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:33",
+    "members": [
+     "r2a:01:33"
+    ],
+    "S1_min": 44.20672828485438,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:35",
+    "members": [
+     "r2a:01:35"
+    ],
+    "S1_min": 70.72677482361722,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:42",
+    "members": [
+     "r2a:01:42"
+    ],
+    "S1_min": 27.424218819504837,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:50",
+    "members": [
+     "r2a:01:50"
+    ],
+    "S1_min": 28.616816397499843,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:53",
+    "members": [
+     "r2a:01:53"
+    ],
+    "S1_min": 30.227188788442653,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:54",
+    "members": [
+     "r2a:01:54"
+    ],
+    "S1_min": 25.536402096276216,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:56",
+    "members": [
+     "r2a:01:56"
+    ],
+    "S1_min": 55.92966830749447,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:01",
+    "rep": "r2a:01:62",
+    "members": [
+     "r2a:01:62"
+    ],
+    "S1_min": 29.58973343777742,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:02",
+    "rep": "r2a:02:38",
+    "members": [
+     "r2a:02:13",
+     "r2a:02:38",
+     "r2a:02:44",
+     "r2a:02:55",
+     "r2a:02:62"
+    ],
+    "S1_min": 78.2768896950726,
+    "max_u": 6.081699884437815e-10,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:00",
+    "members": [
+     "r2a:03:00"
+    ],
+    "S1_min": 12.684801761460985,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:01",
+    "members": [
+     "r2a:03:01",
+     "r2a:03:02",
+     "r2a:03:04",
+     "r2a:03:08",
+     "r2a:03:39",
+     "r2a:03:61"
+    ],
+    "S1_min": 11.88403129568794,
+    "max_u": 0.0004684405828097778,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:13",
+    "members": [
+     "r2a:03:03",
+     "r2a:03:10",
+     "r2a:03:13",
+     "r2a:03:18",
+     "r2a:03:19",
+     "r2a:03:58"
+    ],
+    "S1_min": 12.910736331385957,
+    "max_u": 1.1951868708356035e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:05",
+    "members": [
+     "r2a:03:05",
+     "r2a:03:24",
+     "r2a:03:30",
+     "r2a:03:33"
+    ],
+    "S1_min": 10.076094428656978,
+    "max_u": 7.503640208739171e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:06",
+    "members": [
+     "r2a:03:06",
+     "r2a:03:28",
+     "r2a:03:31",
+     "r2a:03:36",
+     "r2a:03:48"
+    ],
+    "S1_min": 21.125155412536127,
+    "max_u": 0.00015000017950519048,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:14",
+    "members": [
+     "r2a:03:07",
+     "r2a:03:14",
+     "r2a:03:35",
+     "r2a:03:42",
+     "r2a:03:44"
+    ],
+    "S1_min": 12.228502576224304,
+    "max_u": 2.406246449981886e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:16",
+    "members": [
+     "r2a:03:16"
+    ],
+    "S1_min": 12.93813850196842,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:21",
+    "members": [
+     "r2a:03:21"
+    ],
+    "S1_min": 10.436335212031645,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:23",
+    "members": [
+     "r2a:03:23"
+    ],
+    "S1_min": 11.879315820611552,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:62",
+    "members": [
+     "r2a:03:37",
+     "r2a:03:46",
+     "r2a:03:62"
+    ],
+    "S1_min": 10.061398394627984,
+    "max_u": 3.993887265023812e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:03",
+    "rep": "r2a:03:45",
+    "members": [
+     "r2a:03:45"
+    ],
+    "S1_min": 10.442128643081457,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:01",
+    "members": [
+     "r2a:04:01"
+    ],
+    "S1_min": 25.46686862453515,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:23",
+    "members": [
+     "r2a:04:02",
+     "r2a:04:23"
+    ],
+    "S1_min": 28.203102904926418,
+    "max_u": 0.0001596958607263943,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:12",
+    "members": [
+     "r2a:04:05",
+     "r2a:04:12"
+    ],
+    "S1_min": 27.952722396403956,
+    "max_u": 3.2709033579436664e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:29",
+    "members": [
+     "r2a:04:08",
+     "r2a:04:29",
+     "r2a:04:56"
+    ],
+    "S1_min": 106.43729973429821,
+    "max_u": 5.893565480678357e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:44",
+    "members": [
+     "r2a:04:10",
+     "r2a:04:11",
+     "r2a:04:14",
+     "r2a:04:16",
+     "r2a:04:44",
+     "r2a:04:61"
+    ],
+    "S1_min": 15.16572514822225,
+    "max_u": 7.756266966178297e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:28",
+    "members": [
+     "r2a:04:13",
+     "r2a:04:28"
+    ],
+    "S1_min": 44.014231547643945,
+    "max_u": 5.937154998747474e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:46",
+    "members": [
+     "r2a:04:18",
+     "r2a:04:33",
+     "r2a:04:46",
+     "r2a:04:62"
+    ],
+    "S1_min": 28.120616675876697,
+    "max_u": 8.850450006351688e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:19",
+    "members": [
+     "r2a:04:19"
+    ],
+    "S1_min": 26.15035107731952,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:22",
+    "members": [
+     "r2a:04:22"
+    ],
+    "S1_min": 36.217840541802346,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:34",
+    "members": [
+     "r2a:04:34"
+    ],
+    "S1_min": 28.274965408261647,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:35",
+    "members": [
+     "r2a:04:35"
+    ],
+    "S1_min": 40.278922711974246,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:36",
+    "members": [
+     "r2a:04:36"
+    ],
+    "S1_min": 233640.62774408617,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:39",
+    "members": [
+     "r2a:04:39"
+    ],
+    "S1_min": 30.917225867223898,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:42",
+    "members": [
+     "r2a:04:42"
+    ],
+    "S1_min": 28.318742078193846,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:43",
+    "members": [
+     "r2a:04:43"
+    ],
+    "S1_min": 26.181829329975354,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:50",
+    "members": [
+     "r2a:04:50"
+    ],
+    "S1_min": 28.03039330600843,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:53",
+    "members": [
+     "r2a:04:53"
+    ],
+    "S1_min": 30.8924988007893,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:54",
+    "members": [
+     "r2a:04:54"
+    ],
+    "S1_min": 26.29816879210792,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:04",
+    "rep": "r2a:04:63",
+    "members": [
+     "r2a:04:63"
+    ],
+    "S1_min": 26.178068857900445,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:05",
+    "rep": "r2a:05:59",
+    "members": [
+     "r2a:05:02",
+     "r2a:05:10",
+     "r2a:05:13",
+     "r2a:05:42",
+     "r2a:05:44",
+     "r2a:05:59"
+    ],
+    "S1_min": 72.26468879111181,
+    "max_u": 5.054708651641704e-10,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:00",
+    "members": [
+     "r2a:06:00",
+     "r2a:06:60"
+    ],
+    "S1_min": 12.112961184381334,
+    "max_u": 1.4263778526831436e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:01",
+    "members": [
+     "r2a:06:01"
+    ],
+    "S1_min": 12.794407273903325,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:62",
+    "members": [
+     "r2a:06:03",
+     "r2a:06:11",
+     "r2a:06:32",
+     "r2a:06:35",
+     "r2a:06:44",
+     "r2a:06:61",
+     "r2a:06:62"
+    ],
+    "S1_min": 12.039612801520793,
+    "max_u": 0.0010433178579214294,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:39",
+    "members": [
+     "r2a:06:04",
+     "r2a:06:28",
+     "r2a:06:39"
+    ],
+    "S1_min": 11.540579101085454,
+    "max_u": 0.005961957086485133,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:23",
+    "members": [
+     "r2a:06:06",
+     "r2a:06:23",
+     "r2a:06:48"
+    ],
+    "S1_min": 21.249684456503775,
+    "max_u": 0.0007729995532200295,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:17",
+    "members": [
+     "r2a:06:17"
+    ],
+    "S1_min": 10.181855708008381,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:50",
+    "members": [
+     "r2a:06:19",
+     "r2a:06:50"
+    ],
+    "S1_min": 11.746649438090763,
+    "max_u": 0.9999999999949999,
+    "far_pairs": [
+     [
+      "r2a:06:19",
+      "r2a:06:50",
+      0.9999999999949999
+     ]
+    ]
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:45",
+    "members": [
+     "r2a:06:21",
+     "r2a:06:45"
+    ],
+    "S1_min": 10.339876528063826,
+    "max_u": 0.0010411560723687177,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:36",
+    "members": [
+     "r2a:06:36",
+     "r2a:06:42"
+    ],
+    "S1_min": 21.014019437669536,
+    "max_u": 4.329448336182207e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:38",
+    "members": [
+     "r2a:06:38"
+    ],
+    "S1_min": 10.315805746736938,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:55",
+    "members": [
+     "r2a:06:55"
+    ],
+    "S1_min": 12.76411745205565,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:57",
+    "members": [
+     "r2a:06:57"
+    ],
+    "S1_min": 12.794867008096798,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:06",
+    "rep": "r2a:06:58",
+    "members": [
+     "r2a:06:58"
+    ],
+    "S1_min": 12.821010005453292,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:00",
+    "members": [
+     "r2a:07:00"
+    ],
+    "S1_min": 26.05342339428735,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:11",
+    "members": [
+     "r2a:07:02",
+     "r2a:07:11",
+     "r2a:07:16",
+     "r2a:07:18"
+    ],
+    "S1_min": 15.031957201949082,
+    "max_u": 9.074440017187158e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:05",
+    "members": [
+     "r2a:07:05",
+     "r2a:07:12"
+    ],
+    "S1_min": 27.899283049055136,
+    "max_u": 1.2599827519939784e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:07",
+    "members": [
+     "r2a:07:07"
+    ],
+    "S1_min": 15.752277509711487,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:08",
+    "members": [
+     "r2a:07:08"
+    ],
+    "S1_min": 88.30711098774206,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:13",
+    "members": [
+     "r2a:07:13"
+    ],
+    "S1_min": 26.6915327167703,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:14",
+    "members": [
+     "r2a:07:14"
+    ],
+    "S1_min": 26.069199489499727,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:19",
+    "members": [
+     "r2a:07:19"
+    ],
+    "S1_min": 25.226679950710064,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:20",
+    "members": [
+     "r2a:07:20"
+    ],
+    "S1_min": 26.159226715209183,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:21",
+    "members": [
+     "r2a:07:21"
+    ],
+    "S1_min": 20.304264582901013,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:22",
+    "members": [
+     "r2a:07:22"
+    ],
+    "S1_min": 30.876938751911027,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:26",
+    "members": [
+     "r2a:07:26",
+     "r2a:07:55"
+    ],
+    "S1_min": 28.073116387393412,
+    "max_u": 5.076743201115619e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:29",
+    "members": [
+     "r2a:07:29",
+     "r2a:07:56"
+    ],
+    "S1_min": 66.79779002991303,
+    "max_u": 4.5944181792378913e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:35",
+    "members": [
+     "r2a:07:35"
+    ],
+    "S1_min": 66.88617812834582,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:36",
+    "members": [
+     "r2a:07:36"
+    ],
+    "S1_min": 60488.11744533197,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:42",
+    "members": [
+     "r2a:07:42"
+    ],
+    "S1_min": 28.42897157527149,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:44",
+    "members": [
+     "r2a:07:44"
+    ],
+    "S1_min": 36.16729632621698,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:50",
+    "members": [
+     "r2a:07:50"
+    ],
+    "S1_min": 27.96624698718435,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:53",
+    "members": [
+     "r2a:07:53"
+    ],
+    "S1_min": 30.57518696866113,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:07",
+    "rep": "r2a:07:61",
+    "members": [
+     "r2a:07:61"
+    ],
+    "S1_min": 17.51949616401355,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:08",
+    "rep": "r2a:08:10",
+    "members": [
+     "r2a:08:10",
+     "r2a:08:13",
+     "r2a:08:59"
+    ],
+    "S1_min": 69.0372812203745,
+    "max_u": 8.050028791709943e-10,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:00",
+    "members": [
+     "r2a:09:00"
+    ],
+    "S1_min": 12.887275525979614,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:16",
+    "members": [
+     "r2a:09:01",
+     "r2a:09:03",
+     "r2a:09:16",
+     "r2a:09:18",
+     "r2a:09:43"
+    ],
+    "S1_min": 12.769814432351577,
+    "max_u": 5.81341639948052e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:02",
+    "members": [
+     "r2a:09:02"
+    ],
+    "S1_min": 12.015432685623999,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:13",
+    "members": [
+     "r2a:09:04",
+     "r2a:09:13",
+     "r2a:09:35",
+     "r2a:09:37",
+     "r2a:09:42",
+     "r2a:09:51",
+     "r2a:09:61"
+    ],
+    "S1_min": 12.668361258693057,
+    "max_u": 3.1066322193259075e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:05",
+    "members": [
+     "r2a:09:05"
+    ],
+    "S1_min": 10.032698269671016,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:11",
+    "members": [
+     "r2a:09:11"
+    ],
+    "S1_min": 13.008038171035933,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:12",
+    "members": [
+     "r2a:09:12",
+     "r2a:09:22",
+     "r2a:09:30",
+     "r2a:09:41"
+    ],
+    "S1_min": 10.162670853886098,
+    "max_u": 1.0802179768811087e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:21",
+    "members": [
+     "r2a:09:21"
+    ],
+    "S1_min": 10.955202954122568,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:25",
+    "members": [
+     "r2a:09:25"
+    ],
+    "S1_min": 11.776670479287306,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:29",
+    "members": [
+     "r2a:09:29"
+    ],
+    "S1_min": 10.421561489547399,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:36",
+    "members": [
+     "r2a:09:34",
+     "r2a:09:36"
+    ],
+    "S1_min": 21.698027185354725,
+    "max_u": 0.001731548762674438,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:39",
+    "members": [
+     "r2a:09:39"
+    ],
+    "S1_min": 13.082207012104853,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:44",
+    "members": [
+     "r2a:09:44"
+    ],
+    "S1_min": 12.988735845664724,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:45",
+    "members": [
+     "r2a:09:45"
+    ],
+    "S1_min": 10.544202855730436,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:48",
+    "members": [
+     "r2a:09:48"
+    ],
+    "S1_min": 21.452508187352866,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:53",
+    "members": [
+     "r2a:09:53"
+    ],
+    "S1_min": 10.726186668174526,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:54",
+    "members": [
+     "r2a:09:54"
+    ],
+    "S1_min": 12.71892486089618,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:57",
+    "members": [
+     "r2a:09:57"
+    ],
+    "S1_min": 13.011302184186892,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:09",
+    "rep": "r2a:09:60",
+    "members": [
+     "r2a:09:60"
+    ],
+    "S1_min": 10.334510808236573,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:54",
+    "members": [
+     "r2a:10:01",
+     "r2a:10:16",
+     "r2a:10:54"
+    ],
+    "S1_min": 26.64488165158218,
+    "max_u": 3.371635159806393e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:02",
+    "members": [
+     "r2a:10:02",
+     "r2a:10:12"
+    ],
+    "S1_min": 28.051124371092083,
+    "max_u": 0.00027438804796971655,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:07",
+    "members": [
+     "r2a:10:07"
+    ],
+    "S1_min": 32.38222721316788,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:08",
+    "members": [
+     "r2a:10:08",
+     "r2a:10:29"
+    ],
+    "S1_min": 124.98644617007696,
+    "max_u": 2.774750159796743e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:10",
+    "members": [
+     "r2a:10:10"
+    ],
+    "S1_min": 25.362285662648784,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:13",
+    "members": [
+     "r2a:10:13",
+     "r2a:10:19"
+    ],
+    "S1_min": 26.269327902851217,
+    "max_u": 0.0001553085410373578,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:21",
+    "members": [
+     "r2a:10:21"
+    ],
+    "S1_min": 30.670602112011597,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:22",
+    "members": [
+     "r2a:10:22"
+    ],
+    "S1_min": 35.20315389787352,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:23",
+    "members": [
+     "r2a:10:23"
+    ],
+    "S1_min": 19.02775649531661,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:25",
+    "members": [
+     "r2a:10:25"
+    ],
+    "S1_min": 44.49833102553744,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:28",
+    "members": [
+     "r2a:10:28"
+    ],
+    "S1_min": 17.126353993597984,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:59",
+    "members": [
+     "r2a:10:30",
+     "r2a:10:34",
+     "r2a:10:38",
+     "r2a:10:59"
+    ],
+    "S1_min": 28.22212226421426,
+    "max_u": 0.0013353525550447998,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:33",
+    "members": [
+     "r2a:10:33"
+    ],
+    "S1_min": 28.23494307729432,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:35",
+    "members": [
+     "r2a:10:35"
+    ],
+    "S1_min": 42.11786253939079,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:41",
+    "members": [
+     "r2a:10:41"
+    ],
+    "S1_min": 27.60716784107014,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:61",
+    "members": [
+     "r2a:10:42",
+     "r2a:10:61"
+    ],
+    "S1_min": 25.811661333706045,
+    "max_u": 5.796235597118245e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:45",
+    "members": [
+     "r2a:10:45"
+    ],
+    "S1_min": 33.528826718328304,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:50",
+    "members": [
+     "r2a:10:50"
+    ],
+    "S1_min": 28.635166081017537,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:53",
+    "members": [
+     "r2a:10:53"
+    ],
+    "S1_min": 31.198212890719798,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:55",
+    "members": [
+     "r2a:10:55"
+    ],
+    "S1_min": 34.64852473121623,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:56",
+    "members": [
+     "r2a:10:56"
+    ],
+    "S1_min": 70.77692901414008,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:58",
+    "members": [
+     "r2a:10:58"
+    ],
+    "S1_min": 58.634082034913845,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:60",
+    "members": [
+     "r2a:10:60"
+    ],
+    "S1_min": 44.38094348712777,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:10",
+    "rep": "r2a:10:62",
+    "members": [
+     "r2a:10:62"
+    ],
+    "S1_min": 28.305441841159272,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:11",
+    "rep": "r2a:11:55",
+    "members": [
+     "r2a:11:03",
+     "r2a:11:16",
+     "r2a:11:39",
+     "r2a:11:42",
+     "r2a:11:44",
+     "r2a:11:55",
+     "r2a:11:56"
+    ],
+    "S1_min": 180.9563204421881,
+    "max_u": 2.1247597366051232e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:11",
+    "rep": "r2a:11:43",
+    "members": [
+     "r2a:11:13",
+     "r2a:11:18",
+     "r2a:11:26",
+     "r2a:11:38",
+     "r2a:11:43",
+     "r2a:11:60",
+     "r2a:11:61",
+     "r2a:11:62",
+     "r2a:11:63"
+    ],
+    "S1_min": 565.2492611456147,
+    "max_u": 8.146640251283088e-09,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:04",
+    "members": [
+     "r2a:12:04"
+    ],
+    "S1_min": 794.6097603485742,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:07",
+    "members": [
+     "r2a:12:07"
+    ],
+    "S1_min": 10.435773278904604,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:39",
+    "members": [
+     "r2a:12:08",
+     "r2a:12:39"
+    ],
+    "S1_min": 12.160792268097396,
+    "max_u": 2.459289145262389e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:11",
+    "members": [
+     "r2a:12:11"
+    ],
+    "S1_min": 10.736099059251043,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:48",
+    "members": [
+     "r2a:12:12",
+     "r2a:12:31",
+     "r2a:12:36",
+     "r2a:12:48"
+    ],
+    "S1_min": 21.125155414596733,
+    "max_u": 0.00017874797442107848,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:13",
+    "members": [
+     "r2a:12:13",
+     "r2a:12:18",
+     "r2a:12:35",
+     "r2a:12:59"
+    ],
+    "S1_min": 12.379026035181452,
+    "max_u": 0.00020985325102600426,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:38",
+    "members": [
+     "r2a:12:16",
+     "r2a:12:38",
+     "r2a:12:44"
+    ],
+    "S1_min": 10.725788721655473,
+    "max_u": 7.180561771846783e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:19",
+    "members": [
+     "r2a:12:19"
+    ],
+    "S1_min": 12.381462056318192,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:21",
+    "members": [
+     "r2a:12:21"
+    ],
+    "S1_min": 10.706906808150814,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:24",
+    "members": [
+     "r2a:12:24"
+    ],
+    "S1_min": 10.076094425422227,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:25",
+    "members": [
+     "r2a:12:25"
+    ],
+    "S1_min": 11.877326526606645,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:28",
+    "members": [
+     "r2a:12:28"
+    ],
+    "S1_min": 12.76799045831334,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:45",
+    "members": [
+     "r2a:12:45"
+    ],
+    "S1_min": 10.413234474935964,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:46",
+    "members": [
+     "r2a:12:46"
+    ],
+    "S1_min": 12.910736331385591,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:53",
+    "members": [
+     "r2a:12:53"
+    ],
+    "S1_min": 10.526204402294324,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:57",
+    "members": [
+     "r2a:12:57"
+    ],
+    "S1_min": 10.061398393365808,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:58",
+    "members": [
+     "r2a:12:58"
+    ],
+    "S1_min": 12.532027938220374,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:60",
+    "members": [
+     "r2a:12:60"
+    ],
+    "S1_min": 12.512005266857313,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:12",
+    "rep": "r2a:12:61",
+    "members": [
+     "r2a:12:61"
+    ],
+    "S1_min": 12.464561001377152,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:01",
+    "members": [
+     "r2a:13:01"
+    ],
+    "S1_min": 25.384035847228592,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:02",
+    "members": [
+     "r2a:13:02"
+    ],
+    "S1_min": 27.192350788577908,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:04",
+    "members": [
+     "r2a:13:04",
+     "r2a:13:18",
+     "r2a:13:61"
+    ],
+    "S1_min": 26.184575185714362,
+    "max_u": 0.00045339264186416983,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:07",
+    "members": [
+     "r2a:13:07"
+    ],
+    "S1_min": 30.903800404291736,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:35",
+    "members": [
+     "r2a:13:08",
+     "r2a:13:29",
+     "r2a:13:35"
+    ],
+    "S1_min": 106.92495527350671,
+    "max_u": 1.758509231789181e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:12",
+    "members": [
+     "r2a:13:12"
+    ],
+    "S1_min": 27.955757267021443,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:16",
+    "members": [
+     "r2a:13:13",
+     "r2a:13:16"
+    ],
+    "S1_min": 26.180732572129127,
+    "max_u": 8.232008506029824e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:14",
+    "members": [
+     "r2a:13:14",
+     "r2a:13:43",
+     "r2a:13:55"
+    ],
+    "S1_min": 26.27681248995604,
+    "max_u": 3.23325451788703e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:21",
+    "members": [
+     "r2a:13:21"
+    ],
+    "S1_min": 29.765117858535767,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:22",
+    "members": [
+     "r2a:13:22",
+     "r2a:13:51"
+    ],
+    "S1_min": 28.12109336128387,
+    "max_u": 0.0006622230008302606,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:26",
+    "members": [
+     "r2a:13:23",
+     "r2a:13:26",
+     "r2a:13:34"
+    ],
+    "S1_min": 74.30744976456535,
+    "max_u": 4.685872919315178e-08,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:28",
+    "members": [
+     "r2a:13:28"
+    ],
+    "S1_min": 17.564544156728417,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:32",
+    "members": [
+     "r2a:13:32"
+    ],
+    "S1_min": 27.207390528741648,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:36",
+    "members": [
+     "r2a:13:36"
+    ],
+    "S1_min": 233640.6277441993,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:38",
+    "members": [
+     "r2a:13:38"
+    ],
+    "S1_min": 26.407059965023972,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:44",
+    "members": [
+     "r2a:13:44"
+    ],
+    "S1_min": 15.244724364079893,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:45",
+    "members": [
+     "r2a:13:45"
+    ],
+    "S1_min": 29.484338460004544,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:50",
+    "members": [
+     "r2a:13:50"
+    ],
+    "S1_min": 28.53792404307527,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:53",
+    "members": [
+     "r2a:13:53"
+    ],
+    "S1_min": 30.892498800721036,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:60",
+    "members": [
+     "r2a:13:56",
+     "r2a:13:60"
+    ],
+    "S1_min": 42.7671046342468,
+    "max_u": 8.857370366784541e-08,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:58",
+    "members": [
+     "r2a:13:58"
+    ],
+    "S1_min": 36.36007100518733,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:13",
+    "rep": "r2a:13:62",
+    "members": [
+     "r2a:13:62"
+    ],
+    "S1_min": 57.906961955510084,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:14",
+    "rep": "r2a:14:61",
+    "members": [
+     "r2a:14:06",
+     "r2a:14:16",
+     "r2a:14:39",
+     "r2a:14:42",
+     "r2a:14:44",
+     "r2a:14:55",
+     "r2a:14:57",
+     "r2a:14:58",
+     "r2a:14:59",
+     "r2a:14:61"
+    ],
+    "S1_min": 158.8176215518934,
+    "max_u": 3.5733194797179143e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:14",
+    "rep": "r2a:14:43",
+    "members": [
+     "r2a:14:13",
+     "r2a:14:18",
+     "r2a:14:26",
+     "r2a:14:38",
+     "r2a:14:43",
+     "r2a:14:62"
+    ],
+    "S1_min": 466.22562881912194,
+    "max_u": 4.82564162240795e-10,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:00",
+    "members": [
+     "r2a:15:00"
+    ],
+    "S1_min": 12.089144350046016,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:50",
+    "members": [
+     "r2a:15:01",
+     "r2a:15:02",
+     "r2a:15:04",
+     "r2a:15:07",
+     "r2a:15:13",
+     "r2a:15:19",
+     "r2a:15:35",
+     "r2a:15:50",
+     "r2a:15:55",
+     "r2a:15:60",
+     "r2a:15:62"
+    ],
+    "S1_min": 12.120863919267217,
+    "max_u": 0.002176241585270944,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:03",
+    "members": [
+     "r2a:15:03"
+    ],
+    "S1_min": 11.545187592915132,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:08",
+    "members": [
+     "r2a:15:08"
+    ],
+    "S1_min": 12.682968229370498,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:15",
+    "members": [
+     "r2a:15:15"
+    ],
+    "S1_min": 12.654175948664871,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:18",
+    "members": [
+     "r2a:15:18"
+    ],
+    "S1_min": 12.22083391258012,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:21",
+    "members": [
+     "r2a:15:21"
+    ],
+    "S1_min": 10.692026055702566,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:22",
+    "members": [
+     "r2a:15:22"
+    ],
+    "S1_min": 10.004241627050803,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:46",
+    "members": [
+     "r2a:15:25",
+     "r2a:15:36",
+     "r2a:15:46"
+    ],
+    "S1_min": 21.014019435893353,
+    "max_u": 1.0604572318051453e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:29",
+    "members": [
+     "r2a:15:29"
+    ],
+    "S1_min": 10.389792544408692,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:39",
+    "members": [
+     "r2a:15:39"
+    ],
+    "S1_min": 11.540579099696375,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:44",
+    "members": [
+     "r2a:15:44"
+    ],
+    "S1_min": 12.120937283342734,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:45",
+    "members": [
+     "r2a:15:45"
+    ],
+    "S1_min": 10.350112498707356,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:47",
+    "members": [
+     "r2a:15:47"
+    ],
+    "S1_min": 10.553627855221631,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:48",
+    "members": [
+     "r2a:15:48"
+    ],
+    "S1_min": 20.516818845327936,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:51",
+    "members": [
+     "r2a:15:51"
+    ],
+    "S1_min": 10.248582905300516,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:15",
+    "rep": "r2a:15:54",
+    "members": [
+     "r2a:15:54"
+    ],
+    "S1_min": 12.19564221538979,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:00",
+    "members": [
+     "r2a:16:00"
+    ],
+    "S1_min": 26.017126574170813,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:12",
+    "members": [
+     "r2a:16:05",
+     "r2a:16:06",
+     "r2a:16:12",
+     "r2a:16:15"
+    ],
+    "S1_min": 28.073116387468893,
+    "max_u": 0.0010139184506379056,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:07",
+    "members": [
+     "r2a:16:07"
+    ],
+    "S1_min": 52.71591373083187,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:08",
+    "members": [
+     "r2a:16:08"
+    ],
+    "S1_min": 95.25630921862194,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:11",
+    "members": [
+     "r2a:16:11"
+    ],
+    "S1_min": 25.305160083706216,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:14",
+    "members": [
+     "r2a:16:14"
+    ],
+    "S1_min": 26.220035198153383,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:16",
+    "members": [
+     "r2a:16:16",
+     "r2a:16:43"
+    ],
+    "S1_min": 26.04812133855991,
+    "max_u": 2.668536686392664e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:19",
+    "members": [
+     "r2a:16:19"
+    ],
+    "S1_min": 25.303513361185786,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:21",
+    "members": [
+     "r2a:16:21"
+    ],
+    "S1_min": 29.574624495296927,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:26",
+    "members": [
+     "r2a:16:26",
+     "r2a:16:44"
+    ],
+    "S1_min": 73.42042035940456,
+    "max_u": 8.26461445946336e-08,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:28",
+    "members": [
+     "r2a:16:28"
+    ],
+    "S1_min": 17.51949624176011,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:29",
+    "members": [
+     "r2a:16:29"
+    ],
+    "S1_min": 88.6350925789241,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:30",
+    "members": [
+     "r2a:16:30"
+    ],
+    "S1_min": 26.186720765344923,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:33",
+    "members": [
+     "r2a:16:33"
+    ],
+    "S1_min": 27.27106875459203,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:35",
+    "members": [
+     "r2a:16:35"
+    ],
+    "S1_min": 66.85276493573922,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:36",
+    "members": [
+     "r2a:16:36"
+    ],
+    "S1_min": 85715.76471732245,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:39",
+    "members": [
+     "r2a:16:39"
+    ],
+    "S1_min": 34.366900012219574,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:61",
+    "members": [
+     "r2a:16:42",
+     "r2a:16:61"
+    ],
+    "S1_min": 27.899283049154143,
+    "max_u": 1.1652425236263752e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:50",
+    "members": [
+     "r2a:16:50"
+    ],
+    "S1_min": 28.495026036116606,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:53",
+    "members": [
+     "r2a:16:53"
+    ],
+    "S1_min": 35.43376984090701,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:54",
+    "members": [
+     "r2a:16:54"
+    ],
+    "S1_min": 26.16059087422781,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:56",
+    "members": [
+     "r2a:16:56"
+    ],
+    "S1_min": 39.98088953067142,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:16",
+    "rep": "r2a:16:57",
+    "members": [
+     "r2a:16:57"
+    ],
+    "S1_min": 26.16119091629753,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:17",
+    "rep": "r2a:17:61",
+    "members": [
+     "r2a:17:06",
+     "r2a:17:61"
+    ],
+    "S1_min": 154.16718229903245,
+    "max_u": 4.717098077122728e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:17",
+    "rep": "r2a:17:13",
+    "members": [
+     "r2a:17:13",
+     "r2a:17:55"
+    ],
+    "S1_min": 402.6613975919463,
+    "max_u": 3.162866669959019e-10,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:02",
+    "members": [
+     "r2a:18:02",
+     "r2a:18:42",
+     "r2a:18:45"
+    ],
+    "S1_min": 88.2723446677568,
+    "max_u": 8.421701913619017e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:07",
+    "members": [
+     "r2a:18:07"
+    ],
+    "S1_min": 11.222992087391995,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:08",
+    "members": [
+     "r2a:18:08",
+     "r2a:18:15",
+     "r2a:18:20"
+    ],
+    "S1_min": 30.0000964003032,
+    "max_u": 1.8444431458893482e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:11",
+    "members": [
+     "r2a:18:11",
+     "r2a:18:14"
+    ],
+    "S1_min": 111.08347022476231,
+    "max_u": 3.1529060787368245e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:12",
+    "members": [
+     "r2a:18:12"
+    ],
+    "S1_min": 16.617446159795342,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:62",
+    "members": [
+     "r2a:18:13",
+     "r2a:18:32",
+     "r2a:18:62"
+    ],
+    "S1_min": 40.989770524466216,
+    "max_u": 0.00021110772261810168,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:16",
+    "members": [
+     "r2a:18:16"
+    ],
+    "S1_min": 25.86230331737376,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:22",
+    "members": [
+     "r2a:18:22"
+    ],
+    "S1_min": 29.42148661170178,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:25",
+    "members": [
+     "r2a:18:25"
+    ],
+    "S1_min": 29.375223366736897,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:26",
+    "members": [
+     "r2a:18:26"
+    ],
+    "S1_min": 111.08379073645143,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:27",
+    "members": [
+     "r2a:18:27"
+    ],
+    "S1_min": 46.515721134566554,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:28",
+    "members": [
+     "r2a:18:28"
+    ],
+    "S1_min": 27.02251141139789,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:37",
+    "members": [
+     "r2a:18:35",
+     "r2a:18:37",
+     "r2a:18:40"
+    ],
+    "S1_min": 44.587921404324085,
+    "max_u": 6.020806283165333e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:43",
+    "members": [
+     "r2a:18:43"
+    ],
+    "S1_min": 54.19933852550579,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:48",
+    "members": [
+     "r2a:18:48"
+    ],
+    "S1_min": 19.015172870608506,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:49",
+    "members": [
+     "r2a:18:49"
+    ],
+    "S1_min": 63.475955878439855,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:51",
+    "members": [
+     "r2a:18:51"
+    ],
+    "S1_min": 40.47685302391516,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:52",
+    "members": [
+     "r2a:18:52"
+    ],
+    "S1_min": 28.764601713029045,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:18",
+    "rep": "r2a:18:56",
+    "members": [
+     "r2a:18:56"
+    ],
+    "S1_min": 89.21751914651355,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:19",
+    "rep": "r2a:19:08",
+    "members": [
+     "r2a:19:08"
+    ],
+    "S1_min": 16.132956069918023,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:19",
+    "rep": "r2a:19:15",
+    "members": [
+     "r2a:19:15"
+    ],
+    "S1_min": 21.284699187772983,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:19",
+    "rep": "r2a:19:20",
+    "members": [
+     "r2a:19:20"
+    ],
+    "S1_min": 16.00233252539574,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:19",
+    "rep": "r2a:19:22",
+    "members": [
+     "r2a:19:22",
+     "r2a:19:35"
+    ],
+    "S1_min": 31.644626688648525,
+    "max_u": 3.734092334894967e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:19",
+    "rep": "r2a:19:27",
+    "members": [
+     "r2a:19:27"
+    ],
+    "S1_min": 16.344297235065365,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:19",
+    "rep": "r2a:19:28",
+    "members": [
+     "r2a:19:28"
+    ],
+    "S1_min": 678.975307386337,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:19",
+    "rep": "r2a:19:37",
+    "members": [
+     "r2a:19:37"
+    ],
+    "S1_min": 11.581696172351558,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:19",
+    "rep": "r2a:19:56",
+    "members": [
+     "r2a:19:56"
+    ],
+    "S1_min": 17.236692396906165,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:42",
+    "members": [
+     "r2a:21:08",
+     "r2a:21:28",
+     "r2a:21:42",
+     "r2a:21:45",
+     "r2a:21:53"
+    ],
+    "S1_min": 106.30480689567786,
+    "max_u": 6.062906336456083e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:11",
+    "members": [
+     "r2a:21:11"
+    ],
+    "S1_min": 23.729139512703103,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:12",
+    "members": [
+     "r2a:21:12"
+    ],
+    "S1_min": 17.813042725026172,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:27",
+    "members": [
+     "r2a:21:13",
+     "r2a:21:27"
+    ],
+    "S1_min": 40.3611274024602,
+    "max_u": 7.85521800375962e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:37",
+    "members": [
+     "r2a:21:15",
+     "r2a:21:37"
+    ],
+    "S1_min": 27.056160166988533,
+    "max_u": 4.2341366424136955e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:16",
+    "members": [
+     "r2a:21:16"
+    ],
+    "S1_min": 25.525890519157166,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:19",
+    "members": [
+     "r2a:21:19"
+    ],
+    "S1_min": 40.61278534658395,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:24",
+    "members": [
+     "r2a:21:24"
+    ],
+    "S1_min": 44.343728864402806,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:26",
+    "members": [
+     "r2a:21:25",
+     "r2a:21:26",
+     "r2a:21:40",
+     "r2a:21:56"
+    ],
+    "S1_min": 85.82164395046868,
+    "max_u": 5.952867172117257e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:29",
+    "members": [
+     "r2a:21:29"
+    ],
+    "S1_min": 27.982160886296576,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:32",
+    "members": [
+     "r2a:21:32",
+     "r2a:21:60"
+    ],
+    "S1_min": 13.761714927256735,
+    "max_u": 5.524433095829676e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:35",
+    "members": [
+     "r2a:21:35"
+    ],
+    "S1_min": 40.712766742652015,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:52",
+    "members": [
+     "r2a:21:38",
+     "r2a:21:51",
+     "r2a:21:52"
+    ],
+    "S1_min": 28.53310868007624,
+    "max_u": 5.352354612965296e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:48",
+    "members": [
+     "r2a:21:48"
+    ],
+    "S1_min": 47.00796835410168,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:21",
+    "rep": "r2a:21:49",
+    "members": [
+     "r2a:21:49"
+    ],
+    "S1_min": 26.827049653607197,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:22",
+    "rep": "r2a:22:07",
+    "members": [
+     "r2a:22:07"
+    ],
+    "S1_min": 15.36043966363683,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:22",
+    "rep": "r2a:22:08",
+    "members": [
+     "r2a:22:08",
+     "r2a:22:37"
+    ],
+    "S1_min": 11.117558284466318,
+    "max_u": 1.9873189908518423e-08,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:22",
+    "rep": "r2a:22:51",
+    "members": [
+     "r2a:22:11",
+     "r2a:22:51"
+    ],
+    "S1_min": 564.0424992188246,
+    "max_u": 8.10004197641471e-08,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:22",
+    "rep": "r2a:22:29",
+    "members": [
+     "r2a:22:29"
+    ],
+    "S1_min": 19.19514158648866,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:22",
+    "rep": "r2a:22:35",
+    "members": [
+     "r2a:22:35"
+    ],
+    "S1_min": 50.144206498309806,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:22",
+    "rep": "r2a:22:45",
+    "members": [
+     "r2a:22:45"
+    ],
+    "S1_min": 20.75404178501183,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:03",
+    "members": [
+     "r2a:24:03",
+     "r2a:24:08"
+    ],
+    "S1_min": 103.50005574656231,
+    "max_u": 7.378247540520041e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:07",
+    "members": [
+     "r2a:24:07",
+     "r2a:24:20",
+     "r2a:24:51"
+    ],
+    "S1_min": 29.335937085394388,
+    "max_u": 2.50099290492282e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:11",
+    "members": [
+     "r2a:24:11"
+    ],
+    "S1_min": 28.22333395499822,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:12",
+    "members": [
+     "r2a:24:12"
+    ],
+    "S1_min": 35.55769084528746,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:28",
+    "members": [
+     "r2a:24:13",
+     "r2a:24:28",
+     "r2a:24:52"
+    ],
+    "S1_min": 39.16109361034728,
+    "max_u": 7.421280484670723e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:22",
+    "members": [
+     "r2a:24:15",
+     "r2a:24:22"
+    ],
+    "S1_min": 13.74190159515525,
+    "max_u": 1.8278686293449198e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:16",
+    "members": [
+     "r2a:24:16"
+    ],
+    "S1_min": 39.36770437890311,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:26",
+    "members": [
+     "r2a:24:26",
+     "r2a:24:56"
+    ],
+    "S1_min": 103.49677973243733,
+    "max_u": 3.7410588636192327e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:29",
+    "members": [
+     "r2a:24:29"
+    ],
+    "S1_min": 23.292577156543768,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:32",
+    "members": [
+     "r2a:24:32"
+    ],
+    "S1_min": 27.694853249456543,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:35",
+    "members": [
+     "r2a:24:35",
+     "r2a:24:42",
+     "r2a:24:45"
+    ],
+    "S1_min": 28.78169834970714,
+    "max_u": 0.00019811353114770707,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:37",
+    "members": [
+     "r2a:24:37"
+    ],
+    "S1_min": 31.472516364885063,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:43",
+    "members": [
+     "r2a:24:43"
+    ],
+    "S1_min": 43.45135182835166,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:49",
+    "members": [
+     "r2a:24:49"
+    ],
+    "S1_min": 26.690927326690613,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:24",
+    "rep": "r2a:24:53",
+    "members": [
+     "r2a:24:53"
+    ],
+    "S1_min": 65.35179641478838,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:25",
+    "rep": "r2a:25:15",
+    "members": [
+     "r2a:25:15"
+    ],
+    "S1_min": 20.45421287989991,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:25",
+    "rep": "r2a:25:25",
+    "members": [
+     "r2a:25:25"
+    ],
+    "S1_min": 562.2424504429199,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:25",
+    "rep": "r2a:25:42",
+    "members": [
+     "r2a:25:28",
+     "r2a:25:42"
+    ],
+    "S1_min": 18.392026489012412,
+    "max_u": 4.64326475352328e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:25",
+    "rep": "r2a:25:35",
+    "members": [
+     "r2a:25:35"
+    ],
+    "S1_min": 29.077263802804715,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:25",
+    "rep": "r2a:25:45",
+    "members": [
+     "r2a:25:45"
+    ],
+    "S1_min": 16.47530221117737,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:25",
+    "rep": "r2a:25:51",
+    "members": [
+     "r2a:25:51"
+    ],
+    "S1_min": 541.1322228217638,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:25",
+    "rep": "r2a:25:53",
+    "members": [
+     "r2a:25:53"
+    ],
+    "S1_min": 15.07671219223001,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:03",
+    "members": [
+     "r2a:27:03"
+    ],
+    "S1_min": 100.51635648637074,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:07",
+    "members": [
+     "r2a:27:07",
+     "r2a:27:59"
+    ],
+    "S1_min": 27.040814685442058,
+    "max_u": 0.002689642775280158,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:08",
+    "members": [
+     "r2a:27:08"
+    ],
+    "S1_min": 19.1891379228257,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:11",
+    "members": [
+     "r2a:27:11"
+    ],
+    "S1_min": 28.764601717501137,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:52",
+    "members": [
+     "r2a:27:12",
+     "r2a:27:13",
+     "r2a:27:41",
+     "r2a:27:42",
+     "r2a:27:44",
+     "r2a:27:52"
+    ],
+    "S1_min": 27.95489728737487,
+    "max_u": 0.0004421220775077256,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:14",
+    "members": [
+     "r2a:27:14",
+     "r2a:27:20",
+     "r2a:27:49"
+    ],
+    "S1_min": 30.000096400296776,
+    "max_u": 1.6257823756878527e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:15",
+    "members": [
+     "r2a:27:15"
+    ],
+    "S1_min": 40.47685302391595,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:16",
+    "members": [
+     "r2a:27:16"
+    ],
+    "S1_min": 26.876699341596662,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:17",
+    "members": [
+     "r2a:27:17"
+    ],
+    "S1_min": 13.809006892566163,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:22",
+    "members": [
+     "r2a:27:22"
+    ],
+    "S1_min": 25.891835981123695,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:28",
+    "members": [
+     "r2a:27:28",
+     "r2a:27:37"
+    ],
+    "S1_min": 41.27895735442879,
+    "max_u": 3.862237091626734e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:29",
+    "members": [
+     "r2a:27:29"
+    ],
+    "S1_min": 90.35724192151424,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:32",
+    "members": [
+     "r2a:27:32",
+     "r2a:27:39"
+    ],
+    "S1_min": 116.61847994707674,
+    "max_u": 9.204515197073586e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:38",
+    "members": [
+     "r2a:27:38"
+    ],
+    "S1_min": 56.12204259718871,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:40",
+    "members": [
+     "r2a:27:40"
+    ],
+    "S1_min": 26.116175184692175,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:45",
+    "members": [
+     "r2a:27:45"
+    ],
+    "S1_min": 29.48389142594873,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:48",
+    "members": [
+     "r2a:27:48"
+    ],
+    "S1_min": 20.591419715146277,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:51",
+    "members": [
+     "r2a:27:51"
+    ],
+    "S1_min": 28.341224765534136,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:53",
+    "members": [
+     "r2a:27:53"
+    ],
+    "S1_min": 97.90490095256908,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:27",
+    "rep": "r2a:27:56",
+    "members": [
+     "r2a:27:56"
+    ],
+    "S1_min": 28.150811367781955,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:28",
+    "rep": "r2a:28:42",
+    "members": [
+     "r2a:28:01",
+     "r2a:28:42"
+    ],
+    "S1_min": 11.588817196713698,
+    "max_u": 4.4568771682764106e-08,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:28",
+    "rep": "r2a:28:12",
+    "members": [
+     "r2a:28:12"
+    ],
+    "S1_min": 91.60422238492251,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:28",
+    "rep": "r2a:28:56",
+    "members": [
+     "r2a:28:13",
+     "r2a:28:29",
+     "r2a:28:56"
+    ],
+    "S1_min": 31.978596761817595,
+    "max_u": 3.627092315568644e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:28",
+    "rep": "r2a:28:30",
+    "members": [
+     "r2a:28:30"
+    ],
+    "S1_min": 16.313626555849886,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:28",
+    "rep": "r2a:28:32",
+    "members": [
+     "r2a:28:32"
+    ],
+    "S1_min": 16.249028352505775,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:28",
+    "rep": "r2a:28:35",
+    "members": [
+     "r2a:28:35"
+    ],
+    "S1_min": 31.874618128973715,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:28",
+    "rep": "r2a:28:51",
+    "members": [
+     "r2a:28:51"
+    ],
+    "S1_min": 23.3602761301933,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:28",
+    "rep": "r2a:28:53",
+    "members": [
+     "r2a:28:53"
+    ],
+    "S1_min": 16.371517702278325,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:51",
+    "members": [
+     "r2a:30:02",
+     "r2a:30:15",
+     "r2a:30:28",
+     "r2a:30:51"
+    ],
+    "S1_min": 106.3048068957595,
+    "max_u": 2.2612560002244208e-08,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:07",
+    "members": [
+     "r2a:30:07"
+    ],
+    "S1_min": 18.7697943518809,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:08",
+    "members": [
+     "r2a:30:08",
+     "r2a:30:11",
+     "r2a:30:13",
+     "r2a:30:29"
+    ],
+    "S1_min": 88.99243599503754,
+    "max_u": 3.8007872505592863e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:12",
+    "members": [
+     "r2a:30:12"
+    ],
+    "S1_min": 18.18209393329472,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:16",
+    "members": [
+     "r2a:30:16"
+    ],
+    "S1_min": 15.986279890434867,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:52",
+    "members": [
+     "r2a:30:22",
+     "r2a:30:52"
+    ],
+    "S1_min": 27.72703076106815,
+    "max_u": 8.199735815495045e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:25",
+    "members": [
+     "r2a:30:25"
+    ],
+    "S1_min": 39.242217319290276,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:32",
+    "members": [
+     "r2a:30:27",
+     "r2a:30:32",
+     "r2a:30:59"
+    ],
+    "S1_min": 29.664641202906033,
+    "max_u": 1.7496847338094312e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:37",
+    "members": [
+     "r2a:30:37"
+    ],
+    "S1_min": 44.085270977735654,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:38",
+    "members": [
+     "r2a:30:38"
+    ],
+    "S1_min": 424.3099461687424,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:40",
+    "members": [
+     "r2a:30:40",
+     "r2a:30:45"
+    ],
+    "S1_min": 25.809033811957967,
+    "max_u": 3.1772000771265343e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:41",
+    "members": [
+     "r2a:30:41"
+    ],
+    "S1_min": 26.897099090718328,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:30",
+    "rep": "r2a:30:43",
+    "members": [
+     "r2a:30:43"
+    ],
+    "S1_min": 43.38596401476337,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:07",
+    "members": [
+     "r2a:31:07"
+    ],
+    "S1_min": 20.246085877650167,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:08",
+    "members": [
+     "r2a:31:08"
+    ],
+    "S1_min": 29.956384059541804,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:15",
+    "members": [
+     "r2a:31:15"
+    ],
+    "S1_min": 22.48993513925064,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:18",
+    "members": [
+     "r2a:31:18"
+    ],
+    "S1_min": 27.239905459106158,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:62",
+    "members": [
+     "r2a:31:28",
+     "r2a:31:62"
+    ],
+    "S1_min": 15.972320558916731,
+    "max_u": 1.325901368550338e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:56",
+    "members": [
+     "r2a:31:29",
+     "r2a:31:42",
+     "r2a:31:45",
+     "r2a:31:56",
+     "r2a:31:60"
+    ],
+    "S1_min": 30.509391488238393,
+    "max_u": 5.1414548822847905e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:32",
+    "members": [
+     "r2a:31:32"
+    ],
+    "S1_min": 86.13300390178284,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:37",
+    "members": [
+     "r2a:31:37"
+    ],
+    "S1_min": 20.68427382074607,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:31",
+    "rep": "r2a:31:53",
+    "members": [
+     "r2a:31:53"
+    ],
+    "S1_min": 15.704692508275707,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:32",
+    "rep": "r2a:32:11",
+    "members": [
+     "r2a:32:11"
+    ],
+    "S1_min": 244.17118305465374,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:01",
+    "members": [
+     "r2a:33:01"
+    ],
+    "S1_min": 87.68684665535545,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:02",
+    "members": [
+     "r2a:33:02"
+    ],
+    "S1_min": 25.792435894707644,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:07",
+    "members": [
+     "r2a:33:07"
+    ],
+    "S1_min": 50.40969048099782,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:15",
+    "members": [
+     "r2a:33:11",
+     "r2a:33:15",
+     "r2a:33:16",
+     "r2a:33:28",
+     "r2a:33:60"
+    ],
+    "S1_min": 103.49677973243732,
+    "max_u": 1.6243452392206148e-05,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:12",
+    "members": [
+     "r2a:33:12"
+    ],
+    "S1_min": 35.55769084522621,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:13",
+    "members": [
+     "r2a:33:13"
+    ],
+    "S1_min": 28.339275766005994,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:20",
+    "members": [
+     "r2a:33:20"
+    ],
+    "S1_min": 419.99041365583116,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:22",
+    "members": [
+     "r2a:33:22"
+    ],
+    "S1_min": 28.163059620347372,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:24",
+    "members": [
+     "r2a:33:24"
+    ],
+    "S1_min": 39.37922139407799,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:25",
+    "members": [
+     "r2a:33:25"
+    ],
+    "S1_min": 35.385171236062064,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:26",
+    "members": [
+     "r2a:33:26"
+    ],
+    "S1_min": 27.85863686749561,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:62",
+    "members": [
+     "r2a:33:29",
+     "r2a:33:62"
+    ],
+    "S1_min": 39.173228677998566,
+    "max_u": 0.00012151759346157309,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:35",
+    "members": [
+     "r2a:33:35"
+    ],
+    "S1_min": 28.781698337184455,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:40",
+    "members": [
+     "r2a:33:40"
+    ],
+    "S1_min": 28.48231889509557,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:41",
+    "members": [
+     "r2a:33:41"
+    ],
+    "S1_min": 26.699524113260477,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:42",
+    "members": [
+     "r2a:33:42"
+    ],
+    "S1_min": 29.335937085343033,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:43",
+    "members": [
+     "r2a:33:43"
+    ],
+    "S1_min": 52.85640073098163,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:48",
+    "members": [
+     "r2a:33:48"
+    ],
+    "S1_min": 20.87111286200541,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:49",
+    "members": [
+     "r2a:33:49"
+    ],
+    "S1_min": 26.747786951739457,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:51",
+    "members": [
+     "r2a:33:51"
+    ],
+    "S1_min": 29.204204644619757,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:52",
+    "members": [
+     "r2a:33:52"
+    ],
+    "S1_min": 27.217639067867715,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:33",
+    "rep": "r2a:33:57",
+    "members": [
+     "r2a:33:57"
+    ],
+    "S1_min": 28.53434467899337,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:34",
+    "rep": "r2a:34:08",
+    "members": [
+     "r2a:34:08"
+    ],
+    "S1_min": 10.961839036173254,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:34",
+    "rep": "r2a:34:15",
+    "members": [
+     "r2a:34:15"
+    ],
+    "S1_min": 15.014264420026807,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:34",
+    "rep": "r2a:34:40",
+    "members": [
+     "r2a:34:40"
+    ],
+    "S1_min": 13.990338670098623,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:34",
+    "rep": "r2a:34:51",
+    "members": [
+     "r2a:34:45",
+     "r2a:34:51"
+    ],
+    "S1_min": 29.942793996244593,
+    "max_u": 3.2581129036183633e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:34",
+    "rep": "r2a:34:53",
+    "members": [
+     "r2a:34:53"
+    ],
+    "S1_min": 15.103526864115064,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:34",
+    "rep": "r2a:34:56",
+    "members": [
+     "r2a:34:56"
+    ],
+    "S1_min": 27438.960780181587,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:35",
+    "rep": "r2a:35:11",
+    "members": [
+     "r2a:35:11"
+    ],
+    "S1_min": 440.0180044944341,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:00",
+    "members": [
+     "r2a:36:00"
+    ],
+    "S1_min": 11.407243016356947,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:05",
+    "members": [
+     "r2a:36:05"
+    ],
+    "S1_min": 13.139267782555791,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:36",
+    "members": [
+     "r2a:36:06",
+     "r2a:36:31",
+     "r2a:36:36",
+     "r2a:36:42",
+     "r2a:36:46",
+     "r2a:36:63"
+    ],
+    "S1_min": 11.576904445101425,
+    "max_u": 0.00015873119191252746,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:12",
+    "members": [
+     "r2a:36:12"
+    ],
+    "S1_min": 15.876578474848555,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:14",
+    "members": [
+     "r2a:36:14"
+    ],
+    "S1_min": 10.080496067172358,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:15",
+    "members": [
+     "r2a:36:15"
+    ],
+    "S1_min": 39.357436425300754,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:20",
+    "members": [
+     "r2a:36:20",
+     "r2a:36:48"
+    ],
+    "S1_min": 24.825406534390748,
+    "max_u": 0.0045940176229951986,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:22",
+    "members": [
+     "r2a:36:22"
+    ],
+    "S1_min": 11.85054123594356,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:24",
+    "members": [
+     "r2a:36:24"
+    ],
+    "S1_min": 11.577833832634616,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:25",
+    "members": [
+     "r2a:36:25"
+    ],
+    "S1_min": 11.57666716071206,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:30",
+    "members": [
+     "r2a:36:30"
+    ],
+    "S1_min": 13.017763361670172,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:53",
+    "members": [
+     "r2a:36:53"
+    ],
+    "S1_min": 10.48045223337817,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:59",
+    "members": [
+     "r2a:36:59"
+    ],
+    "S1_min": 12.539465654270865,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "r2a:36",
+    "rep": "r2a:36:62",
+    "members": [
+     "r2a:36:62"
+    ],
+    "S1_min": 11.926115812942122,
+    "max_u": 0.0,
+    "far_pairs": []
+   }
+  ],
+  "x2e": [
+   {
+    "dataset": "x2e:2:0:0",
+    "rep": "x2e:D2:2:0:0:0",
+    "members": [
+     "x2e:D2:2:0:0:0"
+    ],
+    "S1_min": 36.58800002025279,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:0:1",
+    "rep": "x2e:D2:2:0:1:0",
+    "members": [
+     "x2e:D2:2:0:1:0"
+    ],
+    "S1_min": 41.06674792269175,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:10:0",
+    "rep": "x2e:D2:2:10:0:0",
+    "members": [
+     "x2e:D2:2:10:0:0"
+    ],
+    "S1_min": 290.26611238439364,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:10:1",
+    "rep": "x2e:D2:2:10:1:0",
+    "members": [
+     "x2e:D2:2:10:1:0"
+    ],
+    "S1_min": 261.89795832785796,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:11:0",
+    "rep": "x2e:C:2:11:0:1",
+    "members": [
+     "x2e:C:2:11:0:1"
+    ],
+    "S1_min": 4.665290415774127,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:11:0",
+    "rep": "x2e:D2:2:11:0:0",
+    "members": [
+     "x2e:D2:2:11:0:0"
+    ],
+    "S1_min": 512.3462593726161,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:11:1",
+    "rep": "x2e:A1:2:11:1:0",
+    "members": [
+     "x2e:A1:2:11:1:0"
+    ],
+    "S1_min": 4.16563653458949,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:11:1",
+    "rep": "x2e:C:2:11:1:1",
+    "members": [
+     "x2e:C:2:11:1:1"
+    ],
+    "S1_min": 4.315605118029665,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:11:1",
+    "rep": "x2e:D2:2:11:1:0",
+    "members": [
+     "x2e:D2:2:11:1:0"
+    ],
+    "S1_min": 1767.5163154425848,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:11:1",
+    "rep": "x2e:S1:2:11:1:1",
+    "members": [
+     "x2e:S1:2:11:1:1"
+    ],
+    "S1_min": 20623.308182373847,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:11:1",
+    "rep": "x2e:S2:2:11:1:1",
+    "members": [
+     "x2e:S2:2:11:1:1"
+    ],
+    "S1_min": 6662.541387566812,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:12:0",
+    "rep": "x2e:D2:2:12:0:0",
+    "members": [
+     "x2e:D2:2:12:0:0"
+    ],
+    "S1_min": 46.44185070302932,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:12:1",
+    "rep": "x2e:C:2:12:1:1",
+    "members": [
+     "x2e:C:2:12:1:1",
+     "x2e:D2:2:12:1:0"
+    ],
+    "S1_min": 46.44185070311369,
+    "max_u": 5.664757551926414e-11,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:13:0",
+    "rep": "x2e:C:2:13:0:3",
+    "members": [
+     "x2e:C:2:13:0:3"
+    ],
+    "S1_min": 374.76307791827907,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:13:0",
+    "rep": "x2e:D2:2:13:0:0",
+    "members": [
+     "x2e:D2:2:13:0:0"
+    ],
+    "S1_min": 4446.7581280693375,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:13:1",
+    "rep": "x2e:C:2:13:1:3",
+    "members": [
+     "x2e:C:2:13:1:0",
+     "x2e:C:2:13:1:3"
+    ],
+    "S1_min": 374.76307793424036,
+    "max_u": 1.2703833798551519e-06,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:13:1",
+    "rep": "x2e:D2:2:13:1:0",
+    "members": [
+     "x2e:D2:2:13:1:0"
+    ],
+    "S1_min": 355.8483419167521,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:14:0",
+    "rep": "x2e:D2:2:14:0:0",
+    "members": [
+     "x2e:D2:2:14:0:0"
+    ],
+    "S1_min": 8.547039314697635,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:14:1",
+    "rep": "x2e:D2:2:14:1:0",
+    "members": [
+     "x2e:D2:2:14:1:0"
+    ],
+    "S1_min": 199.08809358279584,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:15:0",
+    "rep": "x2e:D2:2:15:0:0",
+    "members": [
+     "x2e:D2:2:15:0:0"
+    ],
+    "S1_min": 90.58197310542097,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:15:1",
+    "rep": "x2e:C:2:15:1:3",
+    "members": [
+     "x2e:C:2:15:1:3"
+    ],
+    "S1_min": 160.4762885945086,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:1:0",
+    "rep": "x2e:D2:2:1:0:0",
+    "members": [
+     "x2e:D2:2:1:0:0"
+    ],
+    "S1_min": 80.28475977399978,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:1:1",
+    "rep": "x2e:D2:2:1:1:0",
+    "members": [
+     "x2e:D2:2:1:1:0"
+    ],
+    "S1_min": 164.5117085719746,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:2:0",
+    "rep": "x2e:C:2:2:0:0",
+    "members": [
+     "x2e:C:2:2:0:0"
+    ],
+    "S1_min": 32.18731986622882,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:2:0",
+    "rep": "x2e:D2:2:2:0:0",
+    "members": [
+     "x2e:D2:2:2:0:0"
+    ],
+    "S1_min": 26.50700305737025,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:2:1",
+    "rep": "x2e:C:2:2:1:0",
+    "members": [
+     "x2e:C:2:2:1:0"
+    ],
+    "S1_min": 32.187319866005474,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:3:0",
+    "rep": "x2e:D2:2:3:0:0",
+    "members": [
+     "x2e:D2:2:3:0:0"
+    ],
+    "S1_min": 101.6574048761972,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:3:1",
+    "rep": "x2e:D2:2:3:1:0",
+    "members": [
+     "x2e:D2:2:3:1:0"
+    ],
+    "S1_min": 78.70057845569359,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:4:0",
+    "rep": "x2e:D2:2:4:0:0",
+    "members": [
+     "x2e:D2:2:4:0:0"
+    ],
+    "S1_min": 502.70103667137937,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:4:1",
+    "rep": "x2e:D2:2:4:1:0",
+    "members": [
+     "x2e:D2:2:4:1:0"
+    ],
+    "S1_min": 511.64977787890786,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:5:0",
+    "rep": "x2e:D2:2:5:0:0",
+    "members": [
+     "x2e:D2:2:5:0:0"
+    ],
+    "S1_min": 10.005583402012252,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:5:1",
+    "rep": "x2e:D2:2:5:1:0",
+    "members": [
+     "x2e:D2:2:5:1:0"
+    ],
+    "S1_min": 14.3924219550875,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:6:1",
+    "rep": "x2e:C:2:6:1:3",
+    "members": [
+     "x2e:C:2:6:1:3"
+    ],
+    "S1_min": 43.20714828498605,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:7:1",
+    "rep": "x2e:D2:2:7:1:0",
+    "members": [
+     "x2e:D2:2:7:1:0"
+    ],
+    "S1_min": 19.797344499971434,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:8:0",
+    "rep": "x2e:D2:2:8:0:0",
+    "members": [
+     "x2e:D2:2:8:0:0"
+    ],
+    "S1_min": 947.6874971535836,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:9:1",
+    "rep": "x2e:C:2:9:1:3",
+    "members": [
+     "x2e:C:2:9:1:3"
+    ],
+    "S1_min": 45.09571845017229,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:2:9:1",
+    "rep": "x2e:D2:2:9:1:0",
+    "members": [
+     "x2e:D2:2:9:1:0"
+    ],
+    "S1_min": 59.09193754920111,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:0:0",
+    "rep": "x2e:C:3:0:0:1",
+    "members": [
+     "x2e:C:3:0:0:1",
+     "x2e:C:3:0:0:2"
+    ],
+    "S1_min": 2.9319295539434913,
+    "max_u": 1.9223971955047622e-07,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:0:0",
+    "rep": "x2e:D2:3:0:0:0",
+    "members": [
+     "x2e:D2:3:0:0:0"
+    ],
+    "S1_min": 8.658833980392023,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:0:1",
+    "rep": "x2e:D2:3:0:1:0",
+    "members": [
+     "x2e:D2:3:0:1:0"
+    ],
+    "S1_min": 7.8620918028591955,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:10:0",
+    "rep": "x2e:C:3:10:0:1",
+    "members": [
+     "x2e:C:3:10:0:1"
+    ],
+    "S1_min": 9.212424905427092,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:10:0",
+    "rep": "x2e:D2:3:10:0:0",
+    "members": [
+     "x2e:D2:3:10:0:0"
+    ],
+    "S1_min": 23.477369975366596,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:10:1",
+    "rep": "x2e:C:3:10:1:0",
+    "members": [
+     "x2e:C:3:10:1:0"
+    ],
+    "S1_min": 34.789113316631294,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:10:1",
+    "rep": "x2e:C:3:10:1:1",
+    "members": [
+     "x2e:C:3:10:1:1"
+    ],
+    "S1_min": 10.21569537260269,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:10:1",
+    "rep": "x2e:D2:3:10:1:0",
+    "members": [
+     "x2e:D2:3:10:1:0"
+    ],
+    "S1_min": 14.8519187615141,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:11:0",
+    "rep": "x2e:C:3:11:0:2",
+    "members": [
+     "x2e:C:3:11:0:2"
+    ],
+    "S1_min": 36.47166218000865,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:11:0",
+    "rep": "x2e:D2:3:11:0:0",
+    "members": [
+     "x2e:D2:3:11:0:0"
+    ],
+    "S1_min": 36.97074842978756,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:11:1",
+    "rep": "x2e:C:3:11:1:2",
+    "members": [
+     "x2e:C:3:11:1:2"
+    ],
+    "S1_min": 36.47166218000618,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:11:1",
+    "rep": "x2e:D2:3:11:1:0",
+    "members": [
+     "x2e:D2:3:11:1:0"
+    ],
+    "S1_min": 49.90840463478858,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:12:0",
+    "rep": "x2e:C:3:12:0:2",
+    "members": [
+     "x2e:C:3:12:0:2"
+    ],
+    "S1_min": 125.27919119658426,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:12:0",
+    "rep": "x2e:D2:3:12:0:0",
+    "members": [
+     "x2e:D2:3:12:0:0"
+    ],
+    "S1_min": 52.57064301270063,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:12:1",
+    "rep": "x2e:C:3:12:1:2",
+    "members": [
+     "x2e:C:3:12:1:2"
+    ],
+    "S1_min": 125.27919119656997,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:12:1",
+    "rep": "x2e:D2:3:12:1:0",
+    "members": [
+     "x2e:D2:3:12:1:0"
+    ],
+    "S1_min": 99.78289307825476,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:13:0",
+    "rep": "x2e:D2:3:13:0:0",
+    "members": [
+     "x2e:D2:3:13:0:0"
+    ],
+    "S1_min": 41.59898361177832,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:13:1",
+    "rep": "x2e:D2:3:13:1:0",
+    "members": [
+     "x2e:D2:3:13:1:0"
+    ],
+    "S1_min": 58.21234937565595,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:14:0",
+    "rep": "x2e:C:3:14:0:1",
+    "members": [
+     "x2e:C:3:14:0:1"
+    ],
+    "S1_min": 105.11298411595213,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:14:0",
+    "rep": "x2e:D2:3:14:0:0",
+    "members": [
+     "x2e:D2:3:14:0:0"
+    ],
+    "S1_min": 47.10673061315404,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:14:1",
+    "rep": "x2e:D2:3:14:1:0",
+    "members": [
+     "x2e:D2:3:14:1:0"
+    ],
+    "S1_min": 632.2527260827221,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:15:0",
+    "rep": "x2e:D2:3:15:0:0",
+    "members": [
+     "x2e:D2:3:15:0:0"
+    ],
+    "S1_min": 56.10297651154777,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:15:1",
+    "rep": "x2e:C:3:15:1:0",
+    "members": [
+     "x2e:C:3:15:1:0"
+    ],
+    "S1_min": 9.291422631502922,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:15:1",
+    "rep": "x2e:D2:3:15:1:0",
+    "members": [
+     "x2e:D2:3:15:1:0"
+    ],
+    "S1_min": 121.02963046743892,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:1:0",
+    "rep": "x2e:C:3:1:0:0",
+    "members": [
+     "x2e:C:3:1:0:0"
+    ],
+    "S1_min": 392.2327831794527,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:1:0",
+    "rep": "x2e:D2:3:1:0:0",
+    "members": [
+     "x2e:D2:3:1:0:0"
+    ],
+    "S1_min": 129.18257474387613,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:1:1",
+    "rep": "x2e:C:3:1:1:0",
+    "members": [
+     "x2e:C:3:1:1:0"
+    ],
+    "S1_min": 392.23278317953003,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:1:1",
+    "rep": "x2e:C:3:1:1:3",
+    "members": [
+     "x2e:C:3:1:1:3"
+    ],
+    "S1_min": 152.94489809902126,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:1:1",
+    "rep": "x2e:D2:3:1:1:0",
+    "members": [
+     "x2e:D2:3:1:1:0"
+    ],
+    "S1_min": 21.579876421576085,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:2:0",
+    "rep": "x2e:C:3:2:0:1",
+    "members": [
+     "x2e:C:3:2:0:1"
+    ],
+    "S1_min": 4.296389851782603,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:2:0",
+    "rep": "x2e:D2:3:2:0:0",
+    "members": [
+     "x2e:D2:3:2:0:0"
+    ],
+    "S1_min": 5.800196421130909,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:2:1",
+    "rep": "x2e:C:3:2:1:1",
+    "members": [
+     "x2e:C:3:2:1:1"
+    ],
+    "S1_min": 4.296389851782196,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:2:1",
+    "rep": "x2e:C:3:2:1:3",
+    "members": [
+     "x2e:C:3:2:1:3"
+    ],
+    "S1_min": 12.496340012603861,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:2:1",
+    "rep": "x2e:D2:3:2:1:0",
+    "members": [
+     "x2e:D2:3:2:1:0"
+    ],
+    "S1_min": 4.741378113514975,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:3:0",
+    "rep": "x2e:D2:3:3:0:0",
+    "members": [
+     "x2e:D2:3:3:0:0"
+    ],
+    "S1_min": 114.008186090816,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:3:1",
+    "rep": "x2e:C:3:3:1:0",
+    "members": [
+     "x2e:C:3:3:1:0"
+    ],
+    "S1_min": 33.181322432981105,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:4:0",
+    "rep": "x2e:D2:3:4:0:0",
+    "members": [
+     "x2e:D2:3:4:0:0"
+    ],
+    "S1_min": 29.862356101940033,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:4:1",
+    "rep": "x2e:D2:3:4:1:0",
+    "members": [
+     "x2e:D2:3:4:1:0"
+    ],
+    "S1_min": 83.07060237387843,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:5:0",
+    "rep": "x2e:D2:3:5:0:0",
+    "members": [
+     "x2e:D2:3:5:0:0"
+    ],
+    "S1_min": 11.115866633581817,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:5:1",
+    "rep": "x2e:C:3:5:1:1",
+    "members": [
+     "x2e:C:3:5:1:1"
+    ],
+    "S1_min": 6.2897682707316935,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:5:1",
+    "rep": "x2e:D2:3:5:1:0",
+    "members": [
+     "x2e:D2:3:5:1:0"
+    ],
+    "S1_min": 13.053630430006415,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:6:0",
+    "rep": "x2e:C:3:6:0:1",
+    "members": [
+     "x2e:C:3:6:0:1"
+    ],
+    "S1_min": 9.072675649750119,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:6:0",
+    "rep": "x2e:D2:3:6:0:0",
+    "members": [
+     "x2e:D2:3:6:0:0"
+    ],
+    "S1_min": 15.22230101091553,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:6:1",
+    "rep": "x2e:C:3:6:1:0",
+    "members": [
+     "x2e:C:3:6:1:0"
+    ],
+    "S1_min": 39.894318244254755,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:6:1",
+    "rep": "x2e:C:3:6:1:2",
+    "members": [
+     "x2e:C:3:6:1:2"
+    ],
+    "S1_min": 39.74802098852242,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:7:0",
+    "rep": "x2e:D2:3:7:0:0",
+    "members": [
+     "x2e:D2:3:7:0:0"
+    ],
+    "S1_min": 2.452902749807025,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:7:1",
+    "rep": "x2e:D2:3:7:1:0",
+    "members": [
+     "x2e:D2:3:7:1:0"
+    ],
+    "S1_min": 1.388242916561674,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:8:0",
+    "rep": "x2e:D2:3:8:0:0",
+    "members": [
+     "x2e:D2:3:8:0:0"
+    ],
+    "S1_min": 12.80111520296094,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:8:1",
+    "rep": "x2e:D2:3:8:1:0",
+    "members": [
+     "x2e:D2:3:8:1:0"
+    ],
+    "S1_min": 5.296966446027629,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:9:0",
+    "rep": "x2e:C:3:9:0:3",
+    "members": [
+     "x2e:C:3:9:0:3"
+    ],
+    "S1_min": 216.70845163453987,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:9:0",
+    "rep": "x2e:D2:3:9:0:0",
+    "members": [
+     "x2e:D2:3:9:0:0"
+    ],
+    "S1_min": 90.18035751885233,
+    "max_u": 0.0,
+    "far_pairs": []
+   },
+   {
+    "dataset": "x2e:3:9:1",
+    "rep": "x2e:D2:3:9:1:0",
+    "members": [
+     "x2e:D2:3:9:1:0"
+    ],
+    "S1_min": 60.235374556150376,
+    "max_u": 0.0,
+    "far_pairs": []
+   }
+  ]
+ }
+}
