@@ -34,8 +34,8 @@ onnx = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/NaNIsaac/ReflectoLearn"
-Repository = "https://github.com/NaNIsaac/ReflectoLearn"
+Homepage = "https://github.com/NaNIsaac-Research/ReflectoLearn"
+Repository = "https://github.com/NaNIsaac-Research/ReflectoLearn"
 
 [dependency-groups]
 dev = [

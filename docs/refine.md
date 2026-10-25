@@ -99,13 +99,13 @@ These are open issues, found on synthetic curves:
 - With no angular offset in the data, the default fit moves the 2θ offset towards its bound and the
   SLD comes out up to 30% low; the offset and the SLD are almost perfectly correlated, and the
   `2.structure` stage slides along that valley
-  ([#14](https://github.com/NaNIsaac/ReflectoLearn/issues/14)). Thickness is not affected.
+  ([#14](https://github.com/NaNIsaac-Research/ReflectoLearn/issues/14)). Thickness is not affected.
   `tth_offset_last_stage` is the opt-in mitigation; it is off by default.
 - With the default stages, the fit stops short of the best fit even on curves from its own forward
-  model ([#25](https://github.com/NaNIsaac/ReflectoLearn/issues/25)). `RefineConfig.likelihood` is
+  model ([#25](https://github.com/NaNIsaac-Research/ReflectoLearn/issues/25)). `RefineConfig.likelihood` is
   the opt-in path that reaches it, at about 30 times the cost.
 - The posterior sampler's chains are often far shorter than 50 autocorrelation times with all twelve
-  parameters free ([#29](https://github.com/NaNIsaac/ReflectoLearn/issues/29)). The result reports
+  parameters free ([#29](https://github.com/NaNIsaac-Research/ReflectoLearn/issues/29)). The result reports
   the autocorrelation time and a warning is logged; read the intervals with that in mind.
 
 The [synthetic film example](../examples/synthetic_film_fit/README.md) shows the first limit on one

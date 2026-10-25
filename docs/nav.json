@@ -14,7 +14,10 @@
     },
     {
       "text": "Research",
-      "items": [{ "text": "XRR research index", "link": "xrr-research-index.md" }]
+      "items": [
+        { "text": "Experiments", "link": "research/README.md" },
+        { "text": "XRR research index", "link": "xrr-research-index.md" }
+      ]
     }
   ]
 }
