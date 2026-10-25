@@ -1,0 +1,565 @@
+{
+ "summary": {
+  "multilayer_cells_where_A1_beats_C": 0,
+  "verdict": "no room for RL",
+  "room_to_learn": false,
+  "reward_misaligned": false,
+  "multilayer_cells_where_A1_beats_B": 4,
+  "register_X2c": false,
+  "truths_per_class": 16
+ },
+ "cells": {
+  "n1_s0": {
+   "c_capped_frac": 0.0,
+   "reference": "C",
+   "reference_missing": false,
+   "A1_vs_C": {
+    "truths": 16,
+    "bic_wins": 1,
+    "bic_losses": 0,
+    "bic_ties": 15,
+    "sign_p": 0.5,
+    "ho_wins": 1,
+    "ho_losses": 0,
+    "beats": false,
+    "episodes": 64,
+    "episode_bic_wins": 5,
+    "episode_bic_wins_same_L": 0
+   },
+   "A1_vs_B": {
+    "truths": 16,
+    "bic_wins": 16,
+    "bic_losses": 0,
+    "bic_ties": 0,
+    "sign_p": 1.52587890625e-05,
+    "ho_wins": 16,
+    "ho_losses": 0,
+    "beats": true,
+    "episodes": 64,
+    "episode_bic_wins": 63,
+    "episode_bic_wins_same_L": 23
+   },
+   "describe": {
+    "A1": {
+     "episodes": 64,
+     "layer_count_right": 0.921875,
+     "recovered": 0.921875,
+     "evaluations_median": 67.5,
+     "seconds_median": 1.1003462000080617,
+     "d_bic_median_vs_C": -8.53620463203697e-09
+    },
+    "A2": {
+     "episodes": 64,
+     "layer_count_right": 0.875,
+     "recovered": 0.875,
+     "evaluations_median": 40.5,
+     "seconds_median": 0.8699202999996487,
+     "d_bic_median_vs_C": -2.4246986640719115e-08
+    },
+    "A3": {
+     "episodes": 64,
+     "layer_count_right": 0.21875,
+     "recovered": 0.1875,
+     "evaluations_median": 506.5,
+     "seconds_median": 26.32253545000276,
+     "d_bic_median_vs_C": 2267.693926279786
+    },
+    "A4": {
+     "episodes": 64,
+     "layer_count_right": 0.859375,
+     "recovered": 0.859375,
+     "evaluations_median": 67.5,
+     "seconds_median": 1.1337780500180088,
+     "d_bic_median_vs_C": -8.53620463203697e-09
+    },
+    "B": {
+     "episodes": 64,
+     "layer_count_right": 0.359375,
+     "recovered": 0.09375,
+     "evaluations_median": 24.5,
+     "seconds_median": 0.6851082500070333,
+     "d_bic_median_vs_C": 139369971.0220899
+    },
+    "C": {
+     "episodes": 64,
+     "layer_count_right": 0.890625,
+     "recovered": 0.875,
+     "evaluations_median": 601.5,
+     "seconds_median": 32.19803654999123,
+     "d_bic_median_vs_C": 0.0
+    },
+    "Co": {
+     "episodes": 64,
+     "layer_count_right": 1.0,
+     "recovered": 0.875,
+     "evaluations_median": 16.0,
+     "seconds_median": 0.3580503999837674,
+     "d_bic_median_vs_C": 0.0
+    },
+    "Cr": {
+     "episodes": 64,
+     "layer_count_right": 1.0,
+     "recovered": 0.03125,
+     "evaluations_median": NaN,
+     "seconds_median": 2.0620681999862427
+    }
+   }
+  },
+  "n1_s1": {
+   "c_capped_frac": 0.015625,
+   "reference": "C",
+   "reference_missing": false,
+   "A1_vs_C": {
+    "truths": 16,
+    "bic_wins": 1,
+    "bic_losses": 0,
+    "bic_ties": 15,
+    "sign_p": 0.5,
+    "ho_wins": 1,
+    "ho_losses": 0,
+    "beats": false,
+    "episodes": 64,
+    "episode_bic_wins": 2,
+    "episode_bic_wins_same_L": 0
+   },
+   "A1_vs_B": {
+    "truths": 16,
+    "bic_wins": 16,
+    "bic_losses": 0,
+    "bic_ties": 0,
+    "sign_p": 1.52587890625e-05,
+    "ho_wins": 16,
+    "ho_losses": 0,
+    "beats": true,
+    "episodes": 64,
+    "episode_bic_wins": 64,
+    "episode_bic_wins_same_L": 15
+   },
+   "describe": {
+    "A1": {
+     "episodes": 64,
+     "layer_count_right": 0.921875,
+     "recovered": 0.859375,
+     "evaluations_median": 63.0,
+     "seconds_median": 1.0125496499967994,
+     "d_bic_median_vs_C": -4.09784206567565e-10
+    },
+    "A2": {
+     "episodes": 64,
+     "layer_count_right": 0.921875,
+     "recovered": 0.859375,
+     "evaluations_median": 38.5,
+     "seconds_median": 0.7930689000058919,
+     "d_bic_median_vs_C": -4.275477749615675e-10
+    },
+    "A3": {
+     "episodes": 64,
+     "layer_count_right": 0.265625,
+     "recovered": 0.234375,
+     "evaluations_median": 606.5,
+     "seconds_median": 24.543758749976405,
+     "d_bic_median_vs_C": 6047.3117316885055
+    },
+    "A4": {
+     "episodes": 64,
+     "layer_count_right": 0.921875,
+     "recovered": 0.859375,
+     "evaluations_median": 63.0,
+     "seconds_median": 1.0582658499915851,
+     "d_bic_median_vs_C": -3.873310561175458e-10
+    },
+    "B": {
+     "episodes": 64,
+     "layer_count_right": 0.25,
+     "recovered": 0.0,
+     "evaluations_median": 33.0,
+     "seconds_median": 0.714799449997372,
+     "d_bic_median_vs_C": 1228665.3375619664
+    },
+    "C": {
+     "episodes": 64,
+     "layer_count_right": 0.9375,
+     "recovered": 0.875,
+     "evaluations_median": 852.0,
+     "seconds_median": 37.95376644999487,
+     "d_bic_median_vs_C": 0.0
+    },
+    "Co": {
+     "episodes": 64,
+     "layer_count_right": 1.0,
+     "recovered": 0.875,
+     "evaluations_median": 13.0,
+     "seconds_median": 0.2922139500005869,
+     "d_bic_median_vs_C": 0.0
+    },
+    "Cr": {
+     "episodes": 64,
+     "layer_count_right": 1.0,
+     "recovered": 0.03125,
+     "evaluations_median": NaN,
+     "seconds_median": 2.0545652500150027
+    }
+   }
+  },
+  "n2_s0": {
+   "c_capped_frac": 0.125,
+   "reference": "C",
+   "reference_missing": false,
+   "A1_vs_C": {
+    "truths": 16,
+    "bic_wins": 16,
+    "bic_losses": 0,
+    "bic_ties": 0,
+    "sign_p": 1.52587890625e-05,
+    "ho_wins": 14,
+    "ho_losses": 2,
+    "beats": false,
+    "episodes": 64,
+    "episode_bic_wins": 58,
+    "episode_bic_wins_same_L": 21
+   },
+   "A1_vs_B": {
+    "truths": 16,
+    "bic_wins": 16,
+    "bic_losses": 0,
+    "bic_ties": 0,
+    "sign_p": 1.52587890625e-05,
+    "ho_wins": 16,
+    "ho_losses": 0,
+    "beats": true,
+    "episodes": 64,
+    "episode_bic_wins": 64,
+    "episode_bic_wins_same_L": 10
+   },
+   "describe": {
+    "A1": {
+     "episodes": 64,
+     "layer_count_right": 0.5,
+     "recovered": 0.5,
+     "evaluations_median": 894.0,
+     "seconds_median": 44.9597486499988,
+     "d_bic_median_vs_C": -576525.7682548232
+    },
+    "A2": {
+     "episodes": 64,
+     "layer_count_right": 0.3125,
+     "recovered": 0.3125,
+     "evaluations_median": 530.0,
+     "seconds_median": 33.05910369999765,
+     "d_bic_median_vs_C": -544266.5429899347
+    },
+    "A3": {
+     "episodes": 64,
+     "layer_count_right": 0.25,
+     "recovered": 0.078125,
+     "evaluations_median": 496.5,
+     "seconds_median": 24.368024499999592,
+     "d_bic_median_vs_C": 4635238.1609521415
+    },
+    "A4": {
+     "episodes": 64,
+     "layer_count_right": 0.078125,
+     "recovered": 0.0,
+     "evaluations_median": 539.0,
+     "seconds_median": 26.172133950007265,
+     "d_bic_median_vs_C": 309799.22482369083
+    },
+    "B": {
+     "episodes": 64,
+     "layer_count_right": 0.21875,
+     "recovered": 0.0,
+     "evaluations_median": 25.5,
+     "seconds_median": 0.6972570999932941,
+     "d_bic_median_vs_C": 109879755.20591553
+    },
+    "C": {
+     "episodes": 64,
+     "layer_count_right": 0.109375,
+     "recovered": 0.0,
+     "evaluations_median": 320.5,
+     "seconds_median": 19.152735650000977,
+     "d_bic_median_vs_C": 0.0
+    },
+    "Co": {
+     "episodes": 64,
+     "layer_count_right": 1.0,
+     "recovered": 0.0,
+     "evaluations_median": 28.5,
+     "seconds_median": 0.9391063499933807,
+     "d_bic_median_vs_C": 640927.3276503335
+    },
+    "Cr": {}
+   }
+  },
+  "n2_s1": {
+   "c_capped_frac": 0.125,
+   "reference": "C",
+   "reference_missing": false,
+   "A1_vs_C": {
+    "truths": 16,
+    "bic_wins": 15,
+    "bic_losses": 1,
+    "bic_ties": 0,
+    "sign_p": 0.0002593994140625,
+    "ho_wins": 13,
+    "ho_losses": 3,
+    "beats": false,
+    "episodes": 64,
+    "episode_bic_wins": 57,
+    "episode_bic_wins_same_L": 15
+   },
+   "A1_vs_B": {
+    "truths": 16,
+    "bic_wins": 16,
+    "bic_losses": 0,
+    "bic_ties": 0,
+    "sign_p": 1.52587890625e-05,
+    "ho_wins": 16,
+    "ho_losses": 0,
+    "beats": true,
+    "episodes": 64,
+    "episode_bic_wins": 64,
+    "episode_bic_wins_same_L": 12
+   },
+   "describe": {
+    "A1": {
+     "episodes": 64,
+     "layer_count_right": 0.5,
+     "recovered": 0.5,
+     "evaluations_median": 612.0,
+     "seconds_median": 33.94887914998981,
+     "d_bic_median_vs_C": -5278.598545516659
+    },
+    "A2": {
+     "episodes": 64,
+     "layer_count_right": 0.40625,
+     "recovered": 0.40625,
+     "evaluations_median": 481.5,
+     "seconds_median": 28.11357405000308,
+     "d_bic_median_vs_C": -4666.827390711524
+    },
+    "A3": {
+     "episodes": 64,
+     "layer_count_right": 0.125,
+     "recovered": 0.0,
+     "evaluations_median": 560.5,
+     "seconds_median": 29.08697740000207,
+     "d_bic_median_vs_C": 54573.07151043482
+    },
+    "A4": {
+     "episodes": 64,
+     "layer_count_right": 0.265625,
+     "recovered": 0.09375,
+     "evaluations_median": 492.0,
+     "seconds_median": 23.723293999995803,
+     "d_bic_median_vs_C": 3478.843529340159
+    },
+    "B": {
+     "episodes": 64,
+     "layer_count_right": 0.15625,
+     "recovered": 0.0,
+     "evaluations_median": 20.0,
+     "seconds_median": 0.5204386500117835,
+     "d_bic_median_vs_C": 1241844.5322110322
+    },
+    "C": {
+     "episodes": 64,
+     "layer_count_right": 0.0625,
+     "recovered": 0.0,
+     "evaluations_median": 334.0,
+     "seconds_median": 15.6519362499821,
+     "d_bic_median_vs_C": 0.0
+    },
+    "Co": {
+     "episodes": 64,
+     "layer_count_right": 1.0,
+     "recovered": 0.0,
+     "evaluations_median": 32.0,
+     "seconds_median": 1.027281300004688,
+     "d_bic_median_vs_C": 9966.255407124872
+    },
+    "Cr": {}
+   }
+  },
+  "n3_s0": {
+   "c_capped_frac": 0.234375,
+   "reference": "C",
+   "reference_missing": false,
+   "A1_vs_C": {
+    "truths": 16,
+    "bic_wins": 14,
+    "bic_losses": 2,
+    "bic_ties": 0,
+    "sign_p": 0.0020904541015625,
+    "ho_wins": 14,
+    "ho_losses": 2,
+    "beats": false,
+    "episodes": 64,
+    "episode_bic_wins": 57,
+    "episode_bic_wins_same_L": 31
+   },
+   "A1_vs_B": {
+    "truths": 16,
+    "bic_wins": 16,
+    "bic_losses": 0,
+    "bic_ties": 0,
+    "sign_p": 1.52587890625e-05,
+    "ho_wins": 15,
+    "ho_losses": 1,
+    "beats": true,
+    "episodes": 64,
+    "episode_bic_wins": 64,
+    "episode_bic_wins_same_L": 13
+   },
+   "describe": {
+    "A1": {
+     "episodes": 64,
+     "layer_count_right": 0.109375,
+     "recovered": 0.109375,
+     "evaluations_median": 1119.0,
+     "seconds_median": 73.25040325000009,
+     "d_bic_median_vs_C": -2613525.0090014255
+    },
+    "A2": {
+     "episodes": 64,
+     "layer_count_right": 0.0,
+     "recovered": 0.0,
+     "evaluations_median": 732.0,
+     "seconds_median": 48.86029605001386,
+     "d_bic_median_vs_C": -2068328.184038687
+    },
+    "A3": {
+     "episodes": 64,
+     "layer_count_right": 0.203125,
+     "recovered": 0.0625,
+     "evaluations_median": 683.5,
+     "seconds_median": 43.94193724999786,
+     "d_bic_median_vs_C": 7027819.592832148
+    },
+    "A4": {
+     "episodes": 64,
+     "layer_count_right": 0.0625,
+     "recovered": 0.0,
+     "evaluations_median": 558.0,
+     "seconds_median": 25.17317969999567,
+     "d_bic_median_vs_C": 369317.2020585891
+    },
+    "B": {
+     "episodes": 64,
+     "layer_count_right": 0.25,
+     "recovered": 0.0,
+     "evaluations_median": 26.0,
+     "seconds_median": 0.6707940999913262,
+     "d_bic_median_vs_C": 155947430.21887687
+    },
+    "C": {
+     "episodes": 64,
+     "layer_count_right": 0.25,
+     "recovered": 0.015625,
+     "evaluations_median": 857.5,
+     "seconds_median": 32.53102019999642,
+     "d_bic_median_vs_C": 0.0
+    },
+    "Co": {
+     "episodes": 64,
+     "layer_count_right": 1.0,
+     "recovered": 0.015625,
+     "evaluations_median": 67.5,
+     "seconds_median": 3.1572191500017652,
+     "d_bic_median_vs_C": 1898660.4015894472
+    },
+    "Cr": {}
+   }
+  },
+  "n3_s1": {
+   "c_capped_frac": 0.1875,
+   "reference": "C",
+   "reference_missing": false,
+   "A1_vs_C": {
+    "truths": 16,
+    "bic_wins": 15,
+    "bic_losses": 1,
+    "bic_ties": 0,
+    "sign_p": 0.0002593994140625,
+    "ho_wins": 13,
+    "ho_losses": 3,
+    "beats": false,
+    "episodes": 64,
+    "episode_bic_wins": 56,
+    "episode_bic_wins_same_L": 34
+   },
+   "A1_vs_B": {
+    "truths": 16,
+    "bic_wins": 16,
+    "bic_losses": 0,
+    "bic_ties": 0,
+    "sign_p": 1.52587890625e-05,
+    "ho_wins": 15,
+    "ho_losses": 1,
+    "beats": true,
+    "episodes": 64,
+    "episode_bic_wins": 64,
+    "episode_bic_wins_same_L": 21
+   },
+   "describe": {
+    "A1": {
+     "episodes": 64,
+     "layer_count_right": 0.125,
+     "recovered": 0.109375,
+     "evaluations_median": 1099.5,
+     "seconds_median": 70.66753365000477,
+     "d_bic_median_vs_C": -18854.426876900485
+    },
+    "A2": {
+     "episodes": 64,
+     "layer_count_right": 0.0625,
+     "recovered": 0.0625,
+     "evaluations_median": 757.0,
+     "seconds_median": 42.9199226500059,
+     "d_bic_median_vs_C": -17751.432648436792
+    },
+    "A3": {
+     "episodes": 64,
+     "layer_count_right": 0.125,
+     "recovered": 0.0,
+     "evaluations_median": 585.5,
+     "seconds_median": 37.27971095000976,
+     "d_bic_median_vs_C": 147669.97342860693
+    },
+    "A4": {
+     "episodes": 64,
+     "layer_count_right": 0.1875,
+     "recovered": 0.0,
+     "evaluations_median": 534.0,
+     "seconds_median": 21.52948984998511,
+     "d_bic_median_vs_C": 960.6188896699741
+    },
+    "B": {
+     "episodes": 64,
+     "layer_count_right": 0.203125,
+     "recovered": 0.0,
+     "evaluations_median": 22.0,
+     "seconds_median": 0.3778321499848971,
+     "d_bic_median_vs_C": 1583248.2029209835
+    },
+    "C": {
+     "episodes": 64,
+     "layer_count_right": 0.28125,
+     "recovered": 0.0,
+     "evaluations_median": 834.0,
+     "seconds_median": 34.23009144999378,
+     "d_bic_median_vs_C": 0.0
+    },
+    "Co": {
+     "episodes": 64,
+     "layer_count_right": 1.0,
+     "recovered": 0.0,
+     "evaluations_median": 65.5,
+     "seconds_median": 2.8711886499950197,
+     "d_bic_median_vs_C": 13041.114928278133
+    },
+    "Cr": {}
+   }
+  }
+ }
+}

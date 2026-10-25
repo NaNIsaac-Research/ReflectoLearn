@@ -44,7 +44,6 @@ def fresnel(q, sld):
     return np.abs((k0 - k1) / (k0 + k1)) ** 2
 
 
-# ----------------------------------------------------------- single interface
 def test_bare_substrate_matches_the_fresnel_formula():
     q = np.linspace(1.3 * Q_C_SI, 0.6, 400)
     np.testing.assert_allclose(reflectivity(q, [0.0], [0.0], [0.0, SI]), fresnel(q, SI), rtol=1e-3)
@@ -78,7 +77,6 @@ def test_more_roughness_never_raises_high_q_reflectivity():
         assert np.all(rougher <= smoother * (1 + 1e-4))
 
 
-# ----------------------------------------------------------------- thin film
 def test_film_fringes_are_spaced_by_pi_over_the_thickness_in_film_kz():
     d, film = 250.0, 40.0
     q = np.linspace(0.25, 0.5, 8001)  # ~800 samples per fringe
@@ -92,7 +90,6 @@ def test_film_fringes_are_spaced_by_pi_over_the_thickness_in_film_kz():
     np.testing.assert_allclose(step, np.pi / d, rtol=1e-2)
 
 
-# ------------------------------------------------------------ batch handling
 def test_a_batch_equals_its_stacks_computed_one_by_one():
     q = torch.linspace(0.01, 0.5, 64).repeat(3, 1)
     thickness = torch.tensor([[0.0, 120.0], [0.0, 300.0], [0.0, 55.0]])
@@ -109,7 +106,6 @@ def test_a_batch_equals_its_stacks_computed_one_by_one():
     torch.testing.assert_close(model(q, thickness, roughness, sld), batch)  # a second call
 
 
-# ----------------------------------------------------------------- gradients
 def _core64(q, thickness, roughness, sld_real):
     """abeles_core in double precision, laid out as AbelesMatrix does."""
     sld = (sld_real.to(torch.complex128) - sld_real[:, :1]) * 1e-6 + 1e-9j
@@ -145,7 +141,6 @@ def test_float32_module_gradients_agree_with_double_precision():
         torch.testing.assert_close(p32.grad.double(), p64.grad, rtol=2e-2, atol=1e-3)
 
 
-# ---------------------------------------------------------------- vs. GenX
 def test_matches_genx_on_random_stacks():
     pytest.importorskip("genx")
     from genx.models.lib.physical_constants import r_e

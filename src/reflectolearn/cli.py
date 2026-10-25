@@ -6,6 +6,7 @@ Run via:  uv run -m reflectolearn   (or)  reflectolearn  (installed script)
 from __future__ import annotations
 
 import ast
+import json
 from pathlib import Path
 
 import torch
@@ -14,6 +15,7 @@ from loguru import logger
 
 from reflectolearn.config import Config
 from reflectolearn.data import XRRAugmentor, get_xrr_dataloader, param_stats
+from reflectolearn.data.generator import engine_metadata
 from reflectolearn.model import XRRPhysicsModel
 from reflectolearn.train import Trainer
 
@@ -98,6 +100,8 @@ def train(
     save_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"save_dir = {save_dir}")
     cfg.save_yaml(save_dir / "config.yaml")  # back up the config actually used
+    # the data engine, and for reflectofit the error of its fixed resolution node count
+    (save_dir / "data_engine.json").write_text(json.dumps(engine_metadata(cfg), indent=1))
 
     model = _build_model(cfg)
     augmentor = XRRAugmentor(cfg, cfg.q_grid)
@@ -358,6 +362,35 @@ def benchmark(
         out_dir=out_dir,
         device=cfg.device,
     )
+
+
+@app.command("export-onnx")
+def export_onnx_command(
+    checkpoint: Path = typer.Argument(..., help="Checkpoint to export."),
+    out: Path = typer.Option(Path("model.onnx"), "--out", "-o", help="ONNX file to write."),
+    config_path: Path | None = typer.Option(
+        None, "--config", "-c", help="Config YAML. Defaults to config.yaml next to the checkpoint."
+    ),
+    stats: Path | None = typer.Option(
+        None, "--stats", help="stats.pt. Defaults to next to the checkpoint."
+    ),
+    note: str | None = typer.Option(
+        None, "--note", help="What the model is, stored in the JSON for whoever shows its output."
+    ),
+):
+    """Export the CNN to ONNX (physical outputs) plus a JSON input contract (needs the onnx extra)."""
+    from reflectolearn.export import export_onnx
+    from reflectolearn.predict import load_predictor
+
+    exp_dir = checkpoint.parent
+    if config_path is None and (exp_dir / "config.yaml").exists():
+        config_path = exp_dir / "config.yaml"
+    if stats is None and (exp_dir / "stats.pt").exists():
+        stats = exp_dir / "stats.pt"
+    cfg = _load_config(config_path, [])
+    model, mean, std = load_predictor(cfg, checkpoint, stats, torch.device("cpu"))
+    meta = export_onnx(model, mean, std, cfg, out, note=note)
+    logger.info(f"Wrote {out} and {meta}")
 
 
 @app.command()
