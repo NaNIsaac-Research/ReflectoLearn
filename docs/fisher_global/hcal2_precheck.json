@@ -1,0 +1,61 @@
+{
+ "n_sets": 100,
+ "lengths": [
+  839
+ ],
+ "n_columns": 9,
+ "check1_counts": {
+  "min_raw": 1.0,
+  "max_abs_noninteger": 0.0,
+  "integer": true
+ },
+ "check2_grid": {
+  "q_range": [
+   0.03891954937559414,
+   0.4089691572231678
+  ],
+  "median_step": 0.0004385174659357338,
+  "max_spread_over_step": 0.0,
+  "fraction_within_0.1_step": 1.0
+ },
+ "check3_normalisation": {
+  "N": {
+   "fraction_points_same_across_scans": 0.0,
+   "median_rel_spread_across_scans": 0.27755967292574013,
+   "constant_within_each_scan": true
+  },
+  "af": {
+   "fraction_points_same_across_scans": 1.0,
+   "median_rel_spread_across_scans": 0.0,
+   "constant_within_each_scan": false
+  },
+  "etfp": {
+   "fraction_points_same_across_scans": 1.0,
+   "median_rel_spread_across_scans": 4.544543598839328e-07,
+   "constant_within_each_scan": false
+  },
+  "bg": {
+   "fraction_points_same_across_scans": 0.0059594755661501785,
+   "median_rel_spread_across_scans": 0.02461808530647212,
+   "constant_within_each_scan": false
+  },
+  "N_per_scan": {
+   "mean": 2136077.6,
+   "rel_sd": 0.057865778145856056,
+   "min": 1827074.0,
+   "max": 2419963.0
+  }
+ },
+ "check4_drift": {
+  "total_raw_mean": 114922.1,
+  "slope_per_scan": 7.74549054905511,
+  "slope_se": 7.1629349946384036,
+  "slope_over_mean_per_100_scans": 0.006739774637824326,
+  "dispersion_index_of_totals": 37.26453639271975,
+  "corr_N_vs_first10_raw": 0.9997644059540655,
+  "corr_N_vs_total_raw": 0.5703338757224908,
+  "lag1_autocorr_totals": 0.04524369546506799
+ },
+ "points_mean_raw_ge_10": 839,
+ "n_points": 839
+}

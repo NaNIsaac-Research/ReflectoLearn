@@ -1,0 +1,16 @@
+# basin_full.ps1 log (wrapper in the lane's scratchpad; hourly progress messages omitted)
+2026-10-25T03:53:58 START tag=main workers=4 cap=4 GB max=16 h onlypilot=False already_done=10 of 935 free_GB=17
+2026-10-25T03:53:58 worker 0 start x2e pid=12224 launch=1
+2026-10-25T03:53:58 worker 1 start r2a pid=10600 launch=2
+2026-10-25T03:53:58 worker 2 start r2a pid=13428 launch=3
+2026-10-25T03:53:58 worker 3 start r2a pid=9208 launch=4
+2026-10-25T04:39:11 worker 0 (x2e) exit=0
+2026-10-25T04:39:11 worker 0 start r2a pid=15036 launch=5
+2026-10-25T16:03:04 worker 3 (r2a) exit=0
+2026-10-25T16:44:13 worker 1 (r2a) exit=0
+2026-10-25T16:46:25 worker 0 (r2a) exit=0
+2026-10-25T16:49:33 worker 2 (r2a) exit=0
+2026-10-25T16:49:33 END wall_s=46535 peak_tree_GB=2.874 stopped= done=r2a 749/749 x2e 186/186 errors=0 locks_left=0 bad_exits=
+# basin_chain.ps1 log (drain and resume guard; not needed)
+2026-10-25T11:59:37 CHAIN armed main_pid=2336 drain_at=2026-10-25T17:30:00 next=main2 workers=4 cap=4 max=24 h done=775/935
+2026-10-25T16:49:41 main wrapper finished before the drain with 935/935; nothing to resume

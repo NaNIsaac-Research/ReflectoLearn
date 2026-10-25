@@ -228,3 +228,6 @@ runs/
 *_predict.png
 *_predict.txt
 config_best*
+
+# full basin run, kept as the release asset basin_full.zip (experiments/005_fisher_global/basin_summary.py)
+docs/fisher_global/basin_full/
