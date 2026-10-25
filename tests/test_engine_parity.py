@@ -1,7 +1,7 @@
-"""ReflectoLearn's Abeles engine as the reference, compared with the archived engines.
+"""ReflectoLearn's Abeles engine as the reference, against the XRefine and ReflectoExp engines.
 
-The other implementations are frozen copies in ``tests/reference`` (XRefine and ReflectoExp are
-archived). Ground truth is ``benchmark.parratt``: an independent float64 Parratt recursion.
+The other implementations are frozen copies in ``tests/reference`` taken from XRefine and ReflectoExp
+at fixed commits. Ground truth is ``benchmark.parratt``: an independent float64 Parratt recursion.
 
 Layouts differ, so each engine gets the same stack in its own convention:
     ReflectoLearn / XRefine torch: thickness and roughness per interface (N - 1), SLD per medium (N)

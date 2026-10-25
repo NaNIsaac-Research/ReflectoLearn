@@ -90,7 +90,7 @@ class RefineStage:
 def _default_stages() -> list[RefineStage]:
     """Three-stage default strategy adapted to the simple film model."""
     return [
-        # 1) Intensity/background/alignment: fit i0, bkg, tth_offset + footprint
+        # Fit intensity, background and alignment (i0, bkg, tth_offset, footprint)
         #    with a linear loss (low-angle amplitude/critical angle; footprint's
         #    low-angle rolloff is captured here too).
         RefineStage(
@@ -100,7 +100,7 @@ def _default_stages() -> list[RefineStage]:
             steps=120,
             lr=0.05,
         ),
-        # 2) Film structure (period): fit thickness/SLD + q-zero with a correlation
+        # Fit film structure (period): thickness/SLD and q-zero with a correlation
         #    loss (invariant to scale and attenuation).
         RefineStage(
             "2.structure",
@@ -109,7 +109,7 @@ def _default_stages() -> list[RefineStage]:
             steps=200,
             lr=0.03,
         ),
-        # 3) Fine tuning: refine everything (roughness/resolution/Kα2/footprint/oxide)
+        # Fine tuning: refine everything (roughness/resolution/Kα2/footprint/oxide)
         #    with a log loss.
         RefineStage(
             "3.fine",

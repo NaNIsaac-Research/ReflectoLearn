@@ -1,4 +1,4 @@
-# Verbatim copy of xrefine/core/abeles.py from NaNIsaac/XRefine at 76696de (archived),
+# Verbatim copy of xrefine/core/abeles.py from NaNIsaac/XRefine at 76696de,
 # kept only as a numerical reference for tests/test_engine_parity.py. Do not edit.
 """
 Abeles Matrix Method (Final Optimization)
@@ -83,11 +83,9 @@ class AbelesMatrix(nn.Module):
         
         if self.device is None: self.device = q.device
         
-        # [Optimization] CPU Sync Blocking
-        # wavelength를 Scalar가 아닌 0-d Tensor로 변환하여 연산에 참여시킴
+        # Convert wavelength from a Python scalar to a 0-d tensor to avoid a CPU sync.
         wl_tensor = torch.tensor(wavelength, device=self.device, dtype=torch.float32)
         
-        # 1. Input Preparation
         q_f = q.float()
         
         # SLD & Complex handling (Strict Complex Mode)
@@ -106,10 +104,8 @@ class AbelesMatrix(nn.Module):
         t_in = thickness.float().unsqueeze(1)
         r_in = roughness.float().unsqueeze(1)
 
-        # 2. Physics Core
         reflectivity = abeles_core(q_in, t_in, r_in, sld_in)
         
-        # 3. Footprint Correction
         # R_corr = R * erf((L * sin(alpha)) / (sqrt(2) * sigma_beam))
         if sample_length is not None and beam_width is not None:
             sl = sample_length.float()

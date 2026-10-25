@@ -1,0 +1,26 @@
+name: optional
+# The genx and mcmc extras are not in the default test run, where their tests skip
+# themselves. This job installs them so those tests run somewhere.
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  extras:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      MPLBACKEND: Agg
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          enable-cache: true
+      # importorskip would turn a broken install into a silent skip; import first instead.
+      - name: Extras import
+        run: uv run --python 3.13 --group dev --extra genx --extra mcmc python -c "import genx, bumps, emcee"
+      - name: Run the tests that need the extras
+        run: uv run --python 3.13 --group dev --extra genx --extra mcmc pytest -q -rs tests/test_genx_fit.py tests/test_abeles.py tests/test_refine_alias_mcmc.py

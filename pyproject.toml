@@ -15,7 +15,6 @@ dependencies = [
     "pydantic",
     "pyyaml",
     "loguru",
-    "tensorboard",
     "typer",
     "optuna",
     "reflectofit",
@@ -28,6 +27,10 @@ genx = [
 ]
 mcmc = [
     "emcee",
+]
+onnx = [
+    "onnxruntime",
+    "onnxscript",
 ]
 
 [project.urls]
@@ -59,9 +62,15 @@ torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32'" }]
 # not on PyPI yet: pinned to a ReflectoFit main commit until its first release
 reflectofit = { git = "https://github.com/NaNIsaac/ReflectoFit", rev = "59802ae13b9823f870dcad67898d9a18712799ab" }
 
+# GenX lists wxpython for its GUI, which this project never starts. PyPI has no Linux wheel for
+# it, so on Linux uv would compile it and fail without GTK headers. genx.models, genx.model and
+# genx.fom_funcs import without wx; tests/test_genx_fit.py passes with it uninstalled.
+[tool.uv]
+override-dependencies = ["wxpython; sys_platform != 'linux'"]
+
 [tool.ruff]
 line-length = 100
-# verbatim copies of archived engines, compared against in tests/test_engine_parity.py
+# verbatim copies of the XRefine and ReflectoExp engines, compared against in tests/test_engine_parity.py
 extend-exclude = ["tests/reference"]
 
 [tool.ruff.lint]
