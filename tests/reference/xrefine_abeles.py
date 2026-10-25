@@ -1,4 +1,4 @@
-# Verbatim copy of xrefine/core/abeles.py from NaNIsaac/XRefine at 76696de (archived),
+# Verbatim copy of xrefine/core/abeles.py from NaNIsaac/XRefine at 76696de,
 # kept only as a numerical reference for tests/test_engine_parity.py. Do not edit.
 """
 Abeles Matrix Method (Final Optimization)
