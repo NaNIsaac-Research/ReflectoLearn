@@ -84,7 +84,7 @@ Experiment 001 on synthetic single films (from `docs/identifiability/nonunique_t
 | 005 | Fisher against global fits | H-F unresolved; H-W2, H-cal2, H-BM1 supported |
 
 The commits each registration cites are tagged `frozen/exp…`; result files too large for the
-repository are in the release `research-data-1`.
+repository are in the release [`research-data-1`](https://github.com/NaNIsaac-Research/ReflectoLearn/releases/tag/research-data-1).
 
 ## Citation
 

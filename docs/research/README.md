@@ -12,7 +12,7 @@ Where things are:
   the scripts and registrations use, so they are not renamed.
 - Tags `frozen/expNNN-<part>-<sha>`: the commits the registrations cite. They keep those commits
   reachable now that the research branches are squash-merged and deleted.
-- Release `research-data-1`: result files too large for the repository, with their SHA-256.
+- Release [`research-data-1`](https://github.com/NaNIsaac-Research/ReflectoLearn/releases/tag/research-data-1): result files too large for the repository, with their SHA-256.
 - Reviews: physics cross-reviews by another lane are in the pull-request comments; the code reviews
   of the fit-policy arms are in this directory.
 
