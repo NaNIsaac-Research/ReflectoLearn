@@ -18,11 +18,11 @@ Underneath sits a question none of the branches answered until Experiment 001: w
 
 | Repository | Visibility | Active (research commits) | Role |
 |---|---|---|---|
-| [ReflectoLearn `old` branch](https://github.com/NaNIsaac/ReflectoLearn/tree/old) | public | 2025-04-23 to 2025-10-02 | first exploration, started as `SJB7777/ReflectoLearn`: refnx simulation, CNN/MLP regressors, FFT thickness estimate, layer-count classifier. Unrelated history to `main` (no common ancestor) |
+| [ReflectoLearn `old` (tag `archive/old-2025`)](https://github.com/NaNIsaac-Research/ReflectoLearn/tree/archive/old-2025) | public | 2025-04-23 to 2025-10-02 | first exploration, started as `SJB7777/ReflectoLearn`: refnx simulation, CNN/MLP regressors, FFT thickness estimate, layer-count classifier. Unrelated history to `main` (no common ancestor) |
 | [ReflectoExp](https://github.com/NaNIsaac/ReflectoExp) | public | 2025-11-06 to 2025-12-30, again 2026-08-13 to 08-19 | experiment series exp01-exp07 (began life as `SJB7777/Reflecto`, package renamed `reflecto_exp` on 2025-12-21) |
 | [Reflecto](https://github.com/NaNIsaac/Reflecto) | public | 2025-12-19 to 2025-12-24 (branch `refactor` to 12-30) | packaged single-film analysis: exp07 CNN guess, GenX differential-evolution refinement, electron-density output |
 | [XRefine](https://github.com/NaNIsaac/XRefine) | private | 2025-12-30 to 2026-01-23 | physics-informed network: differentiable Abeles inside the model and the loss, multilayer with complex SLD, instrument parameters predicted, staged DE / hybrid refinement |
-| ReflectoLearn `main` | public | 2026-06-01 onward | library: exp07-style CNN, XRefine's Abeles engine, gradient refinement, MCMC, GenX and stitching ports; research branch `research/identifiability` (Experiment 001) |
+| ReflectoLearn `main` | public | 2026-06-01 onward | library: exp07-style CNN, XRefine's Abeles engine, gradient refinement, MCMC, GenX and stitching ports; registered experiments 001-005, indexed in [docs/research](research/README.md) |
 
 Related, not research branches:
 
@@ -150,9 +150,9 @@ A_full on the augmented domain: SLD MAE 0.785 ×10⁻⁶ Å⁻², roughness MAE 
 - A 40-epoch demonstration network (recorded, single author, explicitly not validated): before refinement, synthetic thickness median error 7.8 %, 5 of 12 cases above 10 % (`$DEV/NaNIsaac/_artifacts/reflectolearn-demo-run-20261022/benchmark/benchmark.json`).
 - Measured In₂O₃ benchmark curves with GenX reference values were added in c66e7bd and removed in 242d7ec (#5); no measured example is bundled now (issue #2).
 
-### ReflectoLearn Experiment 001: identifiability (`research/identifiability`, PR #24, draft)
+### ReflectoLearn Experiment 001: identifiability (PR #24)
 
-Documents: [README](https://github.com/NaNIsaac/ReflectoLearn/blob/research/identifiability/docs/identifiability/README.md), [literature](https://github.com/NaNIsaac/ReflectoLearn/blob/research/identifiability/docs/identifiability/literature.md), [refine_causes](https://github.com/NaNIsaac/ReflectoLearn/blob/research/identifiability/docs/identifiability/refine_causes.md), [mcmc_width](https://github.com/NaNIsaac/ReflectoLearn/blob/research/identifiability/docs/identifiability/mcmc_width.md), [generative_go_nogo](https://github.com/NaNIsaac/ReflectoLearn/blob/research/identifiability/docs/identifiability/generative_go_nogo.md); scripts in `experiments/001_identifiability/`.
+Documents: [README](https://github.com/NaNIsaac-Research/ReflectoLearn/blob/main/docs/identifiability/README.md), [literature](https://github.com/NaNIsaac-Research/ReflectoLearn/blob/main/docs/identifiability/literature.md), [refine_causes](https://github.com/NaNIsaac-Research/ReflectoLearn/blob/main/docs/identifiability/refine_causes.md), [mcmc_width](https://github.com/NaNIsaac-Research/ReflectoLearn/blob/main/docs/identifiability/mcmc_width.md), [generative_go_nogo](https://github.com/NaNIsaac-Research/ReflectoLearn/blob/main/docs/identifiability/generative_go_nogo.md); scripts in `experiments/001_identifiability/`.
 
 | Result | Status |
 |---|---|

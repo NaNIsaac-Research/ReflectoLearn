@@ -12,10 +12,10 @@ been validated yet (see [Validation](../README.md#validation) in the README).
 
 ## Install
 
-Python 3.11 or later, with [uv](https://docs.astral.sh/uv/):
+Python 3.12 or later, with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-git clone https://github.com/NaNIsaac/ReflectoLearn.git
+git clone https://github.com/NaNIsaac-Research/ReflectoLearn.git
 cd ReflectoLearn
 uv sync
 uv run reflectolearn --help
@@ -43,7 +43,7 @@ FFT start 250 Å, log10-MSE after fit 0.0181
 ```
 
 The thickness is right; the SLD is about 30% low. That is a known limit of the default fit on data
-with no angular offset ([#14](https://github.com/NaNIsaac/ReflectoLearn/issues/14)), explained in
+with no angular offset ([#14](https://github.com/NaNIsaac-Research/ReflectoLearn/issues/14)), explained in
 [Refinement](refine.md#known-limits) and in the [example's own page](../examples/synthetic_film_fit/README.md).
 
 To fit a measured curve, train a network first and pass it to `predict`:
@@ -60,13 +60,14 @@ covers `evaluate`, `tune`, `stitch` and `benchmark`.
 
 ## On this site
 
+- [Usage](usage.md): every command, the optional GenX fit, the configuration and the package layout.
 - [Refinement](refine.md): the stages, the nuisance parameters, the options of `predict` and of the
   Python API, and what is known not to work.
 - [Training data and network](training.md): how the simulated training curves are made and what the
   CNN looks like.
 - [XRR research index](xrr-research-index.md): the XRR work across repositories, what each branch
   measured and what is still open.
+- [Research experiments](research/README.md): the five registered experiments in this repository
+  (identifiability, fit policy, Fisher information against global fits), with their registrations,
+  results, verdicts and the commands that rebuild the reports.
 - The Python API page lists every public function and class with its docstring.
-
-A study of which film parameters one curve can determine at all (identifiability) is in progress
-in [#24](https://github.com/NaNIsaac/ReflectoLearn/pull/24) and is not on this site yet.

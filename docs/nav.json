@@ -6,7 +6,10 @@
     },
     {
       "text": "Guides",
-      "items": [{ "text": "Refinement", "link": "refine.md" }]
+      "items": [
+        { "text": "Usage", "link": "usage.md" },
+        { "text": "Refinement", "link": "refine.md" }
+      ]
     },
     {
       "text": "Theory",
@@ -14,7 +17,10 @@
     },
     {
       "text": "Research",
-      "items": [{ "text": "XRR research index", "link": "xrr-research-index.md" }]
+      "items": [
+        { "text": "Experiments", "link": "research/README.md" },
+        { "text": "XRR research index", "link": "xrr-research-index.md" }
+      ]
     }
   ]
 }

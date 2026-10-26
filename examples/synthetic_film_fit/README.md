@@ -28,7 +28,7 @@ uv run --group dev pytest -q tests/test_example_synthetic_film_fit.py
 
 The fringe-period start is 250 Å. The fit ends with a 2θ offset of −0.078° (the bound is ±0.08°) and log10-MSE 0.018.
 
-**The SLD is about 30% low.** The data have no angular offset. The 2θ offset and the film SLD are strongly correlated (about 0.99 at the truth), and the `2.structure` stage moves the fit along that valley to a worse local solution ([ReflectoLearn#14](https://github.com/NaNIsaac/ReflectoLearn/issues/14)). On the plain film-on-Si curves in #14, switching the offset fit off brings the SLD within 2%. The thickness, which comes from the fringe period, is right.
+**The SLD is about 30% low.** The data have no angular offset. The 2θ offset and the film SLD are strongly correlated (about 0.99 at the truth), and the `2.structure` stage moves the fit along that valley to a worse local solution ([ReflectoLearn#14](https://github.com/NaNIsaac-Research/ReflectoLearn/issues/14)). On the plain film-on-Si curves in #14, switching the offset fit off brings the SLD within 2%. The thickness, which comes from the fringe period, is right.
 
 ## What the test checks
 
