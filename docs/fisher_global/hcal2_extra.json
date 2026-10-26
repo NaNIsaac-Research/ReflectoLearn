@@ -1,0 +1,41 @@
+{
+ "fits": {
+  "mean^2": {
+   "columns": [
+    "mean^2"
+   ],
+   "coef": [
+    0.002120724996508311
+   ],
+   "weighted_chi2_per_point": 2.702106909158359,
+   "weighted_r2": -0.15348075903922265
+  },
+  "slope^2": {
+   "columns": [
+    "slope^2"
+   ],
+   "coef": [
+    1.3099241316965464e-10
+   ],
+   "weighted_chi2_per_point": 5.483047230662552,
+   "weighted_r2": -1.340614081565894
+  },
+  "both": {
+   "columns": [
+    "mean^2",
+    "slope^2"
+   ],
+   "coef": [
+    0.002118094115922479,
+    7.520707073287621e-11
+   ],
+   "weighted_chi2_per_point": 2.697442313830652,
+   "weighted_r2": -0.15148952733000431
+  }
+ },
+ "relative_intensity_noise_sd": 0.04605133001888557,
+ "q_jitter_sd_per_A": 8.672201031622607e-06,
+ "median_share_of_excess_from_slope_term": 0.00047840579311342167,
+ "spearman_excess_over_mean2_vs_dlnmean_dq2": 0.27172857707717085,
+ "median_step_q": 0.000438517008826661
+}
