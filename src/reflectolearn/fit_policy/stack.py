@@ -346,6 +346,39 @@ def fringe_spectrum(
     return float(z[1:-1][i]), float(amp[1:-1][i] / max(np.abs(vv).sum(), 1e-12))
 
 
+PEAK_REL = 0.25  # X2e 4.2: a peak needs this fraction of the largest one
+PEAK_MAX = 4
+
+
+def fringe_peaks(
+    q: np.ndarray, values: np.ndarray, q_min: float, z: np.ndarray, k: int = PEAK_MAX
+) -> list[float]:
+    """X2e's peak rule (X2E.md 4.2) on `fringe_spectrum`'s transform: local maxima with at least
+    PEAK_REL of the largest one, taken in decreasing amplitude and kept if at least
+    2 pi / (q_max - q_min) from every peak already kept, at most k. Returns their z, strongest
+    first (so the first is `fringe_spectrum`'s peak); [] with fewer than 40 points or no maximum."""
+    keep = q > q_min
+    if keep.sum() < 40:
+        return []
+    qq, vv = q[keep], values[keep]
+    vv = vv - np.polyval(np.polyfit(qq, vv, 5), qq)
+    vv = vv * np.hanning(vv.size)
+    amp = np.abs(np.exp(-1j * np.outer(z, qq)) @ vv)
+    inner = np.flatnonzero((amp[1:-1] > amp[:-2]) & (amp[1:-1] >= amp[2:])) + 1
+    if inner.size == 0:
+        return []
+    inner = inner[np.argsort(-amp[inner], kind="stable")]
+    floor = PEAK_REL * amp[inner[0]]
+    separation = 2 * np.pi / (qq.max() - qq.min())
+    kept: list[float] = []
+    for i in inner:
+        if amp[i] < floor or len(kept) == k:
+            break
+        if all(abs(z[i] - zk) >= separation for zk in kept):
+            kept.append(float(z[i]))
+    return kept
+
+
 # ------------------------------------------------------------------ registered data (section 3.1, 5.4)
 def sample_truth(n_layers: int, j: int, root: int = SEED) -> Stack:
     """Truth j of class n_layers; adjacent media differ by |delta rho| >= 4 (redrawn otherwise)."""

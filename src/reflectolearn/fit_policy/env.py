@@ -93,6 +93,8 @@ class Episode:
     kiessig: float = field(default=math.nan)
     qc_data: float = field(default=math.nan)
     decisions: list = field(default_factory=list)  # X2d A1m step 7: [L, dBIC unmatched, matched]
+    s1_changed: list = field(default_factory=list)  # X2e S1: chosen start differs from A1's
+    s2_changed: bool | None = None  # X2e S2: chosen start is not A1's step-3 state
 
 
 class FitEnv:
@@ -121,7 +123,8 @@ class FitEnv:
         self.path_best_bic = math.inf
         self.path_best_all: FitState | None = None
         self.path_best_all_bic = math.inf
-        self.history: list[tuple[int, int, float]] = []  # (origin, L, deviance on all training)
+        # (origin, L, deviance on all training, stack) of every evaluated state
+        self.history: list[tuple[int, int, float, Stack]] = []
         self.state = FitState(
             start.clipped(),
             np.zeros((start.n_layers, 3), bool),
@@ -174,6 +177,24 @@ class FitEnv:
         self.fit_mask = None
         self._evaluate()
 
+    def set_stack(self, stack: Stack, open_layers: np.ndarray | None = None) -> None:
+        """Replace the current stack (X2e S1 and S2 starts). A scripted-protocol operation, like
+        amendment 2's estimates, and not part of the action space. New layers are open by default."""
+        s = self.state
+        s.stack = stack.clipped()
+        s.open_layers = (
+            np.ones((stack.n_layers, 3), bool) if open_layers is None else open_layers.copy()
+        )
+        s.origin = self.uid
+        self._evaluate()
+
+    def kept_state_at(self, n_layers: int) -> Stack | None:
+        """The last state on this env's kept path with the given layer count (X2e D1)."""
+        for origin, L, _, stack in reversed(self.history):
+            if origin in self.lineage and L == n_layers:
+                return stack
+        return None
+
     # ------------------------------------------------------------ quality
     def _evaluate(self) -> None:
         s = self.state.stack
@@ -197,7 +218,7 @@ class FitEnv:
                 self.path_best_bic, self.path_best = self.bic, self.state.copy()
             if self.bic_all < self.path_best_all_bic:
                 self.path_best_all_bic, self.path_best_all = self.bic_all, self.state.copy()
-        self.history.append((self.state.origin, s.n_layers, self.dev_all))
+        self.history.append((self.state.origin, s.n_layers, self.dev_all, s))
 
     def excess(self) -> float:
         """(D - E[D]) / SD[D] at the current model (protocol A step 7)."""
@@ -367,7 +388,7 @@ class FitEnv:
             "trace": [list(a) for a in self.trace],
             "on_kept_path": state.origin in self.lineage,
             "kept_path_states": [
-                [n_layers, d] for origin, n_layers, d in self.history if origin in self.lineage
+                [n_layers, d] for origin, n_layers, d, _ in self.history if origin in self.lineage
             ],
         }
         if self.episode.q_ho is not None:
