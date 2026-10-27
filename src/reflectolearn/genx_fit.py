@@ -1,8 +1,8 @@
 """Classical GenX fit (differential evolution via bumps) seeded with a CNN estimate.
 
-Optional: needs the ``genx`` extra (``uv sync --extra genx``). Model: film + oxide
-layer on a fixed substrate, with I0, background and footprint (sample length) fitted
-in two stages (oxide + I0, then everything).
+Optional: needs the ``genx`` extra (``uv sync --extra genx``). Model: a film on a native
+oxide on a fixed substrate (Si / SiO2 / film, the order of the GenX training data), with I0,
+background and footprint (sample length) fitted in two stages (oxide + I0, then everything).
 """
 
 from __future__ import annotations
@@ -17,6 +17,8 @@ _OXIDE_INSTRUMENT = {
     "i0": (1.0, 0.1, 20.0),
     "bkg": (1e-7, 1e-10, 1e-4),
 }
+# The final stage frees every oxide parameter: stage 1 fits them against the unrefined film, and
+# an oxide roughness fixed from there keeps the fit off the true minimum.
 _STAGES = (
     ("oxide", ("oxide_thickness", "oxide_roughness", "i0"), 400),
     (
@@ -26,6 +28,7 @@ _STAGES = (
             "roughness",
             "sld",
             "oxide_thickness",
+            "oxide_roughness",
             "oxide_sld",
             "i0",
             "bkg",
@@ -57,7 +60,8 @@ Amb = Layer(d=0, f=0, dens=0)
 Sub = Layer(d=0, f=to_f({sub_sld}), dens=1, sigma={sub_rough})
 Film = Layer(d=v.thickness, sigma=v.roughness, f=to_f(v.sld), dens=1)
 Oxide = Layer(d=v.oxide_thickness, sigma=v.oxide_roughness, f=to_f(v.oxide_sld), dens=1)
-sample = Sample(Stacks=[Stack(Layers=[Film, Oxide])], Ambient=Amb, Substrate=Sub)
+# GenX lists a stack from the substrate up: Si / oxide / film / ambient.
+sample = Sample(Stacks=[Stack(Layers=[Oxide, Film])], Ambient=Amb, Substrate=Sub)
 
 inst = Instrument(
     probe=Probe.xray, wavelength={wavelength}, coords=Coords.q,
