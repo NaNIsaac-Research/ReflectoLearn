@@ -51,7 +51,7 @@ res = genx_fit(q, intensity, thickness=310.0, roughness=4.2, sld=41.0, wavelengt
 res["thickness"], res["fom"], res["r_fit"]
 ```
 
-The model is film + oxide layer on a fixed substrate (`sub_sld`, `sub_rough`), with I0, background and sample length fitted. Film parameters are bounded to ±10% of the guess (`film_margin`). It runs two stages (oxide + I0, then all parameters) with the logR2 figure of merit; `steps_scale` and `pop_size` trade time for quality.
+The model is a film on a native oxide on a fixed substrate (`sub_sld`, `sub_rough`): substrate / SiO2 / film / air, the order the GenX training data were simulated in. I0, background and sample length are fitted too. Film parameters are bounded to ±10% of the guess (`film_margin`). It runs two stages (oxide + I0, then all parameters) with the logR2 figure of merit; `steps_scale` and `pop_size` trade time for quality.
 
 ## Configuration
 

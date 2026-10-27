@@ -25,7 +25,8 @@ import numpy as np
 from loguru import logger
 from scipy.special import erf
 
-SIO2 = 18.9 + 0.24j  # 1e-6 / Å^2
+# 1e-6 / Å^2 at Cu Kα: amorphous (native or thermal) SiO2 at 2.2 g/cm^3, Si at 2.33 g/cm^3
+SIO2 = 18.9 + 0.24j
 SI = 20.07 + 0.46j
 
 
