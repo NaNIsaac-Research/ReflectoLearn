@@ -1,5 +1,13 @@
 # Basin minimum validation: pilot and compute budget
 
+[Back to all reports](../../reports/README.md)
+
+> **Question.** Does the registered basin-minimum refinement run stably on the eight pilot candidates, and what compute does the full run need?
+>
+> **Result.** All ten pilot refinements reached a confirmed minimum (297 s wall); pilot numbers, used for no verdict, show κ 1.00–1.19 and every R2a minimum on 3–6 bounds. Estimated full-run budget: 9.8 CPU h at the pilot mean, 47 CPU h worst case (2.5 h and 12 h at four processes).
+>
+> **Limits.** Eight candidates are not a sample, so no registered rule is applied; the pilot mean rests on six R2a candidates and is uncertain by about a factor of two.
+
 xrr-policy lane, 2026-10-25. Protocol: `PREREG-BASIN.md` (ReflectoLearn `research/fisher-global`
 51b048a, committed before any candidate was refined). Code: `experiments/005_fisher_global/basin.py`
 (run) and `basin_pilot_report.py` (tables). Outputs: `docs/fisher_global/basin_pilot.jsonl` (raw) and
@@ -132,3 +140,5 @@ Every option is over the 30 min / 2 GB that needs no slot, so the full run needs
 
 Before the run: the verdict code (H-BM1, Q-BM2, H-BM3, duplicate grouping) is committed first; the
 pilot candidates are re-run and compared with these rows.
+
+[Back to all reports](../../reports/README.md)

@@ -12,6 +12,18 @@ gradient-refined fit through the same Abeles engine (red), from `reflectolearn p
 
 A 1D CNN trained on simulated curves guesses the film; a staged gradient fit through a differentiable Abeles simulator (PyTorch) refines the guess against the data. How it works, every command, the GenX fit and the configuration: [docs/usage.md](docs/usage.md).
 
+## Reports
+
+| Date | Report | Result |
+|---|---|---|
+| 2026-10-25 | [Are returned XRR fit endpoints basin minima?](docs/fisher_global/reports/BASIN-NOTE.md) | Returned fit endpoints stand for their basins (supported); a few wrong basins need ≥ 10⁴ counts. |
+| 2026-10-25 | [Basin minimum validation: full run](docs/fisher_global/reports/RESULTS-BASIN.md) | Endpoint S₁ represents its basin (supported); 5 R2a and 1 X2e wrong basins need ≥ 10⁴ counts. |
+| 2026-10-25 | [Synthesis of B-1, B-2 and H-cal2](docs/fisher_global/reports/SYNTHESIS.md) | Fisher-versus-global alone is not a paper; conditional yes inside an identifiability-versus-reach methods paper. |
+| 2026-10-25 | [H-cal2: count dispersion in repeated public scans](docs/fisher_global/reports/RESULTS-HCAL2.md) | Repeated public scans are overdispersed against Poisson: median φ 1.34, above 1.2 at 64 % of points. |
+| 2026-10-25 | [Experiment 004 (X2e) results](docs/fit_policy/x2e_results.md) | Better starts fail: S12 beats C in 0 of 4 cells; wrong-basin reading supported, its source unresolved. |
+
+[All reports →](docs/reports/README.md)
+
 ## Install
 
 Uses [uv](https://docs.astral.sh/uv/); Python 3.12 or newer.

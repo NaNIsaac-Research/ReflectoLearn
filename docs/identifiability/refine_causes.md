@@ -1,5 +1,13 @@
 # Why refine stops short of the best fit (R2b, ReflectoLearn#25)
 
+[Back to all reports](../reports/README.md)
+
+> **Question.** Which of six factors (step budget A, stage 2 B, log-MSE objective C, Occam prior D, trust region E, step size F) makes refine end far from the maximum-likelihood fit from all R1c starts?
+>
+> **Result.** Baseline reaches 0/48 and no factor alone is sufficient; all on reaches 48/48, and A, B, C and F are necessary (leaving one out gives 7, 32, 0 and 37 of 48), D and E not. The ABCF preset reaches 46/48 in sample, but the registered out-of-sample R2f check gives 42/48: 'not confirmed' (needs 43), so the preset stays opt-in.
+>
+> **Limits.** Three synthetic cases on refine's own forward model, one noise draw each; the D* reference was amended after the first runs, the ABCF combination was not registered, and three R2f misses sit 0.1 above the ΔD ≤ 4 threshold.
+
 R1c found that `refine.refine` with the default `RefineConfig` ends far from the maximum-likelihood
 fit from all 48 starts (three cases × 16), while a Poisson least-squares fit from the same starts
 reaches it from 43 of 45. Issue #25 lists three candidate causes without separating them. This
@@ -186,3 +194,5 @@ Observations, not part of the rule:
   curve. In R2b, a trust margin of 1.0 removed them.
 - D\* came from the least-squares fit from the truth in every case. The restart from the lowest
   endpoint found nothing lower.
+
+[Back to all reports](../reports/README.md)

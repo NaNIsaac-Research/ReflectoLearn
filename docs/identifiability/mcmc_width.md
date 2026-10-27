@@ -1,5 +1,13 @@
 # Why `refine.mcmc` intervals disagree with the profile likelihood (R2c)
 
+[Back to all reports](../reports/README.md)
+
+> **Question.** Why did refine.mcmc's 68 % interval of d disagree with the profile likelihood in R1c: the Gaussian log₁₀ R likelihood, the chain length, or the comparison itself?
+>
+> **Result.** With the registered arms, 'Verdict by the registered rules: none': no chain converged at 20000 steps, and the shipped 2000-step chains are 4 to 5 times shorter than 50 τ. Under amendment 3 (whitened DE chains) mid_oxide agrees for both likelihoods, mid_no_oxide's Gaussian chain stays 2.45 times wider while the Poisson chain agrees (cause: likelihood), and t2_low gives no verdict; docs/research/README.md states the MCMC widths were withdrawn (#29, #40).
+>
+> **Limits.** Three synthetic curves with one seed; the all-case rule cannot be applied because t2_low did not converge, and the arms started from the ML before its re-anchoring.
+
 In R1c the 68 % interval of d from `refine.mcmc` agreed with the Poisson profile likelihood within a
 factor 2 for one case of three: it was 4.7 times wider for `mid_no_oxide` and 2–3 times narrower for
 `t2_low`. Candidate causes: the likelihood (Gaussian in log₁₀ R with one fitted spread, while the
@@ -171,3 +179,5 @@ Not part of the rules:
   ratio), because the marginal integrates over volume that the bound cuts off. Not tested here.
 - t2_low is the first case in this experiment where the posterior itself, not only the optimizer,
   shows more than one nuisance basin. It is a candidate for the R2a question, on the nuisance side.
+
+[Back to all reports](../reports/README.md)

@@ -1,5 +1,13 @@
 # Generative inverse model for XRR: go / no-go (R1d)
 
+[Back to all reports](../reports/README.md)
+
+> **Question.** Is a generative posterior model justified, i.e. under which conditions does a single-film or bilayer XRR curve admit several statistically indistinguishable structures?
+>
+> **Result.** 'No-go for now': every checked case had one posterior mode, and the wrong fits came from the optimizer and partly from refine's log-MSE objective. Revisited after the R2a condition scan, the no-go stands: no analysed condition has a multimodal label (19 single-film and 5 reached bilayer conditions, one mode each), but 13 of 18 bilayer conditions are undecided because no start reached the truth's basin.
+>
+> **Limits.** Noise-free data at 10⁶ counts and the registered 2 % ridge line; weak negatives where the truth basin was reached from 1–3 of 64 starts, many fits stopped at the 200-evaluation cap, the bilayer half is largely untested (to be re-tested in R2h), and nothing was trained.
+
 Written 2026-10-23 after Experiment 001 (R1b, R1c). Nothing was trained; no diffusion or flow model
 was started.
 
@@ -445,3 +453,5 @@ label. This does not establish that XRR has no multimodality in this map:
 
 Run: 2 processes × 4 threads, 11–28 minutes per condition, peak 1.4 GB. The planning estimate of
 about 17 minutes per condition was short.
+
+[Back to all reports](../reports/README.md)

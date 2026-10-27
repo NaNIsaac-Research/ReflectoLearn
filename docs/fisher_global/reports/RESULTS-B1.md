@@ -1,5 +1,13 @@
 # B-1 results: R2a endpoints against the Fisher quadratic (H-F, H-W2)
 
+[Back to all reports](../../reports/README.md)
+
+> **Question.** Does the Fisher quadratic at the truth match the deviance at R2a endpoints near the truth and overstate it at wrong ones (H-F), and does a wrong endpoint's deviance sit at low q (H-W2)?
+>
+> **Result.** H-F 'unresolved': part (i) holds for 0.831 of 177 near endpoints (0.90 needed), part (ii) holds at 0.981 of 2191 wrong endpoints. H-W2 'supported': ≥ 90 % of ΔD at q ≤ 0.235 Å⁻¹ for 0.996, largest share in b0–b2 for 0.953, with b0 rather than X2e's b2 dominant.
+>
+> **Limits.** Inverse crime (noise-free data from the fitted model); endpoints under a 200-evaluation cap are not basin minima; Fisher only at the truth; one count level, background and truth per condition; the H-F (i) band was chosen with X2e's near states in view.
+
 xrr-policy lane, 2026-10-25. Registration: `PREREG-HF-HW2.md` (ReflectoLearn `research/fisher-global`
 d1f164c, committed and pushed before any number below). Code and generated output: same branch,
 979ac1c, `experiments/005_fisher_global/b1.py` (`run`, `report`) and `b1_extra.py`;
@@ -117,3 +125,5 @@ H-F is not supported: part (i) failed to reach 90 %. That is the registered outc
 - One count level (10⁶), one background, one truth per condition.
 - The H-F (i) band [0.5, 2] and the 90 % threshold were chosen with X2e's near states in view; the
   outcome is reported as registered. The decision-level count in 3.1 (3 of 177) is post hoc.
+
+[Back to all reports](../../reports/README.md)

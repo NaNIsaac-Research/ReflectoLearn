@@ -1,5 +1,13 @@
 # Research note: are returned XRR fit endpoints basin minima?
 
+[Back to all reports](../../reports/README.md)
+
+> **Question.** Does S₁ at a returned endpoint stand for the basin the endpoint sits in, or would continuing the local search change it or reach the truth?
+>
+> **Result.** H-BM1 supported for R2a (98.3 % κ ≤ 2, misses 0.2 %) and X2e (95.7 %, misses 1.1 %); Q-BM2 counts 5 (R2a) and 1 (X2e) wrong basins with S₁* ≥ 10⁴; H-BM3 persists for R2a and is unresolved for X2e ((b) at 77.5 %). Continuing the search barely changed the deviance (median κ 1.000 for R2a, 1.06 for X2e).
+>
+> **Limits.** Local only, noise-free objective, box-dependent minima (651 of 656 R2a minima held by bounds), interior-only analysis not testable.
+
 xrr-policy lane, 2026-10-25. Written to move into the NaNIsaac-Research note system once it exists
 (XN1). Full record with every table: `RESULTS-BASIN.md` in this folder (ReflectoLearn
 `research/fisher-global`, `docs/fisher_global/reports/RESULTS-BASIN.md`). Labels: [registered] fixed
@@ -82,3 +90,5 @@ reaches (10⁴–10⁵), in R2a only at the box edge.
 - Interior-only analysis not testable (5 R2a, 16 X2e interior minima).
 - Earlier verdicts are untouched: X2e fail, H-F unresolved, H-W2 supported, H-cal2 supported, the
   generative no-go.
+
+[Back to all reports](../../reports/README.md)

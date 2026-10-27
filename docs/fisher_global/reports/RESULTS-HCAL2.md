@@ -1,5 +1,13 @@
 # H-cal2 results: count dispersion in 100 repeated public XRR scans
 
+[Back to all reports](../../reports/README.md)
+
+> **Question.** Are the raw counts of 100 repeated public synchrotron XRR scans overdispersed relative to Poisson (H-cal2)?
+>
+> **Result.** 'H-cal2 supported' under amendment 1 (under the literal pre-check 3 there is no verdict): φ > 1.2 at 64.2 % of the points against 8.5 % expected for Poisson, median φ 1.34; dividing out scan-to-scan intensity leaves a median of 1.31.
+>
+> **Limits.** One sample, one exposure and one fast-scan synchrotron instrument, not laboratory step scans; amendment 1 was made after the pre-checks; the noise source is not identified.
+
 xrr-policy lane, 2026-10-25. Registration: `PREREG-HF-HW2.md` section 6 (ReflectoLearn
 `research/fisher-global` d1f164c) and its amendment 1 (5d3a9f5, written after the pre-checks and
 before the dispersion statistic was computed). Code and output: same branch, 5bf5a9d,
@@ -86,3 +94,5 @@ overdispersed relative to Poisson over most of the curve.
 - The registered rule fixed thresholds on φ only; it does not say which noise model is right.
 - Amendment 1 was made after the pre-checks were seen; it was necessary for any primary verdict and
   is reported with the literal outcome.
+
+[Back to all reports](../../reports/README.md)
