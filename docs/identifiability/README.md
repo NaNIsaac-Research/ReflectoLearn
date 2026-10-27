@@ -1,5 +1,13 @@
 # Experiment 001: how much of a single film does one XRR curve determine?
 
+[Back to all reports](../reports/README.md)
+
+> **Question.** When a fit of a single film returns the wrong structure, did the optimizer stop in the wrong place, or does the curve not contain the answer (several structures fit within the noise)?
+>
+> **Result.** Local Fisher (R1b): with nuisances known, d and ρ have CRLB 0.01–0.04 % and σ 0.3–1 % (γ < 2); a free 2θ offset gives an offset–ρ valley (correlation 0.995, γ 18 for the mid film); a free top oxide's γ 60–1300 is marked 'Corrected by R1c' because refine's bounds cut that direction. R1c: all three cases are identifiable given refine's bounds (Δχ² ≤ 1 widths ±0.04 % to ±1.4 %, along the tracked branch), 43 of 48 refine endpoints are optimization failures and 5 are objective or model errors (a split resting on the unregistered amendment 3), and the MCMC column carries a 'Correction from R2c': unconverged chains, so no MCMC width is established.
+>
+> **Limits.** Local, Poisson, no model error, three films at one point each; every label is conditional on refine's bounds, the profile is an upper bound on PL(d) along one tracked branch, and the deciding test (amendment 3) was not pre-registered.
+
 The question behind this experiment: when a fit of a measured curve returns the wrong film, is that
 because the optimizer stopped in the wrong place, or because the curve does not contain the answer
 (several structures fit it within the noise)? The two need different fixes: a better fitting path in
@@ -352,3 +360,5 @@ Side observations (not part of the registered rules):
   buried oxide/film interface, and these nuisances trade against it. d was profiled; σ was not.
 - `make_forward` pads the grid edges before smearing; with the footprint on this changes R by up to
   3.6 % at the first grid point and 13 % at the last. Recorded in #25.
+
+[Back to all reports](../reports/README.md)

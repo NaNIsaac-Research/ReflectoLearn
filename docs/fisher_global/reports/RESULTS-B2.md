@@ -1,5 +1,13 @@
 # B-2 results: truth-start local profile of R2a bilayer #25
 
+[Back to all reports](../../reports/README.md)
+
+> **Question.** Inside the truth's basin of R2a bilayer condition #25, how well are the film parameters determined locally (an observation that tests no hypothesis)?
+>
+> **Result.** The truth-start fit ends at the truth; d₁ is a ridge (2.24 % half-width) while ρ₁, d₂ and ρ₂ are identifiable (0.12–0.27 %). The bounded profile half-widths are 0.43–0.82 of the unbounded Fisher values, because Fisher's weakest direction runs through Kα2 ratios outside their bounds.
+>
+> **Limits.** One truth-start fit on noise-free data in one condition; profile points are local fits, so half-widths can only be too narrow; memory was not measured; no statement on global uniqueness, multimodality or #25's R2a label.
+
 xrr-policy lane, 2026-10-25. Registration: `PREREG-HF-HW2.md` section 5 (ReflectoLearn
 `research/fisher-global` d1f164c). Code b544baf (`experiments/005_fisher_global/b2.py`, committed before
 the run); output 92d1983: `docs/fisher_global/b2.json`, `b2_log.txt`, and the post-hoc
@@ -67,3 +75,5 @@ no hypothesis.
   bounds the profile likelihood from above, so the half-widths can only be too narrow, not too wide.
 - Memory not measured (section 1).
 - No statement on global uniqueness, multimodality, #25's R2a label or the generative no-go.
+
+[Back to all reports](../../reports/README.md)

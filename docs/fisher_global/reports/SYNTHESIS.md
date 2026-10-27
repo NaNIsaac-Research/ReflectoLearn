@@ -1,5 +1,13 @@
 # Synthesis of B-1, B-2 and H-cal2: is "Fisher against global discrimination" a paper?
 
+[Back to all reports](../../reports/README.md)
+
+> **Question.** Taken together, do B-1, B-2 and H-cal2 make 'Fisher against global discrimination' a paper contribution?
+>
+> **Result.** Registered outcomes: H-F unresolved (0.831, needs 0.90), H-W2 supported, H-cal2 supported under amendment 1, B-2 an observation (d₁ ridge 2.24 %). Judgement 'conditional yes, reframed': not sufficient alone, but a section of a methods paper on physical identifiability against computational reach measured in counts (S₁); the generative no-go stands.
+>
+> **Limits.** No global search, sampler or new run; the general claim that Fisher information is local is not new; H-cal2 covers one instrument; evidence still missing includes basin minima, a regime with S₁ near realistic counts, unreached bilayer basins, and noisy and measured data.
+
 xrr-policy lane, 2026-10-25. Owner approval Q16 (`docs/isaac-directive-20261025-xrr-q16.md`). Inputs:
 `PREREG-HF-HW2.md`, `RESULTS-B1.md`, `RESULTS-B2.md`, `RESULTS-HCAL2.md`, and RESEARCH-DESIGN.md
 (Task A on X2e, post hoc). Code and outputs: ReflectoLearn `research/fisher-global` d1f164c … 92d1983,
@@ -149,3 +157,5 @@ Register and run item 1 on the existing records only: converge every R2a wrong e
 uncapped local fit, then recompute S₁, ρ and the q shares at the minima. Forward and local fits only,
 no new starts, CPU, one process; time to be measured by a pilot under a HEAVY slot. This decides
 whether the S₁ map is worth building.
+
+[Back to all reports](../../reports/README.md)

@@ -1,5 +1,13 @@
 # Basin minimum validation: full run, results and verdicts
 
+[Back to all reports](../../reports/README.md)
+
+> **Question.** Does S₁ at a returned R2a or X2e endpoint represent the basin minimum it converges to (H-BM1), how many wrong basins need S₁ ≥ 10⁴ counts (Q-BM2), and do B-1's descriptions hold at the minima (H-BM3)?
+>
+> **Result.** H-BM1 supported for R2a (98.3 % κ ≤ 2, misses 0.2 %) and X2e (95.7 %, misses 1.1 %); Q-BM2 counts 5 (R2a) and 1 (X2e) wrong basins with S₁* ≥ 10⁴; H-BM3 persists for R2a and is unresolved for X2e ((b) at 77.5 %). It corrects the pilot's budget: the run took 50.9 CPU h against the 47 CPU h worst case quoted.
+>
+> **Limits.** Local refinement from recorded endpoints on noise-free data inside bounded boxes (651 of 656 R2a minima on a bound); nothing global, interior-only H-BM1 not testable, noisy and measured data not tested.
+
 xrr-policy lane, 2026-10-25. Protocol: `PREREG-BASIN.md` (ReflectoLearn `research/fisher-global`
 51b048a, committed before any candidate was refined). Owner approval of the full run:
 `docs/isaac-directive-20261025-xrr-basin-full-run.md` in the NaNIsaac workspace. A copy of this file is
@@ -296,3 +304,5 @@ Not verified:
 Earlier verdicts stay as they are: X2e fail, H-F unresolved, H-W2 supported, H-cal2 supported, the
 generative no-go. Nothing here is a reason to revisit them; H-BM3 tests B-1's descriptions on new
 points and does not change H-F or H-W2.
+
+[Back to all reports](../../reports/README.md)
