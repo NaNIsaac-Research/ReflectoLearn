@@ -7,6 +7,19 @@ withdrew it. Reports marked *generated* are written by the named script and rewr
 run, so they carry no summary box; their question, result and limits are given below the table.
 All results are on synthetic curves except H-cal2 (repeated public scans).
 
+## Start here
+
+- **Key result:** [Experiment 002 (X2a/X2b) results](../fit_policy/results.md). No room for RL: the scripted
+  protocol beats a full fit in 0 of 4 multilayer cells.
+- **Method:** [Research experiments](../research/README.md). Each experiment has a registration written
+  before its run, run records, a report generated from them by a script, and a verdict that applies the
+  registered rules; registrations cite frozen tags.
+- **Verification and limits:** [Basin minimum validation](../fisher_global/reports/RESULTS-BASIN.md). Returned
+  endpoints represent their basin minima (H-BM1 supported in both arms). Limits: local refinement on
+  noise-free data inside bounded boxes; noisy and measured data not tested.
+
+## All reports
+
 | Date | Report | Result | Status |
 |---|---|---|---|
 | 2026-10-25 | [Research note: are returned XRR fit endpoints basin minima?](../fisher_global/reports/BASIN-NOTE.md) | Returned fit endpoints stand for their basins (supported); a few wrong basins need ≥ 10⁴ counts. | checked |
