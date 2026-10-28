@@ -26,6 +26,7 @@ about the registered hypotheses on synthetic data, not general claims.
 | 003 | Fit policy X2d | Why do the protocol's extra layers fail on held-out points? | H2 supported, H1/H3/H4 refuted; primary passes but not attributable | #39 | `frozen/exp003-x2d-690a18b` |
 | 004 | Fit policy X2e | Does a better start basin remove the extra layers? | fail; basin reading supported | #41 | `frozen/exp004-x2e-e1b15ac` |
 | 005 | Fisher against global fits | Does local Fisher information describe what a global fit can tell apart? | H-F unresolved, H-W2 and H-cal2 supported, H-BM1 supported | fisher-global | `frozen/exp005-basin-51b048a` |
+| 006 | Objective | What do log-type objectives cost against the Poisson likelihood? | registered, not run | this PR | |
 
 All results are on synthetic curves except H-cal2 (repeated public scans). No measured film has been
 validated (see the top-level README).
@@ -148,6 +149,17 @@ uv run python experiments/005_fisher_global/basin_report.py
 
 `basin_report.py` orders tied rows of two tables by string hashing, so set `PYTHONHASHSEED` to get
 the same file twice.
+
+## 006: objective
+
+**Question.** How much information, bias and interval calibration do log-type XRR objectives (refine's
+log-MSE, refnx's unweighted `logY`) cost against the Poisson likelihood, and which part of the objective
+causes it?
+
+**Registration.** [`../objective/PREREG.md`](../objective/PREREG.md): six claims with decision rules,
+a one-cell pilot and the run plan. Code: `experiments/006_objective/objective.py`.
+
+**Verdict.** Not run yet.
 
 ## Before 001
 
