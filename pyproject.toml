@@ -42,6 +42,11 @@ dev = [
     "pytest",
     "ruff",
 ]
+# plot style and colour-vision checks for the report figures (uv sync --group figures)
+figures = [
+    "qoraplot",
+    "cvdkit",
+]
 
 [project.scripts]
 reflectolearn = "reflectolearn.cli:main"
@@ -61,6 +66,9 @@ explicit = true
 torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'win32'" }]
 # not on PyPI yet: pinned to a ReflectoFit main commit until its first release
 reflectofit = { git = "https://github.com/NaNIsaac/ReflectoFit", rev = "59802ae13b9823f870dcad67898d9a18712799ab" }
+# not on PyPI yet either; cvdkit is listed because uv sources do not carry over from qoraplot
+qoraplot = { git = "https://github.com/NaNIsaac/qoraplot", rev = "4133d42d873132df4e69111652ad0f98fafa5f22" }
+cvdkit = { git = "https://github.com/NaNIsaac/cvdkit", rev = "8c3566008e861e70e97b6dec62071d3ddc3ac453" }
 
 # GenX lists wxpython for its GUI, which this project never starts. PyPI has no Linux wheel for
 # it, so on Linux uv would compile it and fail without GTK headers. genx.models, genx.model and
