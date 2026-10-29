@@ -296,10 +296,10 @@ Reproduce (about 4 minutes per case on CPU, mostly the profile; needs `uv sync -
 for c in mid_oxide mid_no_oxide t2_low; do
   uv run python experiments/001_identifiability/nonunique.py profile fits lsq mcmc --case $c
 done
-uv run python experiments/001_identifiability/nonunique.py report
+uv run --group figures python experiments/001_identifiability/nonunique.py report
 ```
 
-Writes `nonunique_<case>.json`, [`nonunique_tables.md`](nonunique_tables.md) and `nonunique.png`.
+Writes `nonunique_<case>.json`, [`nonunique_tables.md`](nonunique_tables.md), `nonunique.png` (README) and [`nonunique.pdf`](nonunique.pdf) (vector, 7.2 in wide). `report` only reads the JSON: it rewrites the tables and redraws the figure in seconds, without rerunning a fit. The `figures` group adds the plot style ([qoraplot](https://github.com/NaNIsaac/qoraplot)) and the colour-vision check ([cvdkit](https://github.com/NaNIsaac/cvdkit)).
 `mcmc` takes `--mcmc-start refine` (as registered) or `--mcmc-start ml`; both were run.
 
 | case | label | profile Δχ² ≤ 1 (d, %) | refine endpoints: failure / worse on own objective | refine endpoint d (%) | Poisson LSQ from same starts at ML | MCMC 68 % of d (%), refine / ML start |
@@ -308,13 +308,22 @@ Writes `nonunique_<case>.json`, [`nonunique_tables.md`](nonunique_tables.md) and
 | mid_no_oxide | identifiable | −0.04 / +0.03 | 16/16, 13/16 (min ΔD 2.8e5) | −26 to +29 | 14/15 | −0.04 to +0.29 / −0.03 to +0.30 |
 | t2_low | identifiable | −1.41 / +1.40 | 16/16, 14/16 (min ΔD 4.9e4) | −30 to +45 | 15/15 | −1.82 to −0.49 / −2.05 to −1.08 |
 
-![Profiles, endpoints, residuals](nonunique.png)
+![True films, one Poisson curve with two fits, profile likelihood against the Fisher parabola, fit endpoints](nonunique.png)
 
-(a) Profile likelihood of d on noise-free data; every other parameter is re-fitted within refine's
-bounds. (b) One Poisson curve per case: endpoints of refine (open) and of the Poisson least-squares
-fit (filled) from the same 15 starts plus the truth, against their deviance above the best fit.
-(c) Normalized residuals on the mid_oxide curve for the ML fit, a profile point inside Δχ² ≤ 1, and
-the best refine endpoint.
+Synthetic single films on Si, computed, not measured: Cu Kα1 (1.5406 Å) with Kα2 and the beam footprint in the model, q 0.014–0.43 Å⁻¹ (2θ 0.2–6°), s = 10⁶ counts at R = 1.
+(a) SLD against depth for the three true films (mid_oxide and mid_no_oxide differ by the
+10 Å top oxide), drawn from the true parameters with error-function interfaces: a schematic of
+the model, not a fitted profile. (b) The mid_oxide Poisson curve (seed 0) with the Poisson ML fit
+and the lowest-deviance refine endpoint, recomputed with the forward model from their saved
+parameters; below, (counts − model)/√model, clipped at ±40. (c) Profile likelihood of d on
+noise-free data, every other parameter re-fitted within refine's bounds (solid, markers), and the
+local Fisher parabola Δχ² = (Δd / CRLB)² from the saved CRLB (dotted), which has no bounds; the
+profile is narrower where a nuisance parameter reaches a bound (caveats above).
+(d) One Poisson curve per case: endpoints of refine (open) from the same 15 starts plus the truth,
+and of the Poisson least-squares fit (filled) from the 15 starts, against their deviance above the
+best fit; shape and colour give the case. The filled markers of mid_oxide and mid_no_oxide
+overlap twice: at the best fit, and near d +89 %, where one Poisson least-squares fit of each
+stops.
 
 Verdict by the registered rules:
 

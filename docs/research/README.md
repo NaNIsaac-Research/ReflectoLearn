@@ -55,7 +55,7 @@ pre-registered) are recorded in the README.
 ```bash
 uv run python experiments/001_identifiability/scan.py report
 uv run python experiments/001_identifiability/refine_causes.py report
-uv run python experiments/001_identifiability/nonunique.py report
+uv run --group figures python experiments/001_identifiability/nonunique.py report
 uv run python experiments/001_identifiability/mcmc_width.py report
 ```
 

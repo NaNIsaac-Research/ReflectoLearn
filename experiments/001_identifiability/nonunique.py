@@ -12,7 +12,7 @@ script computes what those rules need, per case:
 The forward model is fim.py's, with Cu Kα2 and the footprint switched on, on a lab-like q grid.
 
 Run:  uv run python experiments/001_identifiability/nonunique.py profile fits --case mid_oxide
-      uv run python experiments/001_identifiability/nonunique.py report
+      uv run --group figures python experiments/001_identifiability/nonunique.py report
 """
 
 from __future__ import annotations
@@ -447,109 +447,186 @@ def report() -> None:
     figure()
 
 
+def sld_profile(p: dict[str, float], z: np.ndarray) -> np.ndarray:
+    """SLD against depth z below the surface (Å) for the stack fim.reflectivity builds, with each
+    interface drawn as an error function of its roughness. For the picture only."""
+    from scipy.special import erf
+
+    if p["oxide_thickness"]:
+        rho = [0.0, p["oxide_sld"], p["sld"], fim.SUB_SLD]
+        tops = [0.0, p["oxide_thickness"], p["oxide_thickness"] + p["thickness"]]
+        sigma = [p["oxide_roughness"], p["roughness"], fim.SUB_ROUGH]
+    else:
+        rho = [0.0, p["sld"], fim.SUB_SLD]
+        tops = [0.0, p["thickness"]]
+        sigma = [p["roughness"], fim.SUB_ROUGH]
+    out = np.full_like(z, rho[0])
+    for j, (z0, sg) in enumerate(zip(tops, sigma, strict=True)):
+        out += (rho[j + 1] - rho[j]) * 0.5 * (1 + erf((z - z0) / (np.sqrt(2) * sg)))
+    return out
+
+
 def figure() -> None:
+    """nonunique.png (README) and nonunique.pdf (paper), both 7.2 in wide, from the saved JSON.
+
+    Panels (b) and its residuals evaluate the forward model at saved parameters and redraw the seeded
+    Poisson curve; nothing is fitted again.
+    """
+    import cvdkit
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    import qoraplot
 
-    ink, ink2, grid, surface = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
-    colors = {"mid_oxide": "#2a78d6", "mid_no_oxide": "#eb6834", "t2_low": "#1baf7a"}
-    plt.rcParams.update(
-        {
-            "font.size": 9,
-            "axes.edgecolor": ink2,
-            "axes.labelcolor": ink,
-            "xtick.color": ink2,
-            "ytick.color": ink2,
-            "axes.spines.top": False,
-            "axes.spines.right": False,
-            "axes.grid": True,
-            "grid.color": grid,
-            "grid.linewidth": 0.6,
-            "figure.facecolor": surface,
-            "axes.facecolor": surface,
-        }
-    )
-    fig, (a, b, c) = plt.subplots(1, 3, figsize=(13.5, 4.2), constrained_layout=True)
     data = {n: json.loads((OUT / f"nonunique_{n}.json").read_text(encoding="utf-8")) for n in CASES}
-
-    # (a) profiles of d
-    for n, d in data.items():
-        pts = [r for r in d["profile"]["profile"] if abs(r["delta"]) <= 0.05]
-        a.plot(
-            [100 * r["delta"] for r in pts],
-            [max(r["dchi2"], 1e-3) for r in pts],
-            "-o",
-            ms=2.5,
-            lw=2,
-            color=colors[n],
-            label=n,
+    pick = cvdkit.pick(3)
+    look = {
+        n: {"color": c, "marker": m, "ls": ls}
+        for n, c, m, ls in zip(CASES, pick.colors, pick.markers, pick.linestyles, strict=True)
+    }
+    with qoraplot.style("house", "paper"):
+        fig = plt.figure(figsize=(qoraplot.WIDTHS["double"], 5.6), layout="constrained")
+        top, bottom = fig.subfigures(2, 1, height_ratios=[1, 1.05])
+        ax = top.subplot_mosaic(
+            [["a", "b"], ["a", "r"]], width_ratios=[1, 2.1], height_ratios=[2.2, 1]
         )
-    a.axhline(1, color=ink2, lw=0.8)
-    a.text(4.9, 1.3, "Δχ² = 1", color=ink2, fontsize=7.5, ha="right")
-    a.set_yscale("log")
-    a.set_ylim(1e-3, 1e5)
-    a.set_xlabel("d − d_true (%), other parameters re-fitted")
-    a.set_ylabel("Δχ² (Poisson deviance, s = 10⁶)")
-    a.set_title("(a) profile likelihood of d, noise-free data", loc="left", color=ink)
-    a.legend(frameon=False, fontsize=7.5)
+        a, b, r = ax["a"], ax["b"], ax["r"]
+        b.sharex(r)
+        b.tick_params(labelbottom=False)
+        c, d = bottom.subplots(1, 2)
 
-    # (b) endpoints on one noisy curve: refine vs Poisson LSQ from the same starts
-    for n, d in data.items():
-        d0 = d["profile"]["film"]["thickness"]
-        d_star = min([d["fits"]["d_star"]] + [e["deviance"] for e in d["lsq"]["endpoints"]])
-        for key, marker, filled in (("fits", "o", False), ("lsq", "^", True)):
-            ends = d[key]["endpoints"]
-            b.scatter(
-                [100 * (e["params"]["thickness"] / d0 - 1) for e in ends],
-                [e["deviance"] - d_star + 1 for e in ends],
-                marker=marker,
-                s=26,
-                facecolors=colors[n] if filled else "none",
-                edgecolors=colors[n],
-                linewidths=1.2,
-                label=f"{n}, {'refine' if key == 'fits' else 'Poisson LSQ'}",
+        # (a) the three true films
+        z = np.linspace(-30.0, 300.0, 600)
+        for n in CASES:
+            a.plot(
+                z,
+                sld_profile(case_truth(n), z),
+                label=n,
+                color=look[n]["color"],
+                ls=look[n]["ls"],
+                marker="none",
             )
-    b.axhline(5, color=ink2, lw=0.8)
-    b.text(-38, 6.5, "ΔD = 4", color=ink2, fontsize=7.5)
-    b.set_yscale("log")
-    b.set_xlabel("d of the endpoint − d_true (%)")
-    b.set_ylabel("ΔD + 1 against the best fit")
-    b.set_title("(b) one noisy curve: refine (open) vs Poisson LSQ (filled)", loc="left", color=ink)
-    b.legend(frameon=False, fontsize=6.5, ncol=2, loc="center")
-    b.set_ylim(0.5, 1e8)
+        a.set_xlabel("depth below the surface z (Å)")
+        a.set_ylabel(r"SLD ($10^{-6}$ Å$^{-2}$)")
+        a.set_title("true films (schematic)")
+        a.text(-27, 3, "air", fontsize=7, color="#52514e")
+        a.text(266, 22, "Si", fontsize=7, color="#52514e")
+        a.legend(loc="lower right", handlelength=2.2)
+        qoraplot.panel_label(a, "a")
 
-    # (c) normalized residuals on the noisy mid_oxide curve
-    n = "mid_oxide"
-    y = noisy_counts(n, data[n]["fits"]["seed"])
-    ml = data[n]["fits"]["ml"]["params"]
-    best_refine = min(data[n]["fits"]["endpoints"], key=lambda e: e["deviance"])
-    far = max(
-        (r for r in data[n]["profile"]["profile"] if r["dchi2"] <= 1),
-        key=lambda r: abs(r["delta"]),
-    )
-    for label_, p, col in (
-        (f"Poisson ML (d {ml['thickness']:.1f} Å)", ml, ink2),
-        (
-            f"profile point, Δχ² {far['dchi2']:.2f} (d {far['params']['thickness']:.1f} Å)",
-            far["params"],
-            "#1baf7a",
-        ),
-        (
-            f"best refine endpoint (d {best_refine['params']['thickness']:.1f} Å)",
-            best_refine["params"],
-            "#e34948",
-        ),
-    ):
-        lam = counts(p)
-        c.plot(Q, (y - lam) / np.sqrt(np.maximum(lam, 1.0)), lw=1.1, color=col, label=label_)
-    c.set_ylim(-40, 40)
-    c.set_xlabel("q (Å⁻¹)")
-    c.set_ylabel("(counts − model) / √model")
-    c.set_title("(c) mid_oxide, one Poisson curve: residuals", loc="left", color=ink)
-    c.legend(frameon=False, fontsize=7.5, loc="lower right")
-    fig.savefig(OUT / "nonunique.png", dpi=150)
+        # (b) one Poisson curve of mid_oxide with two fits, and their residuals
+        n = "mid_oxide"
+        y = noisy_counts(n, data[n]["fits"]["seed"])
+        ml = data[n]["fits"]["ml"]["params"]
+        best_refine = min(data[n]["fits"]["endpoints"], key=lambda e: e["deviance"])
+        b.semilogy(
+            Q, np.maximum(y, 0.5), ".", ms=2.5, color="#8a8984", label="Poisson counts (s = 10⁶)"
+        )
+        fits = (
+            (f"Poisson ML, d = {ml['thickness']:.1f} Å", ml, "#000000", "-"),
+            (
+                f"best refine endpoint, d = {best_refine['params']['thickness']:.1f} Å",
+                best_refine["params"],
+                "#d55e00",
+                (0, (5, 2)),
+            ),
+        )
+        for label_, pp, col, ls in fits:
+            lam = counts(pp)
+            b.semilogy(Q, lam, color=col, ls=ls, marker="none", label=label_)
+            r.plot(
+                Q,
+                (y - lam) / np.sqrt(np.maximum(lam, 1.0)),
+                color=col,
+                ls=ls,
+                lw=0.9,
+                marker="none",
+            )
+        b.set_ylabel("counts")
+        b.set_title("mid_oxide, one Poisson curve (models recomputed)")
+        b.legend(loc="upper right")
+        r.axhline(0, color="#52514e", lw=0.6)
+        r.set_ylim(-40, 40)
+        r.set_xlabel(r"q (Å$^{-1}$)")
+        r.set_ylabel("(y − λ)/√λ")
+        qoraplot.panel_label(b, "b")
+
+        # (c) global profile of d against the local Fisher parabola
+        x = np.linspace(-5, 5, 401)
+        for n, dd in data.items():
+            pr = dd["profile"]
+            pts = [q for q in pr["profile"] if abs(q["delta"]) <= 0.05]
+            st = look[n]
+            c.plot(
+                [100 * q["delta"] for q in pts],
+                [max(q["dchi2"], 1e-3) for q in pts],
+                color=st["color"],
+                marker=st["marker"],
+                ls="-",
+                ms=2.5,
+                label=f"{n} profile",
+            )
+            c.plot(
+                x,
+                (x / pr["crlb_d_pct"]) ** 2,
+                color=st["color"],
+                ls=(0, (1, 1.5)),
+                lw=1.0,
+                marker="none",
+            )
+        c.plot(
+            [],
+            [],
+            color="#52514e",
+            ls=(0, (1, 1.5)),
+            lw=1.0,
+            marker="none",
+            label="local Fisher (CRLB) parabola",
+        )
+        c.axhline(1, color="#52514e", lw=0.6)
+        c.text(4.9, 0.8, "Δχ² = 1", fontsize=7, ha="right", va="top", color="#52514e")
+        c.set_yscale("log")
+        c.set_ylim(1e-3, 1e5)
+        c.set_xlim(-5, 5)
+        c.set_xlabel("d − d_true (% of d_true), other parameters re-fitted")
+        c.set_ylabel("Δχ² (Poisson deviance, noise-free)")
+        c.set_title("profile likelihood of d, noise-free curves")
+        c.legend(loc="lower left", fontsize=6.5)
+        qoraplot.panel_label(c, "c")
+
+        # (d) where the fits stop on one Poisson curve per case
+        for n, dd in data.items():
+            d0 = dd["profile"]["film"]["thickness"]
+            d_star = min([dd["fits"]["d_star"]] + [e["deviance"] for e in dd["lsq"]["endpoints"]])
+            st = look[n]
+            for key, filled in (("fits", False), ("lsq", True)):
+                ends = dd[key]["endpoints"]
+                d.scatter(
+                    [100 * (e["params"]["thickness"] / d0 - 1) for e in ends],
+                    [e["deviance"] - d_star + 1 for e in ends],
+                    marker=st["marker"],
+                    s=18,
+                    facecolors=st["color"] if filled else "none",
+                    edgecolors=st["color"],
+                    linewidths=0.9,
+                    label=f"{n}, {'refine' if key == 'fits' else 'Poisson LSQ'}",
+                )
+        d.axhline(5, color="#52514e", lw=0.6)
+        d.text(0.01, 7, "ΔD = 4", fontsize=7, color="#52514e", transform=d.get_yaxis_transform())
+        d.axvline(0, color="#52514e", lw=0.6, ls=(0, (1, 1.5)))
+        d.set_yscale("log")
+        d.set_ylim(0.5, 1e8)
+        d.set_xlabel("d of the endpoint − d_true (% of d_true)")
+        d.set_ylabel("ΔD + 1 above the best fit")
+        d.set_title("fit endpoints: refine (open), Poisson LSQ (filled)")
+        d.legend(loc="center right", fontsize=6, ncol=1)
+        qoraplot.panel_label(d, "d")
+
+        if collisions := cvdkit.check(fig):
+            raise RuntimeError(f"colours not distinguishable under CVD simulation: {collisions}")
+        fig.savefig(OUT / "nonunique.png", dpi=200)
+        fig.savefig(OUT / "nonunique.pdf")
     plt.close(fig)
 
 
