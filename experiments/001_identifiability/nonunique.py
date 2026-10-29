@@ -70,7 +70,7 @@ REFINE_INIT = {
     "oxide_sld": _rc.oxide_sld_init,
     "oxide_roughness": _rc.oxide_roughness_init,
 }
-# Relative steps of d away from the truth: fine near it, coarse out to ±30 %.
+# Relative steps of d away from the truth: fine near it, coarse out to ±29 %.
 DELTAS = np.r_[
     np.arange(0.0025, 0.05, 0.0025), np.arange(0.05, 0.15, 0.005), np.arange(0.15, 0.31, 0.02)
 ]
@@ -469,8 +469,8 @@ def sld_profile(p: dict[str, float], z: np.ndarray) -> np.ndarray:
 def figure() -> None:
     """nonunique.png (README) and nonunique.pdf (paper), both 7.2 in wide, from the saved JSON.
 
-    Panels (b) and its residuals evaluate the forward model at saved parameters and redraw the seeded
-    Poisson curve; nothing is fitted again.
+    Panel (b) evaluates the forward model at saved parameters and redraws the seeded Poisson curve;
+    nothing is fitted again.
     """
     import cvdkit
     import matplotlib
@@ -485,82 +485,124 @@ def figure() -> None:
         n: {"color": c, "marker": m, "ls": ls}
         for n, c, m, ls in zip(CASES, pick.colors, pick.markers, pick.linestyles, strict=True)
     }
+    grey, light = "#52514e", "#b5b4ae"
     with qoraplot.style("house", "paper"):
-        fig = plt.figure(figsize=(qoraplot.WIDTHS["double"], 5.6), layout="constrained")
-        top, bottom = fig.subfigures(2, 1, height_ratios=[1, 1.05])
+        fig = plt.figure(figsize=(qoraplot.WIDTHS["double"], 6.2), layout="constrained")
+        top, bottom = fig.subfigures(2, 1, height_ratios=[1, 1.1])
         ax = top.subplot_mosaic(
-            [["a", "b"], ["a", "r"]], width_ratios=[1, 2.1], height_ratios=[2.2, 1]
+            [["a", "b"], ["z", "r"]], width_ratios=[1, 2.1], height_ratios=[2, 1]
         )
-        a, b, r = ax["a"], ax["b"], ax["r"]
+        a, zoom, b, r = ax["a"], ax["z"], ax["b"], ax["r"]
         b.sharex(r)
         b.tick_params(labelbottom=False)
         c, d = bottom.subplots(1, 2)
 
-        # (a) the three true films
-        z = np.linspace(-30.0, 300.0, 600)
+        # (a) the three true films, and below them the top 40 Å, where the 10 Å oxide shows
+        z = np.linspace(-30.0, 300.0, 1200)
         for n in CASES:
-            a.plot(
-                z,
-                sld_profile(case_truth(n), z),
-                label=n,
-                color=look[n]["color"],
-                ls=look[n]["ls"],
-                marker="none",
-            )
+            rho = sld_profile(case_truth(n), z)
+            for axis in (a, zoom):
+                axis.plot(z, rho, label=n, color=look[n]["color"], ls=look[n]["ls"], marker="none")
+        zoom.set_xlim(-15, 40)
+        zoom.set_ylim(0, 48)
+        zoom.annotate(
+            "10 Å oxide", xy=(5, 18.5), xytext=(18, 4), fontsize=7, arrowprops={"arrowstyle": "-"}
+        )
+        zoom.set_xlabel("z (Å), top 40 Å")
+        zoom.set_ylabel("SLD")
         a.set_xlabel("depth below the surface z (Å)")
         a.set_ylabel(r"SLD ($10^{-6}$ Å$^{-2}$)")
         a.set_title("true films (schematic)")
-        a.text(-27, 3, "air", fontsize=7, color="#52514e")
-        a.text(266, 22, "Si", fontsize=7, color="#52514e")
-        a.legend(loc="lower right", handlelength=2.2)
+        a.text(-27, 38, "air", fontsize=7, color=grey)
+        a.text(266, 22, "Si", fontsize=7, color=grey)
+        a.legend(loc="center", bbox_to_anchor=(0.55, 0.6), handlelength=2.2)
         qoraplot.panel_label(a, "a")
 
-        # (b) one Poisson curve of mid_oxide with two fits, and their residuals
+        # (b) one Poisson curve of mid_oxide, the bounded ML fit, the best refine endpoint and the
+        # pre-registered pair point, with their residuals
         n = "mid_oxide"
-        y = noisy_counts(n, data[n]["fits"]["seed"])
-        ml = data[n]["fits"]["ml"]["params"]
-        best_refine = min(data[n]["fits"]["endpoints"], key=lambda e: e["deviance"])
-        b.semilogy(
-            Q, np.maximum(y, 0.5), ".", ms=2.5, color="#8a8984", label="Poisson counts (s = 10⁶)"
+        fits = data[n]["fits"]
+        y = noisy_counts(n, fits["seed"])
+        ml = fits["ml"]["params"]
+        # The draw is regenerated, and numpy may change its Poisson stream between versions.
+        if not np.isclose(deviance(ml, y), fits["ml"]["deviance"], rtol=1e-6, atol=0):
+            raise RuntimeError("the regenerated Poisson curve is not the one the fits used")
+        best_refine = min(fits["endpoints"], key=lambda e: e["deviance"])
+        pair = next(
+            q
+            for q in data[n]["profile"]["profile"]
+            if q["delta"] == data[n]["profile"]["pair_delta"]
         )
-        fits = (
-            (f"Poisson ML, d = {ml['thickness']:.1f} Å", ml, "#000000", "-"),
+        zero = y == 0
+        b.semilogy(Q[~zero], y[~zero], ".", ms=2.5, color=light, label="Poisson counts (s = 10⁶)")
+        b.semilogy(
+            Q[zero],
+            np.full(zero.sum(), 0.5),
+            "v",
+            ms=2.5,
+            color=light,
+            label=f"zero counts ({zero.sum()}), drawn at 0.5",
+        )
+        curves = (
+            (f"bounded Poisson ML, d = {ml['thickness']:.1f} Å", ml, "#3b3b3b", "-", 1.2),
             (
-                f"best refine endpoint, d = {best_refine['params']['thickness']:.1f} Å",
+                (
+                    f"best refine endpoint (start: {best_refine['start']}),"
+                    f" d = {best_refine['params']['thickness']:.1f} Å"
+                ),
                 best_refine["params"],
-                "#d55e00",
+                "#cc79a7",
                 (0, (5, 2)),
+                1.2,
+            ),
+            (
+                (
+                    f"pre-registered pair: profile point Δχ² = {pair['dchi2']:.2f},"
+                    f" d = {pair['params']['thickness']:.1f} Å"
+                ),
+                pair["params"],
+                grey,
+                (0, (6, 2, 1, 2)),
+                0.8,
             ),
         )
-        for label_, pp, col, ls in fits:
+        for label_, pp, col, ls, lw in curves:
             lam = counts(pp)
-            b.semilogy(Q, lam, color=col, ls=ls, marker="none", label=label_)
+            b.semilogy(Q, lam, color=col, ls=ls, lw=lw, marker="none", label=label_)
             r.plot(
                 Q,
                 (y - lam) / np.sqrt(np.maximum(lam, 1.0)),
                 color=col,
                 ls=ls,
-                lw=0.9,
+                lw=0.9 * lw,
                 marker="none",
             )
         b.set_ylabel("counts")
-        b.set_title("mid_oxide, one Poisson curve (models recomputed)")
-        b.legend(loc="upper right")
-        r.axhline(0, color="#52514e", lw=0.6)
-        r.set_ylim(-40, 40)
+        b.set_title("mid_oxide, one Poisson curve (seed 0; models recomputed)")
+        b.legend(loc="upper right", fontsize=7)
+        r.axhline(0, color=grey, lw=0.6, ls=(0, (1, 1.5)))
+        r.set_yscale("symlog", linthresh=5)
+        r.set_ylim(-200, 200)
+        r.set_yticks([-100, -10, 0, 10, 100], ["−100", "−10", "0", "10", "100"])
+        r.yaxis.set_minor_locator(matplotlib.ticker.NullLocator())
         r.set_xlabel(r"q (Å$^{-1}$)")
-        r.set_ylabel("(y − λ)/√λ")
+        r.set_ylabel("(y − λ)/√max(λ, 1)")
         qoraplot.panel_label(b, "b")
 
-        # (c) global profile of d against the local Fisher parabola
-        x = np.linspace(-5, 5, 401)
-        for n, dd in data.items():
+        # (c) the profile of d over its whole range against the local Fisher parabola; the truth
+        # point (Δχ² = 0) is left out of the lines, which would otherwise dive to the axis limit
+        span = 100 * max(abs(q["delta"]) for q in data["mid_oxide"]["profile"]["profile"])
+        x = np.linspace(-span, span, 2001)
+        lo_x, hi_x = -40.0, 100.0
+        for k, (n, dd) in enumerate(data.items()):
             pr = dd["profile"]
-            pts = [q for q in pr["profile"] if abs(q["delta"]) <= 0.05]
             st = look[n]
+            # each side of the truth separately, joined by a gap
+            left = [q for q in pr["profile"] if q["delta"] < 0]
+            right = [q for q in pr["profile"] if q["delta"] > 0]
             c.plot(
-                [100 * q["delta"] for q in pts],
-                [max(q["dchi2"], 1e-3) for q in pts],
+                [100 * q["delta"] for q in left] + [np.nan] + [100 * q["delta"] for q in right],
+                [q["dchi2"] for q in left] + [np.nan] + [q["dchi2"] for q in right],
                 color=st["color"],
                 marker=st["marker"],
                 ls="-",
@@ -575,30 +617,65 @@ def figure() -> None:
                 lw=1.0,
                 marker="none",
             )
+            lo, hi = half_width(pr["profile"])
+            c.plot(
+                [-100 * lo, -100 * lo, np.nan, 100 * hi, 100 * hi],
+                [0.4, 2.5, np.nan, 0.4, 2.5],
+                color=st["color"],
+                lw=1.6,
+                ls="-",
+                marker="none",
+            )
+            # endpoint d as rug ticks: refine on the lower row, Poisson LSQ above it
+            d0 = pr["film"]["thickness"]
+            for row, key, mk, size in ((0.02, "fits", "|", 5), (0.065, "lsq", "v", 2.5)):
+                c.plot(
+                    [100 * (e["params"]["thickness"] / d0 - 1) for e in dd[key]["endpoints"]],
+                    np.full(len(dd[key]["endpoints"]), row + 0.012 * k),
+                    mk,
+                    ms=size,
+                    mew=0.9,
+                    color=st["color"],
+                    transform=c.get_xaxis_transform(),
+                )
         c.plot(
             [],
             [],
-            color="#52514e",
+            color=grey,
             ls=(0, (1, 1.5)),
             lw=1.0,
             marker="none",
             label="local Fisher (CRLB) parabola",
         )
-        c.axhline(1, color="#52514e", lw=0.6)
-        c.text(4.9, 0.8, "Δχ² = 1", fontsize=7, ha="right", va="top", color="#52514e")
+        c.plot([], [], color=grey, lw=1.6, marker="none", label="Δχ² = 1 crossing (table)")
+        c.plot([], [], "|", ms=5, mew=0.9, color=grey, label="refine endpoint d (bottom row)")
+        c.plot([], [], "v", ms=2.5, color=grey, label="Poisson LSQ endpoint d")
+        c.axvspan(lo_x, -span, color="#efeeea", lw=0)
+        c.axvspan(span, hi_x, color="#efeeea", lw=0)
+        c.text(span * 1.1, 10, f"no profile\nbeyond\n±{span:.0f} %", fontsize=7, color=grey)
+        c.axhline(1, color=grey, lw=0.6, ls=(0, (5, 2)))
+        c.axvline(0, color=grey, lw=0.6, ls=(0, (3, 3)))
+        c.text(0.06, 4, "truth: Δχ² = 0", fontsize=7, color=grey, rotation=90, va="bottom")
+        c.set_xscale("symlog", linthresh=1)
+        ticks = [-30, -10, -3, -1, 0, 1, 3, 10, 30, 100]
+        c.set_xticks(ticks, [f"{t:+d}" if t else "0" for t in ticks])
+        c.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+        c.set_xlim(lo_x, hi_x)
         c.set_yscale("log")
-        c.set_ylim(1e-3, 1e5)
-        c.set_xlim(-5, 5)
-        c.set_xlabel("d − d_true (% of d_true), other parameters re-fitted")
+        c.set_ylim(1e-4, 1e10)
+        c.set_xlabel("d − d_true (% of d_true, linear within ±1 %), other parameters re-fitted")
         c.set_ylabel("Δχ² (Poisson deviance, noise-free)")
         c.set_title("profile likelihood of d, noise-free curves")
-        c.legend(loc="lower left", fontsize=6.5)
+        c.legend(loc="upper center", fontsize=7, ncol=2)
         qoraplot.panel_label(c, "c")
 
         # (d) where the fits stop on one Poisson curve per case
+        at_best = []
         for n, dd in data.items():
             d0 = dd["profile"]["film"]["thickness"]
             d_star = min([dd["fits"]["d_star"]] + [e["deviance"] for e in dd["lsq"]["endpoints"]])
+            at_best.append(sum(e["deviance"] - d_star <= 4 for e in dd["lsq"]["endpoints"]))
+            lm_ml = dd["fits"]["refine_model"]["log_mse_ml"]
             st = look[n]
             for key, filled in (("fits", False), ("lsq", True)):
                 ends = dd[key]["endpoints"]
@@ -612,15 +689,52 @@ def figure() -> None:
                     linewidths=0.9,
                     label=f"{n}, {'refine' if key == 'fits' else 'Poisson LSQ'}",
                 )
-        d.axhline(5, color="#52514e", lw=0.6)
-        d.text(0.01, 7, "ΔD = 4", fontsize=7, color="#52514e", transform=d.get_yaxis_transform())
-        d.axvline(0, color="#52514e", lw=0.6, ls=(0, (1, 1.5)))
+            own = [e for e in dd["fits"]["endpoints"] if e["log_mse_refine_model"] <= lm_ml]
+            d.scatter(
+                [100 * (e["params"]["thickness"] / d0 - 1) for e in own],
+                [e["deviance"] - d_star + 1 for e in own],
+                marker="x",
+                s=10,
+                color=st["color"],
+                linewidths=0.8,
+            )
+        d.scatter(
+            [], [], marker="x", s=10, color=grey, label="refine endpoint its own objective prefers"
+        )
+        d.annotate(
+            "LSQ at the best fit: " + " / ".join(f"×{k}" for k in at_best),
+            xy=(0, 1.2),
+            xytext=(8, 1.6),
+            fontsize=7,
+            arrowprops={"arrowstyle": "-", "color": grey, "lw": 0.6},
+        )
+        d.axhline(5, color=grey, lw=0.6)
+        d.axhline(26, color=grey, lw=0.6, ls=(0, (5, 2)))
+        d.text(
+            0.99,
+            5.6,
+            "ΔD = 4",
+            fontsize=7,
+            color=grey,
+            ha="right",
+            transform=d.get_yaxis_transform(),
+        )
+        d.text(
+            0.99,
+            29,
+            "ΔD = 25 (failure)",
+            fontsize=7,
+            color=grey,
+            ha="right",
+            transform=d.get_yaxis_transform(),
+        )
+        d.axvline(0, color=grey, lw=0.6, ls=(0, (1, 1.5)))
         d.set_yscale("log")
         d.set_ylim(0.5, 1e8)
         d.set_xlabel("d of the endpoint − d_true (% of d_true)")
         d.set_ylabel("ΔD + 1 above the best fit")
-        d.set_title("fit endpoints: refine (open), Poisson LSQ (filled)")
-        d.legend(loc="center right", fontsize=6, ncol=1)
+        d.set_title("fit endpoints, one Poisson curve per case (seed 0)")
+        d.legend(loc="center right", fontsize=7, ncol=1)
         qoraplot.panel_label(d, "d")
 
         if collisions := cvdkit.check(fig):
