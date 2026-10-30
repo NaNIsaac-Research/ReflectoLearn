@@ -12,6 +12,14 @@ gradient-refined fit through the same Abeles engine (red), from `reflectolearn p
 
 A 1D CNN trained on simulated curves guesses the film; a staged gradient fit through a differentiable Abeles simulator (PyTorch) refines the guess against the data. How it works, every command, the GenX fit and the configuration: [docs/usage.md](docs/usage.md).
 
+## Findings
+
+- [Returned fit endpoints usually represent the minima of the basins they reach](docs/FINDINGS.md#f10-returned-fit-endpoints-usually-represent-the-minima-of-the-basins-they-reach)
+- [Counts in repeated public scans vary more than Poisson statistics predict](docs/FINDINGS.md#f9-counts-in-repeated-public-scans-vary-more-than-poisson-statistics-predict)
+- [One bilayer is locally determined except for the first film's thickness](docs/FINDINGS.md#f8-one-bilayer-is-locally-determined-except-for-the-first-films-thickness)
+
+[All findings →](docs/FINDINGS.md)
+
 ## Reports
 
 | Date | Report | Result |
