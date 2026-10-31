@@ -6,6 +6,11 @@ Results use synthetic curves except F9, which uses repeated public scans. No mea
 validated. F numbers stay fixed; checked refers to the written verification cited in Limits, not a
 new run for this index.
 
+Machine-readable fields use `## F<number>: <title>` and `- Status: supported|unresolved|checked|draft`.
+Optional repeated `- Hypothesis: <ID> | <condition-qualified verdict> | [<evidence label>](<relative report path>)`
+fields quote the Result verdict; they do not inherit the finding Status. A hypothesis without an
+explicit field has no machine-readable verdict. Result and Limits remain the scientific context.
+
 ## F10: Returned fit endpoints usually represent the minima of the basins they reach
 
 - Question: Does the count level S₁ at a returned R2a or X2e endpoint represent its basin minimum, and how many wrong basins need S₁* ≥ 10⁴ counts?
@@ -13,6 +18,8 @@ new run for this index.
 - Figure: none
 - Data and script: [basin_full_summary.jsonl](fisher_global/basin_full_summary.jsonl), [basin_verdict.json](fisher_global/basin_verdict.json), [basin_report.py](../experiments/005_fisher_global/basin_report.py), [basin.py](../experiments/005_fisher_global/basin.py)
 - Status: checked
+- Hypothesis: H-BM1 | supported for R2a and X2e | [F10 report](fisher_global/reports/RESULTS-BASIN.md)
+- Hypothesis: H-BM3 | persists for R2a; unresolved for X2e | [F10 report](fisher_global/reports/RESULTS-BASIN.md)
 - Limits: Local refinement from recorded endpoints on noise-free data inside bounded boxes; 651 of 656 R2a minima are on a bound. Nothing global; interior-only H-BM1 is not testable, and noisy and measured data are not tested. Checked: the report records convergence tests C1–C4, start checks for all 935 refinements, and [bit-for-bit reproduction of the ten pilot refinements](fisher_global/basin_pilot_repro.md).
 - Report: [Basin minimum validation: full run, results and verdicts](fisher_global/reports/RESULTS-BASIN.md) (2026-10-25)
 
@@ -23,6 +30,7 @@ new run for this index.
 - Figure: none
 - Data and script: [hcal2.json](fisher_global/hcal2.json), [hcal2_precheck.json](fisher_global/hcal2_precheck.json), [hcal2.py](../experiments/005_fisher_global/hcal2.py)
 - Status: draft
+- Hypothesis: H-cal2 | supported under amendment 1; no verdict under literal pre-check 3 | [F9 report](fisher_global/reports/RESULTS-HCAL2.md)
 - Limits: One sample, one exposure and one fast-scan synchrotron instrument, not laboratory step scans; the noise source is not identified. Amendment 1 followed the input pre-checks; under literal pre-check 3 there is no verdict. The report records input checks, but no independent verification of the dispersion numbers. Raw public scans are stored outside this repository; the linked JSON contains summary statistics.
 - Report: [H-cal2 results: count dispersion in 100 repeated public XRR scans](fisher_global/reports/RESULTS-HCAL2.md) (2026-10-25)
 
@@ -43,6 +51,8 @@ new run for this index.
 - Figure: none
 - Data and script: [b1.json](fisher_global/b1.json), [b1_verdict.json](fisher_global/b1_verdict.json), [b1.py](../experiments/005_fisher_global/b1.py)
 - Status: checked
+- Hypothesis: H-F | unresolved | [F7 report](fisher_global/reports/RESULTS-B1.md)
+- Hypothesis: H-W2 | supported | [F7 report](fisher_global/reports/RESULTS-B1.md)
 - Limits: Noise-free data from the fitted model; endpoints under a 200-evaluation cap are not basin minima (F10 examines minima). Fisher is evaluated only at the truth; one count level, background and truth per condition; the H-F (i) band was chosen with X2e's near states in view. Checked: the report records recomputed deviance matching recorded endpoints to 2.8 × 10⁻¹⁰ relative difference and the Fisher quadratic matching ΔD to 2 % along 8 random directions in all 37 conditions.
 - Report: [B-1 results: R2a endpoints against the Fisher quadratic (H-F, H-W2)](fisher_global/reports/RESULTS-B1.md) (2026-10-25)
 
@@ -63,6 +73,10 @@ new run for this index.
 - Figure: none
 - Data and script: [x2d_verdict.json](fit_policy/x2d_verdict.json), [x2d_runs/](fit_policy/x2d_runs/), [report.py](../experiments/003_fit_policy_x2d/report.py), [run.py](../experiments/003_fit_policy_x2d/run.py)
 - Status: checked
+- Hypothesis: H2 | supported with partial replication | [F5 report](fit_policy/x2d_results.md)
+- Hypothesis: H1 | refuted with partial replication | [F5 report](fit_policy/x2d_results.md)
+- Hypothesis: H3 | refuted with partial replication | [F5 report](fit_policy/x2d_results.md)
+- Hypothesis: H4 | refuted with partial replication | [F5 report](fit_policy/x2d_results.md)
 - Limits: Synthetic curves only; the registered confirmation run was not run, and X2c stays unregistered, as the [research index](research/README.md#003-fit-policy-x2d) explains. Checked: the [X2d code review](research/review-x2d-code.md) records 19 passing tests and an unchanged A1 digest; physics checked the registration and verdict. It records one deviation in the inner-block critical-edge estimate (#50); its verdict impact is an inference, and the run was not repeated.
 - Report: [Experiment 003 (X2d) results](fit_policy/x2d_results.md) (2026-10-24)
 
