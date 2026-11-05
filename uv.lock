@@ -2472,11 +2472,10 @@ dependencies = [
 [[package]]
 name = "reflectofit"
 version = "0.1.0.dev0"
-source = { git = "https://github.com/NaNIsaac/ReflectoFit?rev=59802ae13b9823f870dcad67898d9a18712799ab#59802ae13b9823f870dcad67898d9a18712799ab" }
+source = { git = "https://github.com/NaNIsaac/ReflectoFit?rev=f287209940884a83acfa77380d0edec023961177#f287209940884a83acfa77380d0edec023961177" }
 dependencies = [
-    { name = "numba" },
     { name = "numpy" },
-    { name = "periodictable" },
+    { name = "reflectosim" },
     { name = "scipy" },
 ]
 
@@ -2492,6 +2491,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "reflectofit" },
+    { name = "reflectosim" },
     { name = "scipy" },
     { name = "seaborn" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "sys_platform == 'win32'" },
@@ -2536,7 +2536,8 @@ requires-dist = [
     { name = "pandas" },
     { name = "pydantic" },
     { name = "pyyaml" },
-    { name = "reflectofit", git = "https://github.com/NaNIsaac/ReflectoFit?rev=59802ae13b9823f870dcad67898d9a18712799ab" },
+    { name = "reflectofit", git = "https://github.com/NaNIsaac/ReflectoFit?rev=f287209940884a83acfa77380d0edec023961177" },
+    { name = "reflectosim", git = "https://github.com/NaNIsaac/ReflectoSim?rev=d84344ee43b2845611a391d1830fd9a24923973d" },
     { name = "scipy" },
     { name = "seaborn" },
     { name = "torch", marker = "sys_platform != 'win32'" },
@@ -2554,6 +2555,17 @@ dev = [
 figures = [
     { name = "cvdkit", git = "https://github.com/NaNIsaac/cvdkit?rev=8c3566008e861e70e97b6dec62071d3ddc3ac453" },
     { name = "qoraplot", git = "https://github.com/NaNIsaac/qoraplot?rev=4133d42d873132df4e69111652ad0f98fafa5f22" },
+]
+
+[[package]]
+name = "reflectosim"
+version = "0.1.0.dev0"
+source = { git = "https://github.com/NaNIsaac/ReflectoSim?rev=d84344ee43b2845611a391d1830fd9a24923973d#d84344ee43b2845611a391d1830fd9a24923973d" }
+dependencies = [
+    { name = "numba" },
+    { name = "numpy" },
+    { name = "periodictable" },
+    { name = "scipy" },
 ]
 
 [[package]]
