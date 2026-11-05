@@ -2,7 +2,7 @@
 
 Two engines compute the same draws (config.simulation.engine): "legacy", the Abeles kernel of
 `reflectolearn.physics` in complex64 followed by the augmentor's grid convolution, and
-"reflectofit", `reflectofit.forward` in float64 with footprint and resolution inside the forward
+"reflectofit", `reflectosim.forward` in float64 with footprint and resolution inside the forward
 model at a fixed node count. A seed gives the same parameters, gates and mask with either engine.
 """
 
@@ -11,9 +11,9 @@ from __future__ import annotations
 from typing import NamedTuple
 
 import numpy as np
-import reflectofit
+import reflectosim
 import torch
-from reflectofit import Instrument, forward
+from reflectosim import Instrument, forward
 from torch import Tensor
 from torch.utils.data import DataLoader, IterableDataset
 
@@ -152,7 +152,7 @@ def reflectofit_instrument(
 def reflectofit_curve(
     config: Config, q: Tensor, media: Media, draw: AugmentDraw | None = None
 ) -> Tensor:
-    """(B, Q) float64 observed R with reflectofit.forward (torch backend, on q's device)."""
+    """(B, Q) float64 observed R with reflectosim.forward (torch backend, on q's device)."""
     packed = (media.sld.to(torch.complex128), media.thickness.double(), media.roughness.double())
     return forward(q.double(), packed, reflectofit_instrument(config, media, draw), backend="torch")
 
@@ -214,7 +214,7 @@ def engine_metadata(config: Config, n: int = 2, seed: int = 0) -> dict:
         errors["median_rel"].append(float(np.median(rel)))
     return {
         "engine": "reflectofit",
-        "reflectofit": reflectofit.__version__,
+        "reflectosim": reflectosim.__version__,
         "precision": "float64",
         "resolution_nodes": config.simulation.resolution_nodes,
         "resolution_error": errors,
@@ -250,7 +250,7 @@ def generate_synthetic_batch(
 
     if config.simulation.engine == "reflectofit" and augmentor is not None:
         # Footprint and resolution belong inside the forward model, so the augmentor's effects are
-        # drawn first (in the same order as before) and applied by reflectofit.forward.
+        # drawn first (in the same order as before) and applied by reflectosim.forward.
         media = draw_media(config, thickness, roughness, sld, sub_sld, sub_rough, device)
         draw = augmentor.draw(batch_size, device)
         R = reflectofit_curve(config, q, media, draw).to(torch.float32).clamp_min(1e-15)

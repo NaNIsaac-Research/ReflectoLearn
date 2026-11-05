@@ -51,7 +51,7 @@ floor so the network sees one consistent "no data" value.
 
 `simulation.engine` picks how the curves are computed from the same draws. `legacy` (the default)
 is the Abeles engine above in complex64 with the augmentor's convolution on the q grid.
-`reflectofit` computes them with [ReflectoFit](https://github.com/NaNIsaac/ReflectoFit) in float64,
+`reflectofit` computes them with the forward model of [ReflectoSim](https://github.com/NaNIsaac/ReflectoSim) in float64,
 with footprint and resolution inside the forward model at `simulation.resolution_nodes` nodes per
 point; `reflectolearn train` writes the engine and the error of that node count to
 `data_engine.json` in the run directory. Without resolution the two engines differ only by the
