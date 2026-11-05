@@ -11,7 +11,7 @@ import time
 
 import numpy as np
 import torch
-from reflectofit import Instrument, forward
+from reflectosim import Instrument, forward
 
 from reflectolearn.config import Config
 from reflectolearn.data import XRRAugmentor, generate_synthetic_batch

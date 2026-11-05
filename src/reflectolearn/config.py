@@ -40,7 +40,7 @@ class SimulationConfig(BaseModel):
     q_points: int = 2000  # [verified] encoder 6x MaxPool -> len 31
     n_samples: int = 50_000  # reference only for streaming (offline compatibility)
     # "legacy": AbelesMatrix (complex64) and the augmentor's grid convolution. "reflectofit": the
-    # same draws through reflectofit.forward in float64, footprint and resolution inside the forward
+    # same draws through reflectosim.forward in float64, footprint and resolution inside the forward
     # model with a fixed node count (its error is in engine_metadata). The default stays legacy until
     # ReflectoFit's resolution rule is fast on real-SLD edges (ReflectoFit#6).
     engine: Literal["legacy", "reflectofit"] = "legacy"

@@ -6,7 +6,7 @@ estimate, the global nuisance bounds, the Occam prior, switching an effect on on
 the i0/background baseline before fom_before, and the offset-last-stage refit. Each Adam stage runs
 in `reflectofit.staged.StagedFit`.
 
-The forward model is `make_reflectofit_forward` (float64 Parratt in ReflectoFit, without the 1e-9j
+The forward model is `make_reflectofit_forward` (float64 Parratt in ReflectoSim, without the 1e-9j
 guard of `AbelesMatrix`) unless `forward=` gives another one with the signature of
 `refine.pipeline.make_forward`; given that one, the result equals `refine.refine`.
 
@@ -22,8 +22,8 @@ from collections.abc import Callable
 
 import torch
 from loguru import logger
-from reflectofit import Instrument, forward
 from reflectofit.staged import Param, Stage, StagedFit
+from reflectosim import Instrument, forward
 from torch import Tensor
 
 from reflectolearn.refine.pipeline import (
@@ -49,7 +49,7 @@ def make_reflectofit_forward(
     device: torch.device,
     nodes: int = 61,
 ) -> Callable[[dict[str, Tensor], set[str]], Tensor]:
-    """refine's model on reflectofit.forward: film (+ oxide on top) on a fixed substrate and the
+    """refine's model on reflectosim.forward: film (+ oxide on top) on a fixed substrate and the
     active nuisance effects, computed in float64 and returned in the dtype of the values.
 
     The footprint factor erf(s · sinθ) is ReflectoFit's erf(L sinθ / (2√2 σ_beam)) with L = s and

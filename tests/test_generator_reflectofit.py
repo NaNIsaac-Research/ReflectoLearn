@@ -1,7 +1,7 @@
 """The training generator on ReflectoFit (X1c), against the generator it replaces.
 
 `simulation.engine = "legacy"` (the default) must stay the generator of cc3c5c5, frozen in
-tests/reference; `"reflectofit"` computes the same draws with `reflectofit.forward` in float64, with
+tests/reference; `"reflectofit"` computes the same draws with `reflectosim.forward` in float64, with
 footprint and resolution inside the forward model and a fixed resolution node count.
 
 Pre-registered (written before the reflectofit engine existed; seeds differ from the pilot's 0 and 1):
@@ -34,7 +34,7 @@ import pytest
 import torch
 from reference import reflectolearn_augmentations as ref_aug
 from reference import reflectolearn_generator as ref_gen
-from reflectofit import Instrument, forward
+from reflectosim import Instrument, forward
 
 from reflectolearn.config import Config
 from reflectolearn.data import XRRAugmentor, generate_synthetic_batch, simulate_reflectivity
