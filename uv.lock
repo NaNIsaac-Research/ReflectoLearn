@@ -2472,7 +2472,7 @@ dependencies = [
 [[package]]
 name = "reflectofit"
 version = "0.1.0.dev0"
-source = { git = "https://github.com/NaNIsaac/ReflectoFit?rev=f287209940884a83acfa77380d0edec023961177#f287209940884a83acfa77380d0edec023961177" }
+source = { git = "https://github.com/NaNIsaac/ReflectoFit?rev=668b23dbdedad71a38a261b8d4f8cdcb023dab69#668b23dbdedad71a38a261b8d4f8cdcb023dab69" }
 dependencies = [
     { name = "numpy" },
     { name = "reflectosim" },
@@ -2536,8 +2536,8 @@ requires-dist = [
     { name = "pandas" },
     { name = "pydantic" },
     { name = "pyyaml" },
-    { name = "reflectofit", git = "https://github.com/NaNIsaac/ReflectoFit?rev=f287209940884a83acfa77380d0edec023961177" },
-    { name = "reflectosim", git = "https://github.com/NaNIsaac/ReflectoSim?rev=d84344ee43b2845611a391d1830fd9a24923973d" },
+    { name = "reflectofit", git = "https://github.com/NaNIsaac/ReflectoFit?rev=668b23dbdedad71a38a261b8d4f8cdcb023dab69" },
+    { name = "reflectosim", git = "https://github.com/NaNIsaac/ReflectoSim?rev=1cdc16e0036752e3f745511e6d97f391defae167" },
     { name = "scipy" },
     { name = "seaborn" },
     { name = "torch", marker = "sys_platform != 'win32'" },
@@ -2560,7 +2560,7 @@ figures = [
 [[package]]
 name = "reflectosim"
 version = "0.1.0.dev0"
-source = { git = "https://github.com/NaNIsaac/ReflectoSim?rev=d84344ee43b2845611a391d1830fd9a24923973d#d84344ee43b2845611a391d1830fd9a24923973d" }
+source = { git = "https://github.com/NaNIsaac/ReflectoSim?rev=1cdc16e0036752e3f745511e6d97f391defae167#1cdc16e0036752e3f745511e6d97f391defae167" }
 dependencies = [
     { name = "numba" },
     { name = "numpy" },
