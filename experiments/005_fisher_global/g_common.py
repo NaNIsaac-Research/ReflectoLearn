@@ -42,9 +42,11 @@ def queue_free() -> bool:
     out = subprocess.run(
         ["pwsh", "-NoProfile", "-File", str(QUEUE), "-Status"],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
-    ).stdout.strip()
+    ).stdout
+    out = (out or "").strip()
     return out == "free"
 
 
