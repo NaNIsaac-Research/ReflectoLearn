@@ -229,9 +229,7 @@ def search(model: Model, worker: int, workers: int, hours: float) -> None:
             return
         gc.wait_for_queue()
         lock = path.with_suffix(".lock")
-        try:
-            lock.open("x").close()
-        except FileExistsError:
+        if not gc.take_lock(lock):
             continue
         try:
             rng = np.random.default_rng(np.random.SeedSequence([gc.SEED, 1, s, j]))
@@ -297,9 +295,7 @@ def repeats(worker: int, workers: int, hours: float) -> None:
             return
         gc.wait_for_queue()
         lock = path.with_suffix(".lock")
-        try:
-            lock.open("x").close()
-        except FileExistsError:
+        if not gc.take_lock(lock):
             continue
         try:
             prob = make_problem(M1, data, s, f"g1:{s}:rep", x0)
