@@ -17,7 +17,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "experiments" / "001_identifiability"))
-import scan  # noqa: E402
+import scan
 
 FG = ROOT / "docs" / "fisher_global"
 OUT = ROOT / "docs" / "paper" / "prereg"
@@ -30,9 +30,7 @@ BOUND_TOL = 1e-6  # bound-scaled distance that counts as on the bound
 
 def load() -> tuple[list[dict], dict[str, dict]]:
     verdict = json.loads((FG / "basin_verdict.json").read_text(encoding="utf-8"))
-    basins = sorted(
-        (b for b in verdict["basins"]["r2a"]), key=lambda b: (-b["S1_min"], b["rep"])
-    )
+    basins = sorted((b for b in verdict["basins"]["r2a"]), key=lambda b: (-b["S1_min"], b["rep"]))
     summary = {}
     for line in (FG / "basin_full_summary.jsonl").read_text(encoding="utf-8").splitlines():
         r = json.loads(line)

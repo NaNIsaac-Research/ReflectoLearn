@@ -37,11 +37,11 @@ import torch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "experiments" / "001_identifiability"))
 sys.path.insert(0, str(ROOT / "src"))
-import fim  # noqa: E402
-import scan  # noqa: E402
-from reflectosim import Instrument, Layer, Stack, forward  # noqa: E402
+import fim
+import scan
+from reflectosim import Instrument, Layer, Stack, forward
 
-from reflectolearn.fit_policy import stack as st  # noqa: E402
+from reflectolearn.fit_policy import stack as st
 
 OUT = ROOT / "docs" / "fisher_global"
 SCAN_DIR = ROOT / "docs" / "identifiability" / "scan"
@@ -165,7 +165,9 @@ def run() -> None:
             q, p0, lam_te, lam_ts = truths[int(cc)]
             p = p0 | dict(zip(rec["names"], rec["x_min"], strict=True))
             c = compare(r2a_engine(q, p), r2a_sim(q, p), lam_te, lam_ts)
-            rows.append({"source": "r2a", "kind": "minimum", "id": cid, "dD_min": rec["dnf_min"], **c})
+            rows.append(
+                {"source": "r2a", "kind": "minimum", "id": cid, "dD_min": rec["dnf_min"], **c}
+            )
         else:
             _, _, n_s, j_s, s_s, _ = cid.split(":")[:6]
             n, j, s = int(n_s), int(j_s), int(s_s)
@@ -178,7 +180,9 @@ def run() -> None:
             x_t, lam_te, lam_ts = x2e_truth[key]
             x = np.asarray(rec["x_min"], float)
             c = compare(x2e_engine(q, x, n, scale), x2e_sim(q, x, n, scale), lam_te, lam_ts)
-            rows.append({"source": "x2e", "kind": "minimum", "id": cid, "dD_min": rec["dnf_min"], **c})
+            rows.append(
+                {"source": "x2e", "kind": "minimum", "id": cid, "dD_min": rec["dnf_min"], **c}
+            )
             rows.append(
                 {
                     "source": "x2e",
@@ -226,7 +230,10 @@ def report() -> None:
             f"{quant(rel) if rel else 'n/a'} |"
         )
     out = ["", "Verdict-relevant crossings (engine ΔD against ReflectoSim ΔD):", ""]
-    for source, kind, thresholds in (("r2a", "endpoint", (4.0, 25.0, 1e2)), ("r2a", "minimum", (1.0, 1e2))):
+    for source, kind, thresholds in (
+        ("r2a", "endpoint", (4.0, 25.0, 1e2)),
+        ("r2a", "minimum", (1.0, 1e2)),
+    ):
         sel = [r for r in rows if r["source"] == source and r["kind"] == kind]
         for th in thresholds:
             a = np.array([r["dD_engine"] for r in sel]) <= th

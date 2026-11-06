@@ -42,7 +42,9 @@ def fig4() -> None:
         ax.text(x * 1.2, 0.5, text, rotation=90, color=GREY, fontsize=8, va="center")
     ax.set_xscale("log")
     ax.set_xlim(0.8, 3e8)
-    ax.set_xlabel("S₁* of the wrong basin (counts at R = 1 at which it is within ΔD = 1 of the truth)")
+    ax.set_xlabel(
+        "S₁* of the wrong basin (counts at R = 1 at which it is within ΔD = 1 of the truth)"
+    )
     ax.set_ylabel("fraction of distinct wrong basins")
     ax.legend(loc="upper left", frameon=False)
     fig.tight_layout()
