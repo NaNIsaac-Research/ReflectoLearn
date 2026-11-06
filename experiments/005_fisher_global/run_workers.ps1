@@ -24,9 +24,13 @@ while ($procs | Where-Object { -not $_.HasExited }) {
     for ($i = 0; $i -lt $Workers; $i++) {
         $p = $procs[$i]
         if (-not $p.HasExited) {
-            $p.Refresh()
-            if ($p.PeakWorkingSet64 -gt $peak[$i]) { $peak[$i] = $p.PeakWorkingSet64 }
-            $cpu[$i] = $p.TotalProcessorTime.TotalHours
+            # the venv launcher spawns the real interpreter as a child; measure the whole tree
+            $kids = Get-Process -Id (Get-CimInstance Win32_Process -Filter "ParentProcessId=$($p.Id)").ProcessId -ErrorAction SilentlyContinue
+            foreach ($k in @($p) + @($kids)) {
+                $k.Refresh()
+                if ($k.PeakWorkingSet64 -gt $peak[$i]) { $peak[$i] = $k.PeakWorkingSet64 }
+                if ($k.TotalProcessorTime.TotalHours -gt $cpu[$i]) { $cpu[$i] = $k.TotalProcessorTime.TotalHours }
+            }
         }
     }
     Start-Sleep -Seconds 10
@@ -34,7 +38,7 @@ while ($procs | Where-Object { -not $_.HasExited }) {
 $wall = ((Get-Date) - $t0).TotalHours
 $summary = [ordered]@{
     wall_hours = [math]::Round($wall, 3)
-    cpu_hours = @($procs | ForEach-Object { [math]::Round($_.TotalProcessorTime.TotalHours, 3) })
+    cpu_hours = @($cpu | ForEach-Object { [math]::Round($_, 3) })
     peak_rss_gb = @($peak | ForEach-Object { [math]::Round($_ / 1GB, 2) })
 }
 $summary | ConvertTo-Json | Set-Content (Join-Path $LogDir 'resources.json') -Encoding utf8
