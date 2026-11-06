@@ -46,13 +46,32 @@ Between the bounds a hypothesis is unresolved. If H-K1 and H-B1 hold, the readin
 basins are search reach for the film and nuisance model stands. If either fails, the draft's central
 claim is restated for the Kα₂-fixed (or widened-box) problem and the changed median is reported.
 
+## Forward models (added before any run, after the G4 follow-up)
+
+The experiment engine's resolution integral is a fixed 15-node Gauss-Hermite rule that does not
+converge ([g4_diagnose.md](../../fisher_global/g4_diagnose.md)); the published ReflectoSim forward does, at about 70
+times the cost per curve. So:
+
+1. The search and the refinements named above run on the experiment engine, as registered.
+2. Every refined minimum is then **polished on the converged forward**: a trust-region least-squares
+   from the engine minimum with the residuals of the ReflectoSim adaptive-resolution forward, the engine's
+   Jacobian as the approximate Jacobian, the same bounds, at most 30 forward evaluations, and its Poisson
+   deviance recorded. Deviances of the polished minima are the **converged scores**.
+3. Each hypothesis is evaluated twice, on the engine scores and on the converged scores. The converged
+   scores are the headline. If the two disagree on a verdict, both are reported and the hypothesis is
+   called unresolved.
+4. Distinct basins are grouped by cross-deviance on the converged forward.
+
+The polish adds about 2.5 CPU hours to the cost estimate for G3
+(150 candidates × 4 variants × about 15 s).
+
 ## Cost
 
 150 candidates × 4 variants × mean 241 s (the recorded mean per R2a refinement) is 40 CPU hours as the
 upper bound; refinements from a recorded minimum are expected nearer the recorded median of 26.5 s,
 about 4 CPU hours for the four variants, so 4 to 40 CPU hours (inference). With 4 processes: 1 to 10
 hours of wall time. The runs start with V1 and V0 on the 5 high-S₁\* basins; the remainder runs only
-if the 5 finish in under 2 minutes each.
+if the 5 finish in under 2 minutes each. The run is capped at 20 CPU hours; if it would exceed that it stops and is reported.
 
 Runs: 4 processes, one torch thread each, BelowNormal priority, a wrapper that stops at 4 GB per
 process or 16 h of wall time; one result file per candidate and variant, written once.

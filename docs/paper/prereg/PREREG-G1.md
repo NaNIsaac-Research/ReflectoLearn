@@ -37,6 +37,17 @@ used before only for the count-dispersion check F9, with no model.
 - Objective: Poisson deviance of the raw counts (primary); the overdispersed objective is not used
   here.
 
+## Forward models (added before any run, after the G4 follow-up)
+
+For measured data the resolution integral is part of the model, so **only converged-forward scores
+count for any claim**; a deviance computed with the experiment engine's fixed 15-node rule is model
+error here and is never reported as a result. The 64 starts per scan run on the experiment engine as
+a search only. Every endpoint (not only the distinct basins) is then polished on the converged
+ReflectoSim forward: trust-region least squares from the engine endpoint with the converged forward's
+residuals, the engine's Jacobian as the approximate Jacobian, at most 30 forward evaluations. Grouping
+into basins, ΔD, S₁\*, the repeat fits of step 4 (polished the same way) and H-G1a to H-G1c use the
+converged scores only. The ReflectoSim forward takes about 1.6 s for 839 points.
+
 ## Procedure
 
 1. **Repeats.** Five scans are drawn from the 100 with `numpy.random.default_rng(20261107)` without
@@ -82,12 +93,13 @@ basin under this model); anything about laboratory step scans.
 
 ## Cost
 
-An evaluation of 839 points costs about 3 times a 291-point evaluation. Using the recorded median of
+An engine evaluation of 839 points costs about 3 times a 291-point one. Using the recorded median of
 26.5 s per R2a refinement for 291 points, 80 s per refinement: 5 × 64 starts = 320 refinements,
-about 7 CPU hours; basin refinement of about 40 distinct endpoints, about 1 hour; 100 repeat fits at
-60 s, about 1.7 hours; M2 on one scan, about 1.5 hours. In all about 11 CPU hours (inference), about 3
-hours of wall time on 4 processes. A first pilot of 3 refinements measures the real time before the run.
+about 7 CPU hours (a pilot of 3 refinements measures the real time before the run). The converged
+polish of all 320 endpoints at 30 evaluations of 1.6 s is about 4.3 CPU hours; 100 repeat fits at 60 s
+plus polish 50 s about 3 hours; M2 on one scan about 1.5 hours. In all about 16 CPU hours (inference), about
+4 hours of wall time on 4 processes.
 
-Runs: 4 processes, one torch or numba thread each, BelowNormal priority, a wrapper that stops at 4 GB per
-process or 16 h of wall time; one result file per scan and start, written once. The code is
+Runs: 3 processes at most, one torch or numba thread each, BelowNormal priority, a wrapper that stops at
+4 GB per process or 16 h of wall time; one result file per scan and start, written once. The code is
 committed before the first run and its hash is recorded in each result file.

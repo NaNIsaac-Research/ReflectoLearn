@@ -21,6 +21,25 @@ before the first run and the commit hash is written into the result file.
 - Runs: 4 processes, one torch thread each, BelowNormal priority, a wrapper that stops at 4 GB per
   process or 16 h of wall time. Results are one file per candidate and draw, written once.
 
+## Forward models (added before any run, after the G4 follow-up)
+
+The experiment engine's resolution integral is a fixed 15-node Gauss-Hermite rule that does not
+converge ([g4_diagnose.md](../../fisher_global/g4_diagnose.md)); the published ReflectoSim forward does, at about 70
+times the cost per curve. So:
+
+1. The search and the refinements named above run on the experiment engine, as registered.
+2. Every refined minimum is then **polished on the converged forward**: a trust-region least-squares
+   from the engine minimum with the residuals of the ReflectoSim adaptive-resolution forward, the engine's
+   Jacobian as the approximate Jacobian, the same bounds, at most 30 forward evaluations, and its Poisson
+   deviance recorded. Deviances of the polished minima are the **converged scores**.
+3. Each hypothesis is evaluated twice, on the engine scores and on the converged scores. The converged
+   scores are the headline. If the two disagree on a verdict, both are reported and the hypothesis is
+   called unresolved.
+4. Distinct basins are grouped by cross-deviance on the converged forward.
+
+The polish adds about 4 CPU hours to G2 (950 polishes at about 15 s, inference); G2b and G2c add
+about 1 and 3 hours.
+
 ## G2: do wrong basins stay rejected under noise?
 
 Data: for each of the 100 candidates (the 5 basins with S₁\* ≥ 10³ and 95 drawn in proportion over

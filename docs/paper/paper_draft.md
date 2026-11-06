@@ -17,18 +17,29 @@ this work). Journal choice and authorship are open. Inference is marked as infer
 
 **Central claim.** In noise-free synthetic fits of one to three layers on silicon, where the fitted
 model is the true model, the recorded wrong endpoints that were refined (those with 4 < ΔD ≤ 10⁵ at
-10⁶ counts) end in box-constrained minima that the curve separates from the truth by 10³ to 10⁵
-deviance units at 10⁶ to 10⁸ counts. Taking S₁\* as the count level (at R = 1) at which a minimum
-lies within ΔD = 1 of the truth, the median S₁\* is about 26 (R2a) and 43 (X2e) among distinct basins
-inside the window 10 ≤ S₁ < 2.5 × 10⁵ that the candidate selection imposes; it is a statement about
-that window, not about all wrong endpoints. For these endpoints the failure is search reach or
-objective choice, not missing information. One structure is the exception and is named: an oxide
-merged into the film is not reliably rejected at 10⁶ counts for 2θ_max ≤ 3° (the closest refined
-basin of the basin run lies at ΔD = 4.3, S₁\* = 2.3 × 10⁵; two near-truth endpoints with this
-structure, which that run did not refine, refine in G0 to minima at ΔD = 1.4, S₁\* = 7.1 × 10⁵). It is the contamination-layer ambiguity known from the
-literature (Gil and Windover 2012), a real identifiability limit at these angles. In the window,
-6 of 488 distinct basins need S₁\* ≥ 10⁴; the five R2a ones are unchanged with the ReflectoSim
-forward, the X2e one disappears (ΔD 48 becomes 8.6 × 10³; cause: the engine's 15-node resolution quadrature).
+10⁶ counts) end in box-constrained minima that the curve separates from the truth by a median of
+4.5 × 10⁴ (R2a, 10⁶ counts; 10th to 90th percentile 1.2 × 10⁴ to 9.1 × 10⁴) and 1.9 × 10⁵ (X2e, 10⁶
+and 10⁸ counts; 6.5 × 10³ to 9.7 × 10⁶) deviance units, scored on the converged resolution integral
+of the published ReflectoSim forward. Taking S₁\* as the count level (at R = 1) at which a minimum lies
+within ΔD = 1 of the truth, the median over distinct basins is 22 (R2a) and 42 (X2e) counts (26 and 43
+with the experiment engine's own forward), inside the window 10 ≤ S₁ < 2.5 × 10⁵ that the candidate
+selection imposes; it is a statement about that window, not about all wrong endpoints. For these
+endpoints the failure is search reach or objective choice, not missing information. One structure is
+the exception and is named: an oxide merged into the film is not reliably rejected at 10⁶ counts for
+2θ_max ≤ 3° (the closest refined basin of the basin run lies at ΔD = 4.3, S₁\* = 2.3 × 10⁵; two
+near-truth endpoints with this structure, which that run did not refine, refine in G0 to minima at
+ΔD = 1.41, S₁\* = 7.1 × 10⁵ on either forward). It is the contamination-layer ambiguity known from the
+literature (Gil and Windover 2012), a real identifiability limit at these angles. Five of 488 distinct
+basins need S₁\* ≥ 10⁴, all R2a and all unchanged between the two forwards. The one X2e basin that
+needed it in the experiment engine (ΔD 48) was an artefact of that engine's fixed 15-node resolution
+quadrature: with the converged integral its ΔD is 8.6 × 10³ and S₁\* about 116.
+
+**Method limitation.** The experiments ran on an engine whose Gaussian resolution is integrated with a
+fixed 15-node Gauss-Hermite rule. That rule does not converge for these curves (counts off by up to
+0.09 at the truth and 0.15 to 0.96 at wrong states). Truth, fits and endpoints share the rule, so the
+fits are exact minima of that engine's model. The headline numbers above are the deviances of those
+minima re-scored on the converged forward; they are not refits on it. Refits on the converged
+forward are done for the pre-registered follow-ups only (G1 to G3), at about 70 times the cost.
 
 **Secondary claim.** At the decision level the local Fisher information at the truth agrees with the
 deviance: no wrong endpoint has a Fisher-predicted ΔD_F ≤ 4, and of 177 near endpoints only 3
@@ -82,9 +93,10 @@ are optimisation failures, the other five objective or model errors (a split tha
 amendment made after the first runs). Of 749 and 93 recorded endpoints of two families (those with
 4 < ΔD ≤ 10⁵), 656 and 92 refined to confirmed box-constrained minima, and an endpoint's S₁ was
 within a factor of two of its minimum's in 98.3 % and 95.7 % of these. Among distinct basins in the
-window 10 ≤ S₁ < 2.5 × 10⁵, the median S₁\* is about 26 and 43 counts (22 and 42 with the published
-ReflectoSim forward) against 10⁶ to 10⁸ in the curves: the failures are search reach or objective
-choice, not missing information. An oxide merged
+window 10 ≤ S₁ < 2.5 × 10⁵, the median S₁\* is about 22 and 42 counts on the converged forward of ReflectoSim (26 and 43
+with the engine of the fits, whose resolution quadrature does not converge) against 10⁶ to 10⁸ in
+the curves: the failures are search reach or objective choice, not missing information. One X2e
+exception of the engine was a quadrature artefact. An oxide merged
 into the film is the exception and is not reliably rejected at 10⁶ counts for 2θ_max ≤ 3°. At the
 decision level local Fisher information agrees; its quadratic overstates the deviance of wrong
 basins by about 10² to 10³ in the fit's own coordinates. No noisy, mismatched-model or measured
@@ -348,6 +360,7 @@ Every limit FINDINGS states is kept here.
   needed an amendment after the input pre-checks and has no verdict under the literal pre-check 3;
   its dispersion numbers have no independent verification.
 - **Withdrawn.** The earlier MCMC widths were withdrawn (unconverged chains).
+- **Resolution quadrature (method limitation).** The experiments' engine integrates the Gaussian resolution with a fixed 15-node rule; see the method limitation in section 0. Any measured-data claim (G1) rests only on scores from the converged forward.
 - **Engine.** The experiments ran on this repository's engine, whose resolution integral is a fixed
   15-node Gauss-Hermite rule that is not converged (counts off by up to 0.05 to 0.09 at the truth and
   0.15 to 0.96 at wrong states). Fits and truths share it, so the results hold for that model;
@@ -430,7 +443,7 @@ content was read in full: the one-line "relevance" comes from the abstract or th
 | C9 | Wrong endpoints' deviance concentrates at low q (H-W2) | supported (checked) | F7; [report](../fisher_global/reports/RESULTS-B1.md) |
 | C10 | The Fisher quadratic matches the deviance near the truth and overstates it at wrong endpoints (H-F) | hypothesis (unresolved: 0.831, 0.90 needed) | F7; same report |
 | C11 | An endpoint's S₁ represents its basin minimum (H-BM1: R2a 98.3 %, X2e 95.7 %) | supported (checked) | F10; [report](../fisher_global/reports/RESULTS-BASIN.md) |
-| C12 | Among distinct wrong basins with 10 ≤ S₁ < 2.5 × 10⁵ (the window of the candidate selection) the median S₁\* is about 26 (R2a) and 43 (X2e) counts, so the curve at 10⁶ to 10⁸ counts separates them by 10³ to 10⁵ deviance units; 6 of 488 have S₁\* ≥ 10⁴; the oxide merged into the film (ΔD 1.4, S₁\* 7.1 × 10⁵) is not rejected at 10⁶ | checked (window- and box-limited) | F10; same report, Q-BM2 and section 3 |
+| C12 | Among distinct wrong basins with 10 ≤ S₁ < 2.5 × 10⁵ (the window of the candidate selection) the median S₁\* is 22 (R2a) and 42 (X2e) counts on the converged forward (26 and 43 with the experiment engine), so the curve at 10⁶ to 10⁸ counts separates them by a median of 4.5 × 10⁴ and 1.9 × 10⁵ deviance units; 5 of 488 have S₁\* ≥ 10⁴ (the X2e one of the engine was a quadrature artefact); the oxide merged into the film (ΔD 1.41, S₁\* 7.1 × 10⁵) is not rejected at 10⁶ | checked (window- and box-limited; minima re-scored, not refitted, on the converged forward) | F10; same report, Q-BM2, g4_diagnose.md |
 | C13 | At the decision level Fisher agrees with the deviance (no wrong endpoint has ΔD_F ≤ 4; 3 of 177 near endpoints disagree); in the fit's linear coordinates the quadratic overstates a wrong basin's deviance by a median of 10² (R2a) to 10³ (X2e), descriptive and parametrisation-dependent | checked (H-BM3 persists for R2a, unresolved for X2e) | F10; same report, section 5 and 7 |
 | C14 | One truth-start bilayer fit: d₁ is a ridge (2.24 %), ρ₁, d₂, ρ₂ identifiable (0.12 to 0.27 %) | draft | F8; [report](../fisher_global/reports/RESULTS-B2.md) |
 | C15 | Counts of 100 repeated public scans are overdispersed (φ median 1.34) | draft (supported under amendment 1; no verdict under literal pre-check 3) | F9; [report](../fisher_global/reports/RESULTS-HCAL2.md) |
