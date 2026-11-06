@@ -28,7 +28,7 @@ basin of the basin run lies at ΔD = 4.3, S₁\* = 2.3 × 10⁵; two near-truth 
 structure, which that run did not refine, refine in G0 to minima at ΔD = 1.4, S₁\* = 7.1 × 10⁵). It is the contamination-layer ambiguity known from the
 literature (Gil and Windover 2012), a real identifiability limit at these angles. In the window,
 6 of 488 distinct basins need S₁\* ≥ 10⁴; the five R2a ones are unchanged with the ReflectoSim
-forward, the X2e one is not.
+forward, the X2e one disappears (ΔD 48 becomes 8.6 × 10³; cause: the engine's 15-node resolution quadrature).
 
 **Secondary claim.** At the decision level the local Fisher information at the truth agrees with the
 deviance: no wrong endpoint has a Fisher-predicted ΔD_F ≤ 4, and of 177 near endpoints only 3
@@ -150,8 +150,13 @@ endpoints and minima (0 of 2368 and 0 of 656). The median S₁\* of the wrong R2
 ReflectoSim against 26.7 (655 minima), and for X2e 42.2 against 44.2. The five R2a basins with
 S₁\* ≥ 10⁴ keep their ΔD to 0.1 %. One X2e basin does not: the exception that is a nearby minimum of
 the true structure (id x2e:S1:2:11:1:1) has ΔD 48 with the engine (S₁\* 2.1 × 10⁴) and ΔD 8.6 × 10³
-with ReflectoSim (S₁\* 116). Its cause was not examined; the X2e mapping may differ in a detail. So the
-X2e exception is not robust to the forward model, and the R2a ones are.
+with ReflectoSim (S₁\* 116). The cause is the engine's resolution integral, a fixed 15-node Gauss-Hermite
+rule that does not converge for these curves; a fine uniform-grid convolution with the engine's own
+physics agrees with ReflectoSim (ΔD 8648 against 8604 for this basin; [g4_diagnose.md](../fisher_global/g4_diagnose.md)).
+ReflectoSim is the correct forward, the recorded fits are exact minima of the engine's own model
+(a 15-line instrument function), and the X2e exception is not an exception in the converged model: the
+count of basins with S₁\* ≥ 10⁴ is 5 of 488, all R2a. Whether a refit with the converged forward would
+end in the same basins was not tested (the ReflectoSim forward is 70 times slower).
 
 Not in the model, by design: any model error between the data and the fit. Every result assumes that
 the fitted model is the true one (the "inverse crime"); section 9.
@@ -343,7 +348,11 @@ Every limit FINDINGS states is kept here.
   needed an amendment after the input pre-checks and has no verdict under the literal pre-check 3;
   its dispersion numbers have no independent verification.
 - **Withdrawn.** The earlier MCMC widths were withdrawn (unconverged chains).
-- **Engine.** The experiments ran on this repository's engine, not on ReflectoSim (section 3).
+- **Engine.** The experiments ran on this repository's engine, whose resolution integral is a fixed
+  15-node Gauss-Hermite rule that is not converged (counts off by up to 0.05 to 0.09 at the truth and
+  0.15 to 0.96 at wrong states). Fits and truths share it, so the results hold for that model;
+  re-evaluated with the converged ReflectoSim forward the R2a conclusions stand and one X2e exception
+  disappears (section 3). Basins a refit with the converged forward would find were not tested.
 
 ## 10. Software availability
 
@@ -445,7 +454,7 @@ pre-registered in [prereg/](prereg/) and not run.
 | G2b | Mismatched truth: generate the curve from a model the fitting model lacks (a graded interface, a density gradient) and refit with the fitting model | removes the inverse crime; the margin of the wrong basins is measured against a truth that is not a model minimum | in the same pre-registration, about 1 CPU hour [estimate]; same pre-registration |
 | G2c | Parametric bootstrap on the ~10 closest basins (all with ΔD < 20 at 10⁶): simulate from the truth and from each basin, refit, and compare the likelihood-ratio distribution with χ² | a deviance margin is not a test; four of the five R2a exceptions are within χ²₁₂ 95 % | about 8.5 CPU hours [estimate]; same pre-registration |
 | G3 | Repeat the basin refinement for 100 to 250 candidates in a widened nuisance box, and with the Kα₂ ratio fixed at 0.5 | 651 of 656 minima rest on bounds, and Kα₂ is at a bound in 550, so S₁\* may reflect the box or an over-parametrised nuisance | 4 to 40 CPU hours [estimate]; [PREREG-G3.md](prereg/PREREG-G3.md) |
-| G4 | Evaluate the recorded endpoints and truths of R2a and X2e with the ReflectoSim forward and compare the deviances with the stored ones (forward only, no fit) | experiments ran on this repository's engine, not the published one | **done**: 20 min on one core; the R2a conclusions are engine-robust, one X2e exception is not (section 3, [g4_sim_forward.md](../fisher_global/g4_sim_forward.md)) |
+| G4 | Evaluate the recorded endpoints and truths of R2a and X2e with the ReflectoSim forward and compare the deviances with the stored ones (forward only, no fit) | experiments ran on this repository's engine, not the published one | **done**: 20 min on one core; the R2a conclusions are engine-robust, the one X2e exception is an artefact of the engine's 15-node resolution quadrature (section 3, [g4_sim_forward.md](../fisher_global/g4_sim_forward.md), [g4_diagnose.md](../fisher_global/g4_diagnose.md)) |
 | G5 | Plot-only scripts for Figures 4 and 5 | needed for the figures | **done**: `paper_figs.py`, no run |
 
 Not in the smallest set but named by the records: the 13 unreached bilayer conditions (R2h, not
