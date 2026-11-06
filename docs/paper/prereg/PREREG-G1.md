@@ -48,6 +48,23 @@ residuals, the engine's Jacobian as the approximate Jacobian, at most 30 forward
 into basins, ΔD, S₁\*, the repeat fits of step 4 (polished the same way) and H-G1a to H-G1c use the
 converged scores only. The ReflectoSim forward takes about 1.6 s for 839 points.
 
+## Counts model and bounds (fixed after the pre-check, before any fit)
+
+The pre-check passed: the stored R equals (raw − bg) · af / (etfp · N) to a relative 4.4e-7 at every point
+of all 100 scans (N constant within a scan, af and etfp identical across scans, raw counts integer, minimum 1).
+The fitted model is
+
+λ_i = k_i · i₀ · R_model(q_i + δq) + 10^b · bg_i,  k_i = etfp_i · N_scan / af_i,
+
+with R_model on the Gaussian-resolution forward (σ_q free), the wavelength fixed at 0.68939 Å (17 984.55 eV,
+file header), and S = k₀ · i₀ the count level at R = 1. Free parameters of M1 (11): Au and Cr thickness,
+roughness and real SLD; Si roughness; i₀; b; δq; σ_q. Au and Cr absorption scale with their fitted real SLD
+from the bulk ratio; the Si SLD is fixed at 19.838 (real) and 0.0905 (imaginary) × 10⁻⁶ Å⁻². Bounds: Au
+thickness 150 to 600 Å, Cr 40 to 160 Å; real SLD 0.5 to 1.5 times bulk (Au 126.44, Cr 57.17 × 10⁻⁶ Å⁻²);
+roughness 0 to 40 Å; i₀ 0.2 to 5; b −1 to 1; δq ±2e-3 Å⁻¹; σ_q 1e-5 to 1e-3 Å⁻¹. M2 adds a layer on Au
+(thickness 0 to 40 Å, roughness 0 to 15 Å, SLD 20 to 120 × 10⁻⁶ Å⁻², absorption 0.1 of its SLD).
+The SLD values are the header's bulk figures, not a fit result. Code: `experiments/005_fisher_global/g1_run.py`.
+
 ## Procedure
 
 1. **Repeats.** Five scans are drawn from the 100 with `numpy.random.default_rng(20261107)` without

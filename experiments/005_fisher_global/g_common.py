@@ -98,10 +98,16 @@ def make_problem(cid: str, y: np.ndarray, x_start: np.ndarray) -> basin.Problem:
 
 
 def polish(
-    prob: basin.Problem, x0: np.ndarray, q: np.ndarray, p_fixed: dict, y: np.ndarray
+    prob: basin.Problem,
+    x0: np.ndarray,
+    q: np.ndarray | None,
+    p_fixed: dict | None,
+    y: np.ndarray,
+    sim_fn=None,
 ) -> dict:
     """Trust-region least squares on the converged ReflectoSim forward from x0: the residuals are the
-    converged forward's, the Jacobian is the engine's, scaled to the converged counts."""
+    converged forward's, the Jacobian is the engine's, scaled to the converged counts. `sim_fn(x)` gives
+    the converged counts; the default is the R2a forward of the problem's free parameters."""
     ev = basin.Evaluator(prob)
     names, lo, hi = prob.names, prob.lo, prob.hi
     n_eval = 0
@@ -109,6 +115,8 @@ def polish(
     def sim(x: np.ndarray) -> np.ndarray:
         nonlocal n_eval
         n_eval += 1
+        if sim_fn is not None:
+            return sim_fn(x)
         return g4.r2a_sim(q, p_fixed | dict(zip(names, x, strict=True)))
 
     def resid(x):
