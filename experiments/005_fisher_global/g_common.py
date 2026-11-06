@@ -8,6 +8,7 @@ the converged scores are the ones the registered verdicts use (PREREG-G2.md, "Fo
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -50,7 +51,22 @@ def queue_free() -> bool:
     return out == "free"
 
 
+def take_lock(path: Path, stale_seconds: float = 1200.0) -> bool:
+    """Create `path` exclusively; a lock older than `stale_seconds` is a dead worker's and is taken over."""
+    try:
+        path.open("x").close()
+        return True
+    except FileExistsError:
+        if time.time() - path.stat().st_mtime < stale_seconds:
+            return False
+        path.write_text("", encoding="utf-8")
+        return True
+
+
 def wait_for_queue(poll: float = 60.0) -> None:
+    """Workers started inside a test-queue job (XRR_IN_QUEUE set) hold the queue themselves."""
+    if os.environ.get("XRR_IN_QUEUE"):
+        return
     while not queue_free():
         print("test-queue is held, waiting", flush=True)
         time.sleep(poll)

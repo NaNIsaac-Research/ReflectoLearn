@@ -128,9 +128,7 @@ def run(worker: int, workers: int, hours: float) -> None:
             return
         gc.wait_for_queue()
         lock = path.with_suffix(".lock")
-        try:
-            lock.open("x").close()
-        except FileExistsError:
+        if not gc.take_lock(lock):
             continue
         try:
             row = one_candidate(idx, rep, summary)
