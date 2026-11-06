@@ -20,7 +20,7 @@ function Mine {
 }
 function Waiters {
     Get-CimInstance Win32_Process | Where-Object {
-        $_.ProcessId -ne $me -and $_.CommandLine -match 'test-queue\.ps1' -and
+        $_.ProcessId -ne $me -and $_.Name -eq 'pwsh.exe' -and $_.CommandLine -match 'test-queue\.ps1' -and
         $_.CommandLine -notmatch "-Name $Name" -and $_.CommandLine -notmatch '-Status' -and
         $_.CommandLine -notmatch 'queue_guard'
     }
