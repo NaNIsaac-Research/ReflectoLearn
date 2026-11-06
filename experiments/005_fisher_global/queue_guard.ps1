@@ -6,7 +6,8 @@ param(
 )
 # Keeps a long G-run polite: when another run (pr-land, a lane's full suite) is waiting behind this test-queue job,
 # the job is stopped (finished results stay, workers skip them on resume), and it is started again through
-# test-queue once the queue is free. Ends when DoneFile exists.
+# test-queue once the queue is free. The job is queued -Preemptible, so a pr-land preempts it by itself (run_workers.ps1
+# exits 75); this guard is the fallback and only acts on a waiter that has stayed 5 minutes. Ends when DoneFile exists.
 $queue = Join-Path $env:DEV 'NaNIsaac/DotFiles/herdr/tools/test-queue.ps1'
 $me = $PID
 function Log($m) { "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $m" | Add-Content $Log }
@@ -26,13 +27,15 @@ function Waiters {
     }
 }
 function Start-JobQueued {
-    Start-Process pwsh -ArgumentList '-NoProfile', '-File', $queue, '-Name', $Name, '-Command', "`"$JobCommand`"" -WindowStyle Hidden
+    Start-Process pwsh -ArgumentList '-NoProfile', '-File', $queue, '-Name', $Name, '-Preemptible', '-Command', "`"$JobCommand`"" -WindowStyle Hidden
     Log 'job started'
 }
 Start-Sleep 20
 while (-not (Test-Path $DoneFile)) {
     $running = @(Mine)
-    if ($running.Count -gt 0 -and @(Waiters).Count -gt 0) {
+    if (@(Waiters).Count -eq 0) { $firstSeen = $null } elseif (-not $firstSeen) { $firstSeen = Get-Date }
+    if ($running.Count -gt 0 -and $firstSeen -and ((Get-Date) - $firstSeen).TotalMinutes -ge 5) {
+        $firstSeen = $null
         $w = (Waiters | Select-Object -First 1).CommandLine
         Log "waiter seen: $($w.Substring(0, [math]::Min(120, $w.Length))); pausing"
         $running | Where-Object Name -match 'python' | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
