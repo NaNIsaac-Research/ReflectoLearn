@@ -27,7 +27,8 @@ merged into the film is not reliably rejected at 10⁶ counts for 2θ_max ≤ 3�
 basin of the basin run lies at ΔD = 4.3, S₁\* = 2.3 × 10⁵; two near-truth endpoints with this
 structure, which that run did not refine, refine in G0 to minima at ΔD = 1.4, S₁\* = 7.1 × 10⁵). It is the contamination-layer ambiguity known from the
 literature (Gil and Windover 2012), a real identifiability limit at these angles. In the window,
-6 of 488 distinct basins need S₁\* ≥ 10⁴.
+6 of 488 distinct basins need S₁\* ≥ 10⁴; the five R2a ones are unchanged with the ReflectoSim
+forward, the X2e one is not.
 
 **Secondary claim.** At the decision level the local Fisher information at the truth agrees with the
 deviance: no wrong endpoint has a Fisher-predicted ΔD_F ≤ 4, and of 177 near endpoints only 3
@@ -81,8 +82,9 @@ are optimisation failures, the other five objective or model errors (a split tha
 amendment made after the first runs). Of 749 and 93 recorded endpoints of two families (those with
 4 < ΔD ≤ 10⁵), 656 and 92 refined to confirmed box-constrained minima, and an endpoint's S₁ was
 within a factor of two of its minimum's in 98.3 % and 95.7 % of these. Among distinct basins in the
-window 10 ≤ S₁ < 2.5 × 10⁵, the median S₁\* is about 26 and 43 counts against 10⁶ to 10⁸ in the
-curves: the failures are search reach or objective choice, not missing information. An oxide merged
+window 10 ≤ S₁ < 2.5 × 10⁵, the median S₁\* is about 26 and 43 counts (22 and 42 with the published
+ReflectoSim forward) against 10⁶ to 10⁸ in the curves: the failures are search reach or objective
+choice, not missing information. An oxide merged
 into the film is the exception and is not reliably rejected at 10⁶ counts for 2θ_max ≤ 3°. At the
 decision level local Fisher information agrees; its quadratic overstates the deviance of wrong
 basins by about 10² to 10³ in the fit's own coordinates. No noisy, mismatched-model or measured
@@ -135,8 +137,21 @@ The physics now lives in ReflectoSim (version 0.1.0 on PyPI): a float64 numba Pa
 agrees with refnx to 1 × 10⁻¹⁰, a differentiable torch backend, and the resolution integral. This
 repository's data generator takes its forward physics from ReflectoSim since the change recorded in
 its history. The experiments reported here were **not** re-run on the ReflectoSim engine. That
-engine agrees with the one used here only through the tests of each against independent references
-(gap G4 in section 8).
+engine agrees with the one used here only through the tests of each against independent references.
+Gap G4 evaluated the recorded states with the ReflectoSim forward, forward only (no fit, 20 minutes on
+one core; [g4_sim_forward.md](../fisher_global/g4_sim_forward.md)). The one model difference is the
+absorption: the engine puts 10⁻⁹ Å⁻² into every medium, ReflectoSim needs a non-absorbing ambient, so
+the ambient is 0 there. The counts differ: the largest relative difference over a curve has a median
+of 0.022 for the 37 R2a truth curves (maximum 0.093) and 0.0009 for the 92 X2e truths. The deviance
+from the truth of the R2a recorded endpoints (2368) differs by a median of 4.7 % (p90 56 %, maximum a
+factor 6); of the R2a basin minima (656) by 2.9 % (p90 58 %); of the X2e basin minima (92) by 0.11 %
+(p90 11 %, one far outlier). No verdict-relevant crossing of ΔD ≤ 4, 25 or 100 changes for the R2a
+endpoints and minima (0 of 2368 and 0 of 656). The median S₁\* of the wrong R2a minima is 22.4 with
+ReflectoSim against 26.7 (655 minima), and for X2e 42.2 against 44.2. The five R2a basins with
+S₁\* ≥ 10⁴ keep their ΔD to 0.1 %. One X2e basin does not: the exception that is a nearby minimum of
+the true structure (id x2e:S1:2:11:1:1) has ΔD 48 with the engine (S₁\* 2.1 × 10⁴) and ΔD 8.6 × 10³
+with ReflectoSim (S₁\* 116). Its cause was not examined; the X2e mapping may differ in a detail. So the
+X2e exception is not robust to the forward model, and the R2a ones are.
 
 Not in the model, by design: any model error between the data and the fit. Every result assumes that
 the fitted model is the true one (the "inverse crime"); section 9.
@@ -419,18 +434,18 @@ content was read in full: the one-line "relevance" comes from the abstract or th
 
 CPU costs are scaled from the recorded full basin run: 935 refinements took 50.9 CPU hours (mean
 241 s per R2a refinement, median 26.5 s) on four processes; B-1 took 31 s; one truth-start profile
-took 451 s. Estimates are inference. G0, G4 and G5 are done in this draft; G2, G2b, G2c and G3 are
+took 451 s. Estimates are inference. G0, G4 and G5 are done in this draft; G1, G2, G2b, G2c and G3 are
 pre-registered in [prereg/](prereg/) and not run.
 
 | id | experiment | why | cost / status |
 |---|---|---|---|
 | G0 | Refine every parameter-distinct recorded R2a endpoint with ΔD ≤ 4 (largest bound-scaled distance from the truth above 10⁻³; 29 endpoints) with the basin run's code | the basin run refined 4 < ΔD ≤ 10⁵ only, so S₁\* was cut at both ends | **done**: 0.04 CPU h, about 1 min wall on two processes; 27 return to the truth, 2 (oxide merged into the film) are second minima at ΔD 1.41 and 1.40, S₁\* 7.1 × 10⁵ ([near_report.md](../fisher_global/near_report.md)) |
-| G1 | One measured thin-film XRR set (public, or a lab sample with known preparation) refitted from many starts, then the S₁\* of its distinct endpoints computed with the same code | shows the wrong-basin picture outside simulation; without it the paper is a simulation study | owner data; data search and registration about 2 to 5 days; CPU about 1 to 4 hours for a few hundred starts of a single film [estimate] |
+| G1 | The public repeated Au / Cr / Si scans (Zenodo 10.5281/zenodo.18548583, CC BY 4.0): multi-start refits of five repeats, S₁\* between distinct endpoints, reproducibility across 100 repeats, measured dispersion | shows the picture on measured counts. No independent structure exists for this sample, so only claims that need no truth are made; the source is a synchrotron fast scan, not a laboratory Cu Kα step scan | about 11 CPU hours, about 3 h wall on 4 processes [estimate]; [PREREG-G1.md](prereg/PREREG-G1.md). A laboratory set with independent structure (TEM) remains open |
 | G2 | Noisy curves: refit Poisson draws (and negative-binomial draws with φ = 1.34) of existing conditions from the recorded endpoints, about 100 plus 30 candidates | tests whether the picture survives noise; all current results are noise-free | about 9 CPU hours, about 2.3 h wall on 4 processes [estimate]; [PREREG-G2.md](prereg/PREREG-G2.md) |
 | G2b | Mismatched truth: generate the curve from a model the fitting model lacks (a graded interface, a density gradient) and refit with the fitting model | removes the inverse crime; the margin of the wrong basins is measured against a truth that is not a model minimum | in the same pre-registration, about 1 CPU hour [estimate]; same pre-registration |
 | G2c | Parametric bootstrap on the ~10 closest basins (all with ΔD < 20 at 10⁶): simulate from the truth and from each basin, refit, and compare the likelihood-ratio distribution with χ² | a deviance margin is not a test; four of the five R2a exceptions are within χ²₁₂ 95 % | about 8.5 CPU hours [estimate]; same pre-registration |
 | G3 | Repeat the basin refinement for 100 to 250 candidates in a widened nuisance box, and with the Kα₂ ratio fixed at 0.5 | 651 of 656 minima rest on bounds, and Kα₂ is at a bound in 550, so S₁\* may reflect the box or an over-parametrised nuisance | 4 to 40 CPU hours [estimate]; [PREREG-G3.md](prereg/PREREG-G3.md) |
-| G4 | Evaluate the recorded endpoints and truths of R2a and X2e with the ReflectoSim forward and compare the deviances with the stored ones (forward only, no fit) | experiments ran on this repository's engine, not the published one | **done**: RESULT_G4 |
+| G4 | Evaluate the recorded endpoints and truths of R2a and X2e with the ReflectoSim forward and compare the deviances with the stored ones (forward only, no fit) | experiments ran on this repository's engine, not the published one | **done**: 20 min on one core; the R2a conclusions are engine-robust, one X2e exception is not (section 3, [g4_sim_forward.md](../fisher_global/g4_sim_forward.md)) |
 | G5 | Plot-only scripts for Figures 4 and 5 | needed for the figures | **done**: `paper_figs.py`, no run |
 
 Not in the smallest set but named by the records: the 13 unreached bilayer conditions (R2h, not

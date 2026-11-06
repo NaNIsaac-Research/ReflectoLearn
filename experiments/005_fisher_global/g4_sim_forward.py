@@ -235,13 +235,6 @@ def report() -> None:
                 f"- {source} {kind}, ΔD ≤ {th:g}: engine {int(a.sum())}, ReflectoSim {int(b.sum())}, "
                 f"changed {int((a != b).sum())} of {len(sel)}"
             )
-    mins = [r for r in rows if r["kind"] == "minimum"]
-    big = sorted(
-        (r for r in mins if r["dD_engine"] > 1e-3 and r["dD_engine"] <= 1e2), key=lambda r: -r["dD_engine"]
-    )[:0]
-    del big
-    top = sorted((r for r in mins if r["source"] == "r2a"), key=lambda r: r["dD_engine"])[:0]
-    del top
     REPORT.write_text("\n".join([*lines, *out, ""]), encoding="utf-8")
     print("\n".join([*lines, *out]))
 

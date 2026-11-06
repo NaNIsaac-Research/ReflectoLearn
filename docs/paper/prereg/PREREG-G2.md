@@ -74,6 +74,10 @@ from the basin minimum, and T = D_basin − D_truth is recorded (T > 0 means the
 With the basin as the generating structure, the same is done with 15 draws of the basin's curve
 (starts: basin minimum and truth).
 
+A second set of truth-generated draws (30 per basin) is overdispersed with the per-q-region φ measured
+on the real repeats in [PREREG-G1.md](PREREG-G1.md), once that run exists; until then the 1.34 of F9
+is used and the run is marked as such.
+
 Outputs: the fraction of truth-generated draws with T > 0 (the power to prefer the truth), the fraction
 of basin-generated draws with T < 0, and the quantiles of T against χ² of 12 free parameters
 (95 % bound 21.0). No verdict rule: this is the reference for the statement that a deviance margin is
