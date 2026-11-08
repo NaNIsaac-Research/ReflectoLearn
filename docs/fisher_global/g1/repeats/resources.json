@@ -1,0 +1,9 @@
+{
+  "wall_hours": 0.158,
+  "cpu_hours": [
+    0.315
+  ],
+  "peak_rss_gb": [
+    0.95
+  ]
+}
