@@ -132,3 +132,40 @@ committed before the first run and its hash is recorded in each result file.
   "each scored on its own scan" above, and the threshold 25 was not calibrated for a same-structure
   comparison. The recorded H-G1b numbers are therefore not a verdict; a profiled and calibrated score
   is a follow-up.
+
+## Declared deviation 1: wider δq and σ_q bounds (2026-11-09, written before any fit under it)
+
+Reason. In the recorded run σ_q ends on its upper bound (1e-3 Å⁻¹) in all 100 repeat fits and δq on its
+lower bound (−2e-3 Å⁻¹) in 83. While the nuisances sit on their bounds, the structural parameters absorb what
+the nuisances cannot, the fits split into two δq families, and none of H-G1a to H-G1c can be read. The
+recorded results stay as they are and are reported next to the ones below; the rows below are labelled as
+results under this deviation, not as the registered test.
+
+Changes. Model M1W is M1 with δq ±1e-2 Å⁻¹ and σ_q 1e-5 to 3e-3 Å⁻¹; every other bound, the counts model and
+the forward are unchanged. M2W is M2 with the same two bounds and the added layer's SLD from 5 (was 20) to
+120 × 10⁻⁶ Å⁻², so that a low-density contamination layer is reachable. Code:
+`experiments/005_fisher_global/g1_wide.py`; results in `docs/fisher_global/g1/wide/`, each file with the
+commit hash of the code that wrote it.
+
+Procedure, in the order the runs are made:
+
+- W1, cross-seeding. Each of the five drawn scans is refined in the M1W box from the five recorded M1 search
+  bests (its own and the other four scans'), with the basin run's rules, and polished as in step 2.
+- W2, reproducibility. As step 4, from the lowest W1 minimum of the first drawn scan, over all 100 repeats.
+- W3, second model on all repeats. For each repeat, M2W is fitted from two starts: the repeat's W2 fit with
+  a contamination layer of 10 Å, roughness 3 Å and SLD 10 added, and the recorded M2 best with its i₀, b, δq and
+  σ_q replaced by the repeat's W2 values. The lower minimum counts. Reported: ΔD = D(M1W) − D(M2W) per repeat
+  and its distribution, the quasi-F (ΔD / 3) / (D(M2W) / (n − 14)), and the fitted layer. Descriptive.
+- W4, multi-start. As step 2 in the M1W box: 64 starts per drawn scan from the same seeds. This is the
+  costly part and runs last; if it is stopped, the report gives the number of starts done per scan.
+
+Analysis under the deviation. H-G1a as registered, over the W1 and W4 endpoints. H-G1b with the profiled
+score of `g1_hg1b.py` (each source structure against the target scan's best curve on the target's counts,
+minimised over i₀, b, δq and σ_q inside the M1W bounds), the threshold being the 95th percentile of the same
+score over 200 seeded pairs of W2 fits; the registered rule's verdict is given next to it. H-G1c as
+registered on the W2 fits, and again with δq and σ_q fixed and dropped from the Fisher matrix. For every set,
+the number of fits with a parameter on a bound. The holds and fails figures are the registered ones.
+
+Cost (inference, from the recorded run: 320 M1 starts took 15 CPU hours, 100 warm repeat fits 0.3): W1 25
+fits about 1 CPU hour, W2 under 1, W3 200 fits about 3, W4 320 fits about 15 to 20. Runs through the test
+queue as a preemptible job, 3 processes at most, BelowNormal priority, one result file per fit, written once.
