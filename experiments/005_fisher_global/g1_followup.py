@@ -26,6 +26,7 @@ import g1_run as g1
 
 OUT = g1.OUT / "followup"
 WINDOW = 20
+EDGE = 8
 OFF_LO = g1.M1.lo[g1.M1.names.index("off")]
 PINNED = ("off", "sigq")
 
@@ -53,26 +54,54 @@ def steps() -> None:
     reps = load_repeats()
     res = pearson(data, reps)
     q, af = data["q"], data["af"]
-    # af changes where the attenuator is switched; the first point of the new setting is the step index
-    idx = [int(i) + 1 for i in np.flatnonzero(np.abs(np.diff(af)) > 1e-6 * af.max())]
-    fam = off_family(reps)
-    rows = []
+    # af drifts by about 1e-6 per point; an attenuator switch is a jump of several times, and the
+    # first point of the new setting is the step index
+    idx = [int(i) + 1 for i in np.flatnonzero(np.abs(np.log(af[1:] / af[:-1])) > np.log(1.1))]
+    # a switch spans two or three points; each run of consecutive changes is one step
+    switches: list[list[int]] = []
     for s in idx:
-        before, after = res[:, s - WINDOW : s], res[:, s : s + WINDOW]
-        per_rep = after.mean(axis=1) - before.mean(axis=1)
+        if switches and s == switches[-1][-1] + 1:
+            switches[-1].append(s)
+        else:
+            switches.append([s])
+    fam = off_family(reps)
+
+    def step(a: int, b: int) -> np.ndarray:
+        # straight lines through EDGE points on each side, compared at the switch; a line follows the
+        # fringe-period oscillation of the misfit far better than a window mean does
+        xa = np.arange(a - EDGE, a) - a
+        xb = np.arange(b, b + EDGE) - a
+        before = np.polyfit(xa, res[:, a - EDGE : a].T, 1)
+        after = np.polyfit(xb, res[:, b : b + EDGE].T, 1)
+        return after[1] - before[1]
+
+    # the same statistic at points far from any switch measures what the smooth misfit alone gives
+    far = [
+        c
+        for c in range(WINDOW, len(q) - WINDOW)
+        if all(c < g[0] - WINDOW - 2 or c > g[-1] + WINDOW + 2 for g in switches)
+    ]
+    control = np.array([step(c, c).mean() for c in far])
+    rows = []
+    for g in switches:
+        a, b = g[0], g[-1]
+        per_rep = step(a, b)
+        m = float(per_rep.mean())
         rows.append(
             {
-                "index": s,
-                "q": float(q[s]),
-                "af_ratio": float(af[s - 1] / af[s]),
-                "step_mean": float(per_rep.mean()),
+                "points": g,
+                "q": float(q[a]),
+                "af_ratio": float(af[a - 1] / af[b]),
+                "step_mean": m,
                 "step_sem": float(per_rep.std(ddof=1) / np.sqrt(len(per_rep))),
                 "step_mean_off_bound": float(per_rep[fam].mean()),
                 "step_mean_inside": float(per_rep[~fam].mean()) if (~fam).any() else None,
-                "lam_before": float(np.median([r["lam"][s - 1] for r in reps])),
-                "lam_after": float(np.median([r["lam"][s] for r in reps])),
+                "control_fraction_at_least_as_large": float(np.mean(np.abs(control) >= abs(m))),
+                "lam_before": float(np.median([r["lam"][a - 1] for r in reps])),
+                "lam_after": float(np.median([r["lam"][b] for r in reps])),
             }
         )
+    idx = [g[0] for g in switches]
     mean = res.mean(axis=0)
     sem = res.std(axis=0, ddof=1) / np.sqrt(len(res))
     fig, (a, b) = plt.subplots(2, 1, figsize=(8, 6), sharex=True, layout="constrained")
@@ -95,7 +124,18 @@ def steps() -> None:
     )
     OUT.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT / "attenuator_steps.png", dpi=200)
-    rec = {"window": WINDOW, "n_repeats": len(reps), "n_off_bound": int(fam.sum()), "steps": rows}
+    rec = {
+        "edge_points": EDGE,
+        "n_repeats": len(reps),
+        "n_off_bound": int(fam.sum()),
+        "control_points": len(far),
+        "control_abs_step_p50_p95_max": [
+            float(np.percentile(np.abs(control), 50)),
+            float(np.percentile(np.abs(control), 95)),
+            float(np.abs(control).max()),
+        ],
+        "steps": rows,
+    }
     (OUT / "attenuator_steps.json").write_text(json.dumps(rec, indent=1) + "\n", encoding="utf-8")
     print(json.dumps(rec, indent=1))
 
