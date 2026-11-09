@@ -378,12 +378,38 @@ def basins_of_scan(model: Model, data: dict, scan: int, recs: list[dict]) -> lis
         b["cross"] = float(gc.deviance_terms(lams[b["best"]], lams[out[0]["best"]]).sum())
         b["S1_star"] = (
             float(
-                k[0] * np.array(recs[out[0]["best"]]["x"])[list(M1.names).index("i0")] / b["cross"]
+                k[0]
+                * np.array(recs[out[0]["best"]]["x"])[list(model.names).index("i0")]
+                / b["cross"]
             )
             if b["cross"] > 0
             else None
         )
     return out
+
+
+def search_records(model: Model, scan: int) -> list[dict]:
+    return [
+        json.loads(p.read_text(encoding="utf-8"))
+        for p in sorted((OUT / f"search_{model.name}").glob(f"s{scan:03d}_*.json"))
+        if not p.name.endswith(".error.json")
+    ]
+
+
+def basin_table(model: Model, scan: int, recs: list[dict], bs: list[dict]) -> list[str]:
+    lines = [
+        f"## {model.name}, scan {scan}: {len(recs)} starts, {len(bs)} distinct basins, "
+        + f"best deviance {bs[0]['dev']:.1f}",
+        "",
+        "| basin | starts | deviance | dD | cross-dev with best | S1* (counts at R = 1) |",
+        "|---|---|---|---|---|---|",
+    ]
+    for i, b in enumerate(bs):
+        s1 = f"{b['S1_star']:.3g}" if b["S1_star"] else "n/a"
+        lines.append(
+            f"| {i} | {len(b['members'])} | {b['dev']:.1f} | {b['dD']:.3g} | {b['cross']:.3g} | {s1} |"
+        )
+    return [*lines, ""]
 
 
 def report() -> None:
@@ -398,31 +424,18 @@ def report() -> None:
     ]
     sep, tot = 0, 0
     bests = {}
+    best_dev = {}
     for s in scans:
-        recs = [
-            json.loads(p.read_text(encoding="utf-8"))
-            for p in sorted((OUT / "search_M1").glob(f"s{s:03d}_*.json"))
-            if not p.name.endswith(".error.json")
-        ]
+        recs = search_records(M1, s)
         if not recs:
             continue
         bs = basins_of_scan(M1, data, s, recs)
         bests[s] = np.array(recs[bs[0]["best"]]["x"])
+        best_dev[s] = bs[0]["dev"]
         others = bs[1:]
         sep += sum(b["dD"] >= H_A_SEP for b in others)
         tot += len(others)
-        lines += [
-            f"## scan {s}: {len(recs)} starts, {len(bs)} distinct basins, best deviance {bs[0]['dev']:.1f}",
-            "",
-            "| basin | starts | deviance | dD | cross-dev with best | S1* (counts at R = 1) |",
-            "|---|---|---|---|---|---|",
-        ]
-        for i, b in enumerate(bs):
-            s1 = f"{b['S1_star']:.3g}" if b["S1_star"] else "n/a"
-            lines.append(
-                f"| {i} | {len(b['members'])} | {b['dev']:.1f} | {b['dD']:.3g} | {b['cross']:.3g} | {s1} |"
-            )
-        lines.append("")
+        lines += basin_table(M1, s, recs, bs)
     if tot:
         lines.append(
             f"H-G1a: {sep} of {tot} other basins separated from the best by dD >= {H_A_SEP:g} ({sep / tot:.3f}); holds >= 0.80, fails < 0.60."
@@ -441,7 +454,7 @@ def report() -> None:
         )
     reps = [
         json.loads(p.read_text(encoding="utf-8"))
-        for p in sorted((OUT / "repeats").glob("r*.json"))
+        for p in sorted((OUT / "repeats").glob("r[0-9][0-9][0-9].json"))
         if not p.name.endswith(".error.json")
     ]
     if reps:
@@ -469,6 +482,22 @@ def report() -> None:
         lines.append(
             "Fitted values (median over repeats), for description only, not a truth: "
             + ", ".join(f"{n} {np.median(xs[:, i]):.4g}" for i, n in enumerate(names))
+        )
+    s = scans[0]
+    if recs2 := search_records(M2, s):
+        bs2 = basins_of_scan(M2, data, s, recs2)
+        lines += ["", *basin_table(M2, s, recs2, bs2)]
+        if s in best_dev:
+            lines.append(
+                f"M2 against M1 on scan {s}: best deviance {bs2[0]['dev']:.1f} against {best_dev[s]:.1f} "
+                + f"(difference {best_dev[s] - bs2[0]['dev']:.1f}, {len(M2.names) - len(M1.names)} more "
+                + "free parameters); descriptive, no rule."
+            )
+        lines.append(
+            "M2 best fit, for description only, not a truth: "
+            + ", ".join(
+                f"{n} {v:.4g}" for n, v in zip(M2.names, recs2[bs2[0]["best"]]["x"], strict=True)
+            )
         )
     (OUT / "g1_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines).encode("ascii", "replace").decode())
