@@ -2,7 +2,7 @@
 
 Run from the repository root:
 
-    <venv python> -I experiments/005_fisher_global/g1_hg1b.py profile [--null N] [--hours H]
+    <venv python> -I experiments/005_fisher_global/g1_hg1b.py profile [--null 200] [--hours H]
     <venv python> -I experiments/005_fisher_global/g1_hg1b.py report
 
 For a target scan a and a source fit b, the score is the noise-free Poisson deviance of b's structure
@@ -140,6 +140,7 @@ def jobs(n_null: int) -> list[tuple[str, str, int, int]]:
 
 
 def run(n_null: int, hours: float) -> None:
+    gc.init_worker()
     data = g1.load_scans()
     f = fits()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -249,7 +250,7 @@ def report() -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("mode", choices=["profile", "report"])
-    ap.add_argument("--null", type=int, default=60)
+    ap.add_argument("--null", type=int, default=200)
     ap.add_argument("--hours", type=float, default=4.0)
     ap.add_argument("--worker", type=int, default=0)
     ap.add_argument("--workers", type=int, default=1)
