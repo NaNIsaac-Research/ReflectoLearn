@@ -51,7 +51,7 @@ registered bounds.
   q-offset family). The Poisson-only reference 2φχ²₇ is 33.6. Fits of one sample on different scans differ far more
   than counting noise allows, so 25 was never a usable same-structure threshold here.
 - With the repeat fits of the five drawn scans (scan 68's search best is a missed basin), every pair inside one
-  q-offset family scores well below that family's 95th percentile: 42 to 98 among scans 19, 68 and 76, and 204 to 213
+  q-offset family scores well below that family's 95th percentile: 42 to 152 among scans 19, 68 and 76, and 204 to 213
   between scans 15 and 41. 4 of the 20 directed scores lie above the all-pairs 95th percentile, all between scan 15
   and scans 68 or 76, which sit in different q-offset families.
 - In most cross-family scores the profiled q offset ends on its bound, so the profile cannot bring the two families
