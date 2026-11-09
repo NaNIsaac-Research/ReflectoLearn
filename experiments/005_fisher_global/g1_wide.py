@@ -271,6 +271,22 @@ def crb_ratios(reps: list[dict], phi: float, drop: tuple[str, ...]) -> dict[str,
     return out
 
 
+def fisher_correlations(
+    reps: list[dict], pairs: list[tuple[str, str]]
+) -> dict[tuple[str, str], float]:
+    """Median over repeats of the correlation between two parameters in the inverse Fisher matrix (phi cancels)."""
+    names = reps[0]["names"]
+    cors: dict[tuple[str, str], list[float]] = {p: [] for p in pairs}
+    for r in reps:
+        j = np.array(r["jlog"])
+        cov = np.linalg.pinv(j.T @ (np.array(r["lam"])[:, None] * j))
+        sd = np.sqrt(np.diag(cov))
+        for a, b in pairs:
+            ia, ib = names.index(a), names.index(b)
+            cors[(a, b)].append(float(cov[ia, ib] / (sd[ia] * sd[ib])))
+    return {p: float(np.median(v)) for p, v in cors.items()}
+
+
 def verdict(ratio: float) -> str:
     return "holds" if ratio <= 2 else ("fails" if ratio > 3 else "unresolved")
 
@@ -324,6 +340,14 @@ def report() -> None:
             + f"(start {best['start']}). {bound_counts(recs)}.",
             "",
         ]
+        if 2 * reach < len(recs):
+            nearest = min((b["dD"] for b in others), default=float("nan"))
+            lines += [
+                f"The global minimum on scan {s} is not certain: the best basin is reached by {reach} of "
+                + f"{len(recs)} starts and the nearest other basin is at dD {nearest:.3g}"
+                + ("; random starts (W4) have not run yet." if n_x == len(recs) else "."),
+                "",
+            ]
         summary[s] = {
             "best_dev": best["dev_converged"],
             "best_start": best["start"],
@@ -388,9 +412,17 @@ def report() -> None:
                     + f"{verdict(v['ratio_median'])} | {v['ratio_first']:.2f} |"
                 )
         xs = np.array([r["x"] for r in reps])
+        cors = fisher_correlations(
+            reps, [(p, n) for p in ("Au_d", "Cr_d") for n in ("off", "sigq")] + [("off", "sigq")]
+        )
         lines += [
             "",
             "H-G1c rule: holds if the ratio is at most 2 for both, fails if above 3 for either.",
+            "",
+            "Correlations in the inverse Fisher matrix with all parameters free (median over repeats): "
+            + ", ".join(f"{a} with {b} {c:+.3f}" for (a, b), c in cors.items())
+            + ". A thickness strongly correlated with the q offset or sigma_q has a CRB that shrinks when "
+            + "those are fixed, which is why the two CRB rows differ.",
             "",
             "Fitted values (median over repeats), for description only: "
             + ", ".join(f"{n} {np.median(xs[:, i]):.4g}" for i, n in enumerate(M1W.names)),
@@ -437,6 +469,14 @@ def report() -> None:
             bound_counts(list(by_scan.values())) + ".",
             "",
         ]
+        au_rho = float(np.median([by_scan[s]["x"][M2W.names.index("Au_rho")] for s in common]))
+        if abs(np.median(layer[:, 2]) - au_rho) <= 0.2 * au_rho:
+            lines += [
+                f"The added layer's SLD is close to the Au SLD in the same fits ({au_rho:.3g}). It may be an Au "
+                + "sub-layer or a split of the Au interface rather than a contamination layer; the fit cannot "
+                + "tell which (inference).",
+                "",
+            ]
 
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "summary.json").write_text(
