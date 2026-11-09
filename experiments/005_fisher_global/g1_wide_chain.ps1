@@ -21,7 +21,8 @@ foreach ($s in $stages) {
     New-Item -ItemType Directory -Force $log, $s.Locks | Out-Null
     & (Join-Path $exp 'run_workers.ps1') -Script $s.Script -Mode $s.Mode -Workers $s.Workers `
         -ExtraArgs $s.Extra -LogDir $log -LockDir $s.Locks
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    # run_workers.ps1 sets an exit code only when preempted (75); in a fresh pwsh $LASTEXITCODE is otherwise $null
+    if ($LASTEXITCODE) { exit $LASTEXITCODE }
     Set-Content $done (Get-Date -Format o)
 }
 Set-Content (Join-Path $wide 'chain.done') (Get-Date -Format o)
