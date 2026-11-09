@@ -215,6 +215,19 @@ def report() -> None:
         f"Analytic same-truth reference 2 phi chi2_{len(STRUCT)} at 95 %, phi {phi:.2f}: {analytic:.1f} "
         + "(Poisson Fisher, no scan-to-scan variation). The registered threshold was 25.",
         "",
+        (
+            f"The empirical 95th percentile is {np.percentile(null, 95) / analytic:.0f} times the analytic one. "
+            + "Inference: the gap comes from the fits, not from the counts. Every repeat fit has sigma_q on its "
+            + "upper bound and most have the q offset on its lower bound, which splits the fits into two "
+            + "q-offset families and lets the structural parameters absorb what the pinned nuisances cannot; "
+            + "the slab model's misfit (deviance about 2 to 2.8 times n - p) adds to it. The split alone does "
+            + f"not account for it, since the same-family percentile is still {np.percentile(null_fam, 95) / analytic:.0f} "
+            + "times the analytic one. This threshold is a calibration for the present bounds only and is "
+            + "recomputed after the rerun with wider q offset and sigma_q bounds."
+            if len(null) and len(null_fam) > 2
+            else ""
+        ),
+        "",
     ]
     thr = float(np.percentile(null, 95)) if len(null) else None
     for v, title in (

@@ -9,6 +9,8 @@ Null: 200 seeded random pairs of the 100 repeat fits (one sample, different scan
 Pairs in the same q-offset family (146): 95th percentile 420.6.
 Analytic same-truth reference 2 phi chi2_7 at 95 %, phi 1.19: 33.6 (Poisson Fisher, no scan-to-scan variation). The registered threshold was 25.
 
+The empirical 95th percentile is 17 times the analytic one. Inference: the gap comes from the fits, not from the counts. Every repeat fit has sigma_q on its upper bound and most have the q offset on its lower bound, which splits the fits into two q-offset families and lets the structural parameters absorb what the pinned nuisances cannot; the slab model's misfit (deviance about 2 to 2.8 times n - p) adds to it. The split alone does not account for it, since the same-family percentile is still 13 times the analytic one. This threshold is a calibration for the present bounds only and is recomputed after the rerun with wider q offset and sigma_q bounds.
+
 ## Five drawn scans, search bests (as registered)
 
 | target | source | unprofiled | profiled | q offset | sigma_q | above null 95th |
