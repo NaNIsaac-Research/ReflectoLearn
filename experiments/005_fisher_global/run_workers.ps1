@@ -12,6 +12,10 @@ param(
 # their lock files in LockDir removed (finished results stay; a restart skips them) and the script exits 75.
 $py = Join-Path $env:DEV 'NaNIsaac/_wt/ReflectoLearn-use-sim/.venv/Scripts/python.exe'
 $env:XRR_IN_QUEUE = '1'
+# torch is limited in the scripts; numpy's BLAS in the ReflectoSim forward reads these before import
+$env:OMP_NUM_THREADS = '1'
+$env:OPENBLAS_NUM_THREADS = '1'
+$env:MKL_NUM_THREADS = '1'
 $t0 = Get-Date
 $procs = @()
 $preempted = $false

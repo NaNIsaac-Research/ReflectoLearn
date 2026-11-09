@@ -39,3 +39,26 @@ so these rows describe the spread and do not decide H-G1c. The registered rule w
 
 The pooled ratio in `../g1_report.md` (2.97, 2.19) uses the Fisher matrix of repeat 0 alone; the median over
 all repeats gives 2.94 and 2.46.
+
+## H-G1b profiled over the nuisances, with a null
+
+[`../hg1b_profiled.md`](../hg1b_profiled.md), one JSON per score in [`../hg1b_profiled/`](../hg1b_profiled/),
+code `experiments/005_fisher_global/g1_hg1b.py`. No structural fit was re-run; each score refits only i0, b,
+q offset and σ_q of the source fit to the target scan's best curve, on the target scan's counts, inside the
+registered bounds.
+
+- The null, 200 seeded pairs of the 100 repeat fits, has a 95th percentile of 557 (421 for pairs in the same
+  q-offset family). The Poisson-only reference 2φχ²₇ is 33.6. Fits of one sample on different scans differ far more
+  than counting noise allows, so 25 was never a usable same-structure threshold here.
+- With the repeat fits of the five drawn scans (scan 68's search best is a missed basin), every pair inside one
+  q-offset family scores well below that family's 95th percentile: 42 to 98 among scans 19, 68 and 76, and 204 to 213
+  between scans 15 and 41. 4 of the 20 directed scores lie above the all-pairs 95th percentile, all between scan 15
+  and scans 68 or 76, which sit in different q-offset families.
+- In most cross-family scores the profiled q offset ends on its bound, so the profile cannot bring the two families
+  together. Inference: the remaining cross-family difference is the bound-induced offset/Au SLD split, not
+  evidence of different structures; it stays unresolved until the q offset and σ_q are refitted inside wider bounds.
+- With the search bests as registered, 8 of 20 are above the 95th percentile; the extra four involve scan 68's
+  missed basin.
+- The 20 directed scores are compared one by one with a single-pair percentile, with no correction for the number
+  of comparisons, and the null mixes both families as the repeats do. The nuisance minimum comes from two local
+  starts per score.
