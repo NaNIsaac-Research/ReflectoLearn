@@ -76,8 +76,9 @@ The SLD values are the header's bulk figures, not a fit result. Code: `experimen
    minimum.
 3. **Endpoints.** For each basin, D = the Poisson deviance of the scan at the basin minimum, ΔD = D
    − D_best (the best basin of that scan), and S₁\* between basins = S / ΔD_cross, where ΔD_cross is
-   the noise-free deviance of one basin's curve against the other's at the scan's counts and S the
-   scan's mean count level. Neither needs a true structure.
+   the noise-free deviance of one basin's curve against the other's at the scan's counts and
+   S = k₀ · i₀ (the counts at R = 1 at the first q point, attenuator and footprint included).
+   Neither needs a true structure.
 4. **Reproducibility.** The best-basin minimum of the first drawn scan is the start of a fit to each of
    all 100 repeats (one start per scan). The across-scan standard deviation of each parameter is
    compared with the Cramér-Rao bound from the Fisher information at the best basin, scaled by the
@@ -120,3 +121,14 @@ plus polish 50 s about 3 hours; M2 on one scan about 1.5 hours. In all about 16 
 Runs: 3 processes at most, one torch or numba thread each, BelowNormal priority, a wrapper that stops at
 4 GB per process or 16 h of wall time; one result file per scan and start, written once. The code is
 committed before the first run and its hash is recorded in each result file.
+
+## Changes after the run (2026-11-09)
+
+- Step 3 defined S as the scan's mean count level, while the counts model section and the code use
+  S = k₀ · i₀. The wording of step 3 now follows the code; no number changes. S₁\* from G1 is in counts
+  at R = 1 at the first q point with its attenuator, so it is not on the same scale as the simulation S₁\*.
+- H-G1b is computed by the code with every scan's best minimum scored on the first drawn scan's counts,
+  in one direction, with the per-scan i₀, b, δq and σ_q inside the compared vectors. This differs from
+  "each scored on its own scan" above, and the threshold 25 was not calibrated for a same-structure
+  comparison. The recorded H-G1b numbers are therefore not a verdict; a profiled and calibrated score
+  is a follow-up.

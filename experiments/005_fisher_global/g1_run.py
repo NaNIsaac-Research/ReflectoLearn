@@ -401,7 +401,7 @@ def basin_table(model: Model, scan: int, recs: list[dict], bs: list[dict]) -> li
         f"## {model.name}, scan {scan}: {len(recs)} starts, {len(bs)} distinct basins, "
         + f"best deviance {bs[0]['dev']:.1f}",
         "",
-        "| basin | starts | deviance | dD | cross-dev with best | S1* (counts at R = 1) |",
+        "| basin | starts | deviance | dD | cross-dev with best | S1* (counts at R = 1 at q[0], attenuated) |",
         "|---|---|---|---|---|---|",
     ]
     for i, b in enumerate(bs):
