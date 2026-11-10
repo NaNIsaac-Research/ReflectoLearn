@@ -15,6 +15,7 @@ Run from the repository root, stages in this order (each resumes where it stoppe
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import subprocess
 import sys
@@ -46,8 +47,36 @@ def widen(model: g1.Model, name: str, extra: dict[str, tuple[float, float]]) -> 
 M1W = widen(g1.M1, "M1W", {})
 M2W = widen(g1.M2, "M2W", {"ox_rho": (5.0, 120.0)})
 OUT = g1.OUT / "wide"
-# declared deviation 2: W4 cut from 64 to 16 starts per scan
+# declared deviation 2: W4 cut from 64 to 16 starts per scan, each fit capped at 60 minutes of run time
 N_SEARCH = 16
+WALL_CAP_S = 3600.0
+
+
+class WallCapReached(Exception):
+    pass
+
+
+class WallCap:
+    """Run time of one fit, summed over attempts: a preempted fit restarts from its start, and the time already
+    spent is kept in `path` so the cap still ends it."""
+
+    def __init__(self, path: Path, cap_s: float):
+        self.path, self.cap_s = path, cap_s
+        self.spent = float(path.read_text()) if path.exists() else 0.0
+        self.t0 = self.last = time.monotonic()
+
+    def total(self) -> float:
+        return self.spent + time.monotonic() - self.t0
+
+    def check(self) -> None:
+        now = time.monotonic()
+        if now - self.last > 30:
+            self.path.write_text(f"{self.total():.1f}")
+            self.last = now
+        if self.total() > self.cap_s:
+            raise WallCapReached(f"{self.total():.0f} s")
+
+
 CONTAMINATION = {"ox_d": 10.0, "ox_sig": 3.0, "ox_rho": 10.0}
 NUIS = ("i0", "b", "off", "sigq")
 BOUND_TOL = 1e-6
@@ -80,13 +109,31 @@ def on_bound(model: g1.Model, x) -> list[str]:
 
 
 def fit(
-    model: g1.Model, data: dict, scan: int, cid: str, x0: np.ndarray, fisher: bool = False
+    model: g1.Model,
+    data: dict,
+    scan: int,
+    cid: str,
+    x0: np.ndarray,
+    fisher: bool = False,
+    cap: WallCap | None = None,
 ) -> dict:
     prob = g1.make_problem(model, data, scan, cid, x0)
+    sim = g1.sim_fn(model, data, scan)
+    if cap is not None:
+        log_counts, sim_plain = prob.log_counts, sim
+
+        def capped_log_counts(theta):
+            cap.check()
+            return log_counts(theta)
+
+        def capped_sim(x):
+            cap.check()
+            return sim_plain(x)
+
+        prob = dataclasses.replace(prob, log_counts=capped_log_counts)
+        sim = capped_sim
     row = basin.refine(prob)
-    pol = gc.polish(
-        prob, np.array(row["x_min"]), None, None, data["raw"][scan], g1.sim_fn(model, data, scan)
-    )
+    pol = gc.polish(prob, np.array(row["x_min"]), None, None, data["raw"][scan], sim)
     rec = {
         "scan": scan,
         "model": model.name,
@@ -116,7 +163,8 @@ def run_jobs(
     gc.init_worker()
     t_end = time.time() + hours * 3600
     for n, (path, thunk) in enumerate(jobs):
-        if n % workers != worker or path.exists():
+        unfinished = path.with_suffix(".unfinished.json")
+        if n % workers != worker or path.exists() or unfinished.exists():
             continue
         if time.time() > t_end:
             print("deadline reached", flush=True)
@@ -135,6 +183,14 @@ def run_jobs(
                 f"{path.stem}: converged {rec['dev_converged']:.1f} on bound {rec['on_bound']}",
                 flush=True,
             )
+        except WallCapReached as exc:
+            unfinished.write_text(
+                json.dumps(
+                    {"job": path.stem, "wall_cap_s": WALL_CAP_S, "spent": str(exc), "code": CODE}
+                ),
+                encoding="utf-8",
+            )
+            print(f"{path.stem}: unfinished at the wall cap ({exc})", flush=True)
         except Exception as exc:  # noqa: BLE001 - recorded and skipped
             path.with_suffix(".error.json").write_text(
                 json.dumps({"job": path.stem, "error": repr(exc), "code": CODE}), encoding="utf-8"
@@ -148,7 +204,7 @@ def records(sub: str, pattern: str = "*.json") -> list[dict]:
     return [
         json.loads(p.read_text(encoding="utf-8"))
         for p in sorted((OUT / sub).glob(pattern))
-        if not p.name.endswith(".error.json")
+        if not p.name.endswith((".error.json", ".unfinished.json"))
     ]
 
 
@@ -183,7 +239,8 @@ def search_jobs(data: dict) -> Iterator[tuple[Path, Callable[[], dict]]]:
             def job(s=s, j=j):
                 rng = np.random.default_rng(np.random.SeedSequence([gc.SEED, 1, s, j]))
                 x0 = rng.uniform(M1W.lo, M1W.hi)
-                return {"start": j, **fit(M1W, data, s, f"g1w:{s}:{j}", x0)}
+                cap = WallCap(OUT / "search_M1W" / f"s{s:03d}_{j:02d}.elapsed", WALL_CAP_S)
+                return {"start": j, **fit(M1W, data, s, f"g1w:{s}:{j}", x0, cap=cap)}
 
             yield OUT / "search_M1W" / f"s{s:03d}_{j:02d}.json", job
 
@@ -308,8 +365,12 @@ def cut_check(scans: list[int]) -> list[str]:
         b4 = min(r["dev_converged"] for r in w4)
         ref = min(r["dev_converged"] for r in w1 + extra)
         same = "yes" if b4 <= ref + 1 else "no"
+        n_cap = sum(
+            int(p.name.split("_")[1].split(".")[0]) < N_SEARCH
+            for p in (OUT / "search_M1W").glob(f"s{s:03d}_*.unfinished.json")
+        )
         rows.append(
-            f"| {s} | {len(w4)} | {b4:.1f} | {min(r['dev_converged'] for r in w1):.1f} | "
+            f"| {s} | {len(w4)} | {n_cap} | {b4:.1f} | {min(r['dev_converged'] for r in w1):.1f} | "
             + (f"{min(r['dev_converged'] for r in extra):.1f} ({len(extra)})" if extra else "none")
             + f" | {b4 - ref:+.1f} | {same} |"
         )
@@ -320,10 +381,10 @@ def cut_check(scans: list[int]) -> list[str]:
         "",
         f"Best deviance of the first {N_SEARCH} random starts against the lowest of the other fits of the scan "
         + f"(W1 cross-seeded, and any random starts {N_SEARCH} and above run before the cut). "
-        + "Reached means within 1 of it.",
+        + f"Reached means within 1 of it. Unfinished: stopped at the {WALL_CAP_S / 60:.0f}-minute cap, no endpoint.",
         "",
-        f"| scan | starts done | best of W4 | best of W1 | best of starts >= {N_SEARCH} (n) | difference | reached |",
-        "|---|---|---|---|---|---|---|",
+        f"| scan | starts done | unfinished | best of W4 | best of W1 | best of starts >= {N_SEARCH} (n) | difference | reached |",
+        "|---|---|---|---|---|---|---|---|",
         *rows,
         "",
     ]

@@ -185,3 +185,9 @@ Check of the cut. Per scan the report gives the best deviance of the 16 starts n
 fits of that scan (the five W1 cross-seeded fits, and on scan 15 the 15 later random starts), and whether the
 16 reach it within 1. Where they do not, the minimum found by the other fits is the lower one and the report
 says so. Code: `N_SEARCH` and `cut_check` in `experiments/005_fisher_global/g1_wide.py`.
+
+Wall cap (2026-11-11, written before any W4 fit under it). Each W4 fit, engine refinement and polish together,
+stops after 60 minutes of run time, summed over the attempts a preemption splits it into. Reason: two starts
+of scan 15 held their workers from the start of W4 without finishing, since every preemption restarts a fit
+from its start. A start stopped at the cap has no endpoint: it is reported per scan as unfinished, not
+counted as a basin and not replaced by another start. Code: `WallCap` and `WALL_CAP_S` in the same file.
