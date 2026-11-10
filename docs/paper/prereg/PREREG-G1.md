@@ -169,3 +169,19 @@ the number of fits with a parameter on a bound. The holds and fails figures are 
 Cost (inference, from the recorded run: 320 M1 starts took 15 CPU hours, 100 warm repeat fits 0.3): W1 25
 fits about 1 CPU hour, W2 under 1, W3 200 fits about 3, W4 320 fits about 15 to 20. Runs through the test
 queue as a preemptible job, 3 processes at most, BelowNormal priority, one result file per fit, written once.
+
+## Declared deviation 2: W4 cut to 16 starts per scan (2026-11-11, written after 21 W4 fits, all on scan 15)
+
+Reason. The cost above was an estimate. Measured, W4 finished 21 fits in about 4 hours of run time between
+preemptions, about 5 fits an hour, so 320 fits would need some 60 more hours of queue time. Some starts take
+the full engine budget (about 50 minutes) before the polish, and a preemption discards a fit in progress.
+
+Change. W4 runs the first 16 of the 64 seeded starts per scan (start indices 0 to 15, the same seeds), in
+start-major order so that every scan gets its first starts before any scan gets later ones. H-G1a uses the W1
+and these W4 endpoints. The 15 fits of scan 15 with start index 16 or above that finished before the cut are
+kept on disk, are not part of H-G1a, and enter only the check below.
+
+Check of the cut. Per scan the report gives the best deviance of the 16 starts next to the best of the other
+fits of that scan (the five W1 cross-seeded fits, and on scan 15 the 15 later random starts), and whether the
+16 reach it within 1. Where they do not, the minimum found by the other fits is the lower one and the report
+says so. Code: `N_SEARCH` and `cut_check` in `experiments/005_fisher_global/g1_wide.py`.

@@ -46,6 +46,8 @@ def widen(model: g1.Model, name: str, extra: dict[str, tuple[float, float]]) -> 
 M1W = widen(g1.M1, "M1W", {})
 M2W = widen(g1.M2, "M2W", {"ox_rho": (5.0, 120.0)})
 OUT = g1.OUT / "wide"
+# declared deviation 2: W4 cut from 64 to 16 starts per scan
+N_SEARCH = 16
 CONTAMINATION = {"ox_d": 10.0, "ox_sig": 3.0, "ox_rho": 10.0}
 NUIS = ("i0", "b", "off", "sigq")
 BOUND_TOL = 1e-6
@@ -174,8 +176,9 @@ def xseed_jobs(data: dict) -> Iterator[tuple[Path, Callable[[], dict]]]:
 
 
 def search_jobs(data: dict) -> Iterator[tuple[Path, Callable[[], dict]]]:
-    for s in g1.draw_scans():
-        for j in range(g1.N_START):
+    # start-major, so that every scan gets its first starts before any scan gets later ones
+    for j in range(N_SEARCH):
+        for s in g1.draw_scans():
 
             def job(s=s, j=j):
                 rng = np.random.default_rng(np.random.SeedSequence([gc.SEED, 1, s, j]))
@@ -185,8 +188,14 @@ def search_jobs(data: dict) -> Iterator[tuple[Path, Callable[[], dict]]]:
             yield OUT / "search_M1W" / f"s{s:03d}_{j:02d}.json", job
 
 
+def search_records(scan: int, all_starts: bool = False) -> list[dict]:
+    """W4 fits of a scan; by default only the declared N_SEARCH starts, not the ones run before the cut."""
+    recs = records("search_M1W", f"s{scan:03d}_*.json")
+    return recs if all_starts else [r for r in recs if r["start"] < N_SEARCH]
+
+
 def scan_records(scan: int) -> list[dict]:
-    return records("xseed", f"s{scan:03d}_*.json") + records("search_M1W", f"s{scan:03d}_*.json")
+    return records("xseed", f"s{scan:03d}_*.json") + search_records(scan)
 
 
 def repeat_start() -> np.ndarray:
@@ -287,6 +296,39 @@ def fisher_correlations(
     return {p: float(np.median(v)) for p, v in cors.items()}
 
 
+def cut_check(scans: list[int]) -> list[str]:
+    """Per scan, whether the best of the N_SEARCH random starts reaches the lowest minimum of the other fits."""
+    rows = []
+    for s in scans:
+        w4 = search_records(s)
+        if not w4:
+            continue
+        w1 = records("xseed", f"s{s:03d}_*.json")
+        extra = [r for r in search_records(s, all_starts=True) if r["start"] >= N_SEARCH]
+        b4 = min(r["dev_converged"] for r in w4)
+        ref = min(r["dev_converged"] for r in w1 + extra)
+        same = "yes" if b4 <= ref + 1 else "no"
+        rows.append(
+            f"| {s} | {len(w4)} | {b4:.1f} | {min(r['dev_converged'] for r in w1):.1f} | "
+            + (f"{min(r['dev_converged'] for r in extra):.1f} ({len(extra)})" if extra else "none")
+            + f" | {b4 - ref:+.1f} | {same} |"
+        )
+    if not rows:
+        return []
+    return [
+        f"## W4 cut to {N_SEARCH} starts per scan",
+        "",
+        f"Best deviance of the first {N_SEARCH} random starts against the lowest of the other fits of the scan "
+        + f"(W1 cross-seeded, and any random starts {N_SEARCH} and above run before the cut). "
+        + "Reached means within 1 of it.",
+        "",
+        f"| scan | starts done | best of W4 | best of W1 | best of starts >= {N_SEARCH} (n) | difference | reached |",
+        "|---|---|---|---|---|---|---|",
+        *rows,
+        "",
+    ]
+
+
 def verdict(ratio: float) -> str:
     return "holds" if ratio <= 2 else ("fails" if ratio > 3 else "unresolved")
 
@@ -358,6 +400,7 @@ def report() -> None:
             f"H-G1a: {sep} of {tot} other basins at dD >= {g1.H_A_SEP:g} ({sep / tot:.3f}); holds >= 0.80, fails < 0.60."
         )
         lines.append("")
+    lines += cut_check(scans)
 
     bests = wide_bests()
     if len(bests) == len(scans):
