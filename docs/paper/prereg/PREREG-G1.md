@@ -191,3 +191,15 @@ stops after 60 minutes of run time, summed over the attempts a preemption splits
 of scan 15 held their workers from the start of W4 without finishing, since every preemption restarts a fit
 from its start. A start stopped at the cap has no endpoint: it is reported per scan as unfinished, not
 counted as a basin and not replaced by another start. Code: `WallCap` and `WALL_CAP_S` in the same file.
+
+The order above (the cut and the cap written after 21 and before the remaining W4 fits) rests on the result
+files' modification times and the commit times of the code; the W4 results were first committed on 2026-11-12,
+after the run.
+
+## Declared deviation 3: flag rule for an uncertain global minimum (2026-11-12, post hoc)
+
+Written after W4 ended. The report flags a scan whose global minimum is not certain. The rule in the code while
+W4 ran (rule A: the best basin reached by fewer than half of the scan's starts) flags all five scans once the
+random starts are in, since most of them end far from any good basin. The replacement (rule B: the best basin
+reached by one start only, or by no random start) was chosen after seeing the W4 results and is post hoc. The
+report gives both rules per scan. Neither enters a registered verdict.

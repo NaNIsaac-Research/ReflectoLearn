@@ -327,12 +327,15 @@ def crb_ratios(reps: list[dict], phi: float, drop: tuple[str, ...]) -> dict[str,
             cov = np.linalg.pinv(j.T @ (lam[:, None] * j))
             crbs.append(float(np.sqrt(phi * cov[keep.index(i), keep.index(i)])))
         sd = float(np.std(xs[:, i], ddof=1))
+        rng = np.random.default_rng([gc.SEED, 3])
+        boot = np.std(xs[rng.integers(0, len(xs), (2000, len(xs))), i], axis=1, ddof=1)
         out[key] = {
             "sd": sd,
             "crb_median": float(np.median(crbs)),
             "ratio_median": sd / float(np.median(crbs)),
             "crb_first": crbs[0],
             "ratio_first": sd / crbs[0],
+            "ci_first": tuple(float(v) for v in np.percentile(boot / crbs[0], [2.5, 97.5])),
         }
     return out
 
@@ -390,6 +393,31 @@ def cut_check(scans: list[int]) -> list[str]:
     ]
 
 
+def resources() -> list[str]:
+    """CPU hours per stage, summed over the preempted segments and the final run."""
+    parts = []
+    for stage, label in (
+        ("repeats", "W2"),
+        ("m2", "W3"),
+        ("search", "W4"),
+        ("profile", "profiled H-G1b"),
+    ):
+        files = list((OUT / f"run_{stage}").glob("resources*.json"))
+        if files:
+            cpu = sum(
+                sum(json.loads(p.read_text(encoding="utf-8-sig"))["cpu_hours"]) for p in files
+            )
+            parts.append(f"{label} {cpu:.1f} ({len(files)} segments)")
+    return [
+        "## Cost",
+        "",
+        "CPU hours, summed over workers and preempted segments: "
+        + ", ".join(parts)
+        + ". W1 is not recorded: restarts that found it finished overwrote its resource file.",
+        "",
+    ]
+
+
 def verdict(ratio: float) -> str:
     return "holds" if ratio <= 2 else ("fails" if ratio > 3 else "unresolved")
 
@@ -425,7 +453,9 @@ def report() -> None:
     )
     lines += [f"Code hashes in the result files: {', '.join(codes) or 'none'}.", ""]
 
-    sep, tot, summary = 0, 0, {}
+    summary: dict[int, dict] = {}
+    others_all: list[dict] = []
+    reach_rows: list[dict] = []
     for s in scans:
         recs = scan_records(s)
         if not recs:
@@ -433,37 +463,88 @@ def report() -> None:
         n_x = sum(str(r["start"]).startswith("x") for r in recs)
         bs = g1.basins_of_scan(M1W, data, s, recs)
         others = bs[1:]
-        sep += sum(b["dD"] >= g1.H_A_SEP for b in others)
-        tot += len(others)
+        for b in others:
+            budget = str(recs[b["best"]]["outcome"]).startswith("unconfirmed: budget")
+            others_all.append({"scan": s, "dD": b["dD"], "budget": budget})
         best = recs[bs[0]["best"]]
         reach = len(bs[0]["members"])
+        random_reach = sum(not str(m).startswith("x") for m in bs[0]["members"])
         lines += g1.basin_table(M1W, s, recs, bs)
         lines += [
-            f"Scan {s}: {n_x} cross-seeded and {len(recs) - n_x} random starts; {reach} reach the best basin "
-            + f"(start {best['start']}). {bound_counts(recs)}.",
+            f"Scan {s}: {n_x} cross-seeded and {len(recs) - n_x} finished random starts; the best basin is "
+            + f"reached by {reach - random_reach} cross-seeded and {random_reach} random starts (lowest from start "
+            + f"{best['start']}). {bound_counts(recs)}.",
             "",
         ]
-        # found once, or never from a random start: nothing independent of the cross-seeding confirms it
-        random_reach = sum(not str(m).startswith("x") for m in bs[0]["members"])
-        if reach == 1 or random_reach == 0:
-            nearest = min((b["dD"] for b in others), default=float("nan"))
+        if best["on_bound"]:
+            at = ", ".join(f"{n} at {best['x'][M1W.names.index(n)]:.4g}" for n in best["on_bound"])
+            interior = next((b for b in bs if not recs[b["best"]]["on_bound"]), None)
             lines += [
-                f"The global minimum on scan {s} is not certain: the best basin is reached by {reach} of "
-                + f"{len(recs)} starts, {random_reach} of them random, and the nearest other basin is at "
-                + f"dD {nearest:.3g}"
-                + ("; random starts (W4) have not run yet." if n_x == len(recs) else "."),
+                f"The lowest minimum on scan {s} is a bound solution ({at}), from start {best['start']}"
+                + (
+                    f"; the lowest basin with no parameter on a bound is at dD {interior['dD']:.2f}."
+                    if interior
+                    else "; every basin has a parameter on a bound."
+                ),
                 "",
             ]
+        reach_rows.append(
+            {
+                "scan": s,
+                "n": len(recs),
+                "reach": reach,
+                "random": random_reach,
+                "n_random": len(recs) - n_x,
+            }
+        )
         summary[s] = {
             "best_dev": best["dev_converged"],
             "best_start": best["start"],
             "reach": reach,
+            "random_reach": random_reach,
         }
-    if tot:
-        lines.append(
-            f"H-G1a: {sep} of {tot} other basins at dD >= {g1.H_A_SEP:g} ({sep / tot:.3f}); holds >= 0.80, fails < 0.60."
-        )
-        lines.append("")
+    if others_all:
+        tot = len(others_all)
+        sep = sum(o["dD"] >= g1.H_A_SEP for o in others_all)
+        near = [o for o in others_all if o["dD"] < 1000]
+        near_sep = sum(o["dD"] >= g1.H_A_SEP for o in near)
+        kept = [o for o in others_all if not o["budget"]]
+        kept_sep = sum(o["dD"] >= g1.H_A_SEP for o in kept)
+        lines += [
+            f"H-G1a: {sep} of {tot} other basins at dD >= {g1.H_A_SEP:g} ({sep / tot:.3f}); holds >= 0.80, "
+            + "fails < 0.60.",
+            "",
+            f"What the {tot} are: {tot - len(near)} are at dD >= 1000, far endpoints of random starts. Of the "
+            + f"{len(near)} nearer ones, {near_sep} are at dD >= {g1.H_A_SEP:g}"
+            + (f" ({near_sep / len(near):.3f})" if near else "")
+            + f". {tot - len(kept)} endpoints whose refinement ran out of its evaluation budget count as basins; "
+            + f"without them {kept_sep} of {len(kept)}.",
+            "",
+        ]
+    if reach_rows:
+        n_rand = sum(r["n_random"] for r in reach_rows)
+        lines += [
+            f"Random starts that reach the best basin: {sum(r['random'] for r in reach_rows)} of {n_rand} "
+            + "finished (per scan "
+            + ", ".join(f"{r['scan']}: {r['random']} of {r['n_random']}" for r in reach_rows)
+            + "). The reach figures above count cross-seeded and random starts together.",
+            "",
+            "## Flag for an uncertain global minimum",
+            "",
+            "Rule A, in the code while W4 ran: the best basin is reached by fewer than half of the scan's starts. "
+            + "Rule B, declared deviation 3, written after W4 ended (post hoc): the best basin is reached by one "
+            + "start only, or by no random start.",
+            "",
+            "| scan | starts | reach (cross-seeded + random) | rule A | rule B |",
+            "|---|---|---|---|---|",
+            *(
+                f"| {r['scan']} | {r['n']} | {r['reach'] - r['random']} + {r['random']} | "
+                + f"{'flagged' if 2 * r['reach'] < r['n'] else '-'} | "
+                + f"{'flagged' if r['reach'] == 1 or r['random'] == 0 else '-'} |"
+                for r in reach_rows
+            ),
+            "",
+        ]
     lines += cut_check(scans)
 
     bests = wide_bests()
@@ -483,10 +564,15 @@ def report() -> None:
             )
             for s in scans[1:]
         ]
+        same = 1 + sum(c <= g1.H_B_CROSS for c in cross)
+        hb = "holds" if same == len(scans) else ("fails" if same < len(scans) - 1 else "unresolved")
         lines += [
             f"H-G1b as coded for the registered run (bests scored on scan {scans[0]}'s counts, nuisances inside the "
-            + f"compared vectors): {[round(c, 1) for c in cross]}; registered rule all <= {g1.H_B_CROSS:g}. "
-            + "The profiled score with the null threshold is in `hg1b_profiled.md`.",
+            + f"compared vectors): {[round(c, 1) for c in cross]}. Registered rule: holds if all {len(scans)} "
+            + f"scans share the structure (cross-deviance at most {g1.H_B_CROSS:g}), fails if fewer than "
+            + f"{len(scans) - 1}. Here {same} of {len(scans)} (scan {scans[0]} and those within "
+            + f"{g1.H_B_CROSS:g} of it): **{hb}** under deviation 1, which keeps the registered figures. The "
+            + "profiled score with a null threshold (`hg1b_profiled.md`) is exploratory and gives no verdict.",
             "",
         ]
 
@@ -509,22 +595,41 @@ def report() -> None:
             + f"{np.median(devs) / (n_pts - p1):.2f}, range {devs.min() / (n_pts - p1):.2f} to {devs.max() / (n_pts - p1):.2f}.",
             bound_counts(reps) + ".",
             "",
-            "| parameter | nuisances | across-scan sd (A) | CRB, median over fits (A) | ratio | verdict | ratio with first fit's CRB |",
-            "|---|---|---|---|---|---|---|",
+            "Registered: across-scan sd over the CRB of the first repeat fit, as `g1_run.py` computes it. The "
+            + "interval is a seeded bootstrap of the sd over the repeats (2000 resamples, 2.5 to 97.5 %). The "
+            + "median-CRB ratio and the rows with the q offset and sigma_q fixed are not registered.",
+            "",
+            "| parameter | nuisances | across-scan sd (A) | CRB, first repeat fit (A) | ratio | 95 % interval | "
+            + "verdict | CRB, median over fits (A) | ratio, median CRB |",
+            "|---|---|---|---|---|---|---|---|---|",
         ]
+        free = {}
         for label, drop in (("free", ()), ("q offset and sigma_q fixed", ("off", "sigq"))):
             for key, v in crb_ratios(reps, phi, drop).items():
+                if not drop:
+                    free[key] = v
                 lines.append(
-                    f"| {key} | {label} | {v['sd']:.3g} | {v['crb_median']:.3g} | {v['ratio_median']:.2f} | "
-                    + f"{verdict(v['ratio_median'])} | {v['ratio_first']:.2f} |"
+                    f"| {key} | {label} | {v['sd']:.3g} | {v['crb_first']:.3g} | {v['ratio_first']:.2f} | "
+                    + f"{v['ci_first'][0]:.2f} to {v['ci_first'][1]:.2f} | {verdict(v['ratio_first'])} | "
+                    + f"{v['crb_median']:.3g} | {v['ratio_median']:.2f} |"
                 )
+        overall = (
+            "holds"
+            if all(v["ratio_first"] <= 2 for v in free.values())
+            else ("fails" if any(v["ratio_first"] > 3 for v in free.values()) else "unresolved")
+        )
         xs = np.array([r["x"] for r in reps])
         cors = fisher_correlations(
             reps, [(p, n) for p in ("Au_d", "Cr_d") for n in ("off", "sigq")] + [("off", "sigq")]
         )
         lines += [
             "",
-            "H-G1c rule: holds if the ratio is at most 2 for both, fails if above 3 for either.",
+            "H-G1c rule: holds if the ratio is at most 2 for both, fails if above 3 for either. Registered "
+            + f"verdict, all parameters free: **{overall}**; "
+            + ", ".join(
+                f"{k} {v['ratio_first']:.2f} ({verdict(v['ratio_first'])})" for k, v in free.items()
+            )
+            + ".",
             "",
             "Correlations in the inverse Fisher matrix with all parameters free (median over repeats): "
             + ", ".join(f"{a} with {b} {c:+.3f}" for (a, b), c in cors.items())
@@ -576,16 +681,45 @@ def report() -> None:
             bound_counts(list(by_scan.values())) + ".",
             "",
         ]
-        au_rho = float(np.median([by_scan[s]["x"][M2W.names.index("Au_rho")] for s in common]))
-        au_like = int((np.abs(layer[:, 2] - au_rho) <= 0.2 * au_rho).sum())
-        low = int((layer[:, 2] < 0.5 * au_rho).sum())
+        i_rho, i_au = M2W.names.index("ox_rho"), M2W.names.index("Au_rho")
+
+        def layer_type(r: dict) -> str:
+            rho, au = r["x"][i_rho], r["x"][i_au]
+            return "au" if abs(rho - au) <= 0.2 * au else ("low" if rho < 0.5 * au else "other")
+
+        table = []
+        for t, label in (("m2best", "recorded M2 best"), ("contam", "contamination layer")):
+            fits_t = [r for r in m2 if r["start"] == t]
+            kinds = [layer_type(r) for r in fits_t]
+            table.append(
+                f"| {label} | {len(fits_t)} | {kinds.count('au')} | {kinds.count('low')} | {kinds.count('other')} |"
+            )
+        devs_by = {(r["scan"], r["start"]): r["dev_converged"] for r in m2}
+        margin = [
+            abs(devs_by[(s, "contam")] - devs_by[(s, "m2best")])
+            for s in common
+            if (s, "contam") in devs_by and (s, "m2best") in devs_by
+        ]
+        win_kinds = [layer_type(by_scan[s]) for s in common]
+        at_top = sum(by_scan[s]["x"][i_rho] >= M2W.hi[i_rho] - 1e-6 for s in common)
         lines += [
-            f"Added-layer SLD within 20 % of the Au SLD in the same fits ({au_rho:.3g}): {au_like} of "
-            + f"{len(common)} repeats; below half of it: {low}. An Au-like layer may be an Au sub-layer or a split "
-            + "of the Au interface rather than a contamination layer; the fit cannot tell which (inference).",
+            "Layer type of every W3 fit by its start (Au-like: SLD within 20 % of the same fit's Au SLD; low: "
+            + "below half of it):",
+            "",
+            "| start | fits | Au-like | low | other |",
+            "|---|---|---|---|---|",
+            *table,
+            "",
+            f"Winners: {win_kinds.count('au')} Au-like, {win_kinds.count('low')} low, {win_kinds.count('other')} "
+            + "other. The layer type follows the start, so it describes where the fit began, not the sample. "
+            + f"{sum(bool(by_scan[s]['on_bound']) for s in common)} of {len(common)} winners have a parameter on a "
+            + f"bound ({at_top} with the layer SLD at its upper bound {M2W.hi[i_rho]:g}). The two starts end within "
+            + f"dD 25 of each other in {sum(m < 25 for m in margin)} of {len(margin)} repeats. dD >= 0 is "
+            + "expected, since M2W contains M1W.",
             "",
         ]
 
+    lines += resources()
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "summary.json").write_text(
         json.dumps({"phi": phi, "scans": summary, "code": CODE}, indent=1) + "\n", encoding="utf-8"

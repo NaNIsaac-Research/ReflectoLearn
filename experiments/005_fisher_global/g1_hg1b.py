@@ -221,6 +221,11 @@ def report() -> None:
         else load(g1.OUT / "followup" / "hg1c_families.json")["pooled"]["phi"]
     )
     analytic = 2 * phi * float(chi2.ppf(0.95, len(STRUCT)))
+    null_ci = (float("nan"), float("nan"))
+    if len(null):
+        rng = np.random.default_rng([gc.SEED, 4])
+        boot = np.percentile(null[rng.integers(0, len(null), (2000, len(null)))], 95, axis=1)
+        null_ci = tuple(float(v) for v in np.percentile(boot, [2.5, 97.5]))
     lines = [
         "# H-G1b profiled over the nuisances, with a null threshold",
         "",
@@ -230,12 +235,23 @@ def report() -> None:
         f"inside the {'registered' if VARIANT == 'registered' else 'deviation-1 (M1W)'} bounds; "
         + "the seven structural parameters of the source are kept.",
         "",
+        (
+            "Exploratory: the registered H-G1b verdict is the one from the as-coded scores in `report.md`; this "
+            + "score and its threshold were not registered and give no verdict."
+            if VARIANT == "wide"
+            else ""
+        ),
+        "",
         f"Null: {len(null)} seeded random pairs of the 100 repeat fits (one sample, different scans). "
         + (
-            f"95th percentile {np.percentile(null, 95):.1f}, median {np.median(null):.1f}, max {null.max():.1f}."
+            f"95th percentile {np.percentile(null, 95):.1f} (bootstrap 95 % interval "
+            + f"{null_ci[0]:.0f} to {null_ci[1]:.0f}), median {np.median(null):.1f}, max {null.max():.1f}."
             if len(null)
             else "not computed."
         ),
+        "Limits: the profile minimiser is L-BFGS-B over the q offset and log sigma_q from two starts, capped at "
+        + "40 function evaluations per start; whether it converged is not stored, so a score may be above its "
+        + "true minimum.",
         (
             f"Pairs in the same q-offset family ({len(null_fam)}): 95th percentile {np.percentile(null_fam, 95):.1f}."
             if len(null_fam) > 2
@@ -259,6 +275,7 @@ def report() -> None:
         "",
     ]
     thr = float(np.percentile(null, 95)) if len(null) else None
+    above_sets: dict[str, set[tuple[int, int]]] = {}
     for v, title in (
         ("search", "search bests (as registered)"),
         ("repeat", "repeat fits of the same scans"),
@@ -279,12 +296,34 @@ def report() -> None:
                 + f"{r['nuisances']['off']:.2e} | {r['nuisances']['sigq']:.2e} | {above} |"
             )
         if thr is not None:
-            n_above = sum(r["dev_profiled"] > thr for r in rows)
+            above = {(r["target"], r["source"]) for r in rows if r["dev_profiled"] > thr}
+            above_sets[v] = above
+            pairs = {frozenset(p) for p in above if (p[1], p[0]) in above}
+            n_pairs = len({frozenset((r["target"], r["source"])) for r in rows})
+            scans = sorted({r["target"] for r in rows})
+            per_scan = {s: sum(s in p for p in above) for s in scans}
+            top = max(per_scan, key=per_scan.get)
             lines += [
                 "",
-                f"{n_above} of {len(rows)} directed scores above the null 95th percentile.",
+                f"{len(above)} of {len(rows)} directed scores above the null 95th percentile; {len(pairs)} of "
+                + f"{n_pairs} scan pairs above in both directions. Directed scores above, by scan involved: "
+                + ", ".join(f"{s} {n}" for s, n in per_scan.items())
+                + f" ({per_scan[top]} of the {len(above)} involve scan {top}).",
                 "",
             ]
+    if len(above_sets) == 2:
+        diff = above_sets["search"] ^ above_sets["repeat"]
+        involved = set.intersection(*(set(p) for p in diff)) if diff else set()
+        lines += [
+            f"The two tables differ in {len(diff)} directed scores"
+            + (
+                f", all involving scan {', '.join(map(str, sorted(involved)))}: the gap comes from that scan "
+                + "alone, whose search best and repeat fit differ."
+                if involved
+                else "."
+            ),
+            "",
+        ]
     (OUT.parent / "hg1b_profiled.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines).encode("ascii", "replace").decode())
 
