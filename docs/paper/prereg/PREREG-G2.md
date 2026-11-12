@@ -65,6 +65,27 @@ Cost estimate (inference): 95 × 3 + 5 × 20 + 30 × 3 = 475 draws, two refineme
 refinement (a refinement from a nearby minimum is closer to the recorded median of 26.5 s than to
 the 241 s mean of the far starts), about 9 CPU hours; with 4 processes about 2.3 hours of wall time.
 
+### Choices fixed before the G2 run (2026-11-12, written before any G2 fit)
+
+The text above leaves these open; they are fixed here, in `experiments/005_fisher_global/g2_run.py`.
+
+- Data curve. The draws are taken from the truth curve on the converged forward, as in G2b, so that the
+  converged scores (the headline) are not offset by the engine's quadrature error. The engine is used
+  for the refinements only, as registered.
+- Seeds. Stage 1 for the Poisson draws and stage 3 for the negative-binomial draws (stage 2 is G2b); the
+  basin index is the candidate's position in `g2` of the subset file, also for the `g2_phi` candidates.
+- Negative-binomial draws: mean λ and variance φλ with φ = 1.34, numpy's parameters n = λ / (φ − 1) and
+  p = 1 / φ per point.
+- H-N1 compares the noisy basin minimum with the recorded noise-free basin minimum by cross-deviance on
+  the converged forward, at most 25. ΔD₀ is the converged-forward deviance between the recorded basin
+  minimum and the truth curve.
+- Files: one result file per draw, written once; each of the two fits of a draw is also written to its
+  own file when it ends, so a preempted run loses at most the fit in progress. Runs through the test
+  queue as a preemptible job, 4 processes.
+- Cost. A one-draw check before the run did not finish within 10 minutes, against the 70 s per draw
+  assumed above, so the cost estimate is likely low by a large factor. The first hour of the run measures
+  it; the run continues unless the queue owner stops it, and the report gives the number of draws done.
+
 ## G2b: mismatched truth
 
 Removes the inverse crime. The data curve is not from the fitting model: one interface of the truth

@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory)][string]$Name,
     [Parameter(Mandatory)][string]$JobCommand,
     [Parameter(Mandatory)][string]$DoneFile,
-    [string]$Log = 'queue_guard.log'
+    [string]$Log = 'queue_guard.log',
+    [string]$NotifyTo = 'xrr'
 )
 # Keeps a long G-run polite: when another run (pr-land, a lane's full suite) is waiting behind this test-queue job,
 # the job is stopped (finished results stay, workers skip them on resume), and it is started again through
@@ -50,3 +51,6 @@ while (-not (Test-Path $DoneFile)) {
     Start-Sleep 15
 }
 Log 'done file present; guard ends'
+# the lane that started the run has no watch of its own; tell it the job is done
+& courier send $NotifyTo "[queue_guard] $Name done: $DoneFile" 2>&1 | Out-Null
+if ($LASTEXITCODE) { Log "courier send $NotifyTo failed (exit $LASTEXITCODE)" }
