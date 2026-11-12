@@ -99,8 +99,9 @@ the curves: the failures are search reach or objective choice, not missing infor
 exception of the engine was a quadrature artefact. An oxide merged
 into the film is the exception and is not reliably rejected at 10⁶ counts for 2θ_max ≤ 3°. At the
 decision level local Fisher information agrees; its quadratic overstates the deviance of wrong
-basins by about 10² to 10³ in the fit's own coordinates. No noisy, mismatched-model or measured
-data are tested.
+basins by about 10² to 10³ in the fit's own coordinates. Noisy and mismatched-model data are tested
+only in G2b and measured data only in G1, under declared deviations (section 13); neither enters the
+abstract.
 
 Only F1, F3, F5, F6, F7 (H-W2 part) and F10 enter the abstract. F4, F8 and F9 are draft and are not
 used.
@@ -345,6 +346,11 @@ Every limit FINDINGS states is kept here.
   global uniqueness, number of basins or multimodality is established; interior-only H-BM1 is not
   testable; basins no recorded endpoint reached are not counted. The 13 bilayer conditions where no
   start reached the truth are undecided, so the bilayer half of F3 is largely untested.
+- **Measured data (G1).** On the public Au / Cr / Si repeats no scan's best fit is established as the
+  global minimum: 4 of 75 finished random starts reach it, on two scans only cross-seeded starts do,
+  and one scan's lowest minimum is a bound solution. The across-repeat spread of the Au thickness is
+  five times its Cramér-Rao bound, so local Fisher information understates it on these data. The
+  second model's added layer follows its start and is not a statement about the sample.
 - **Capped fits.** Many R2a endpoints stopped at the 200-evaluation cap and are not basin minima
   (F10 examines minima); F3 has weak negatives where only 1 to 3 of 64 starts reached the truth
   basin.
@@ -456,13 +462,13 @@ content was read in full: the one-line "relevance" comes from the abstract or th
 
 CPU costs are scaled from the recorded full basin run: 935 refinements took 50.9 CPU hours (mean
 241 s per R2a refinement, median 26.5 s) on four processes; B-1 took 31 s; one truth-start profile
-took 451 s. Estimates are inference. G0, G2b, G4 and G5 are done in this draft; G1, G2, G2c and G3 are
-pre-registered in [prereg/](prereg/) and not run.
+took 451 s. Estimates are inference. G0, G2b, G4 and G5 are done in this draft; G1 is run, with its
+rerun under declared deviations; G2, G2c and G3 are pre-registered in [prereg/](prereg/) and not run.
 
 | id | experiment | why | cost / status |
 |---|---|---|---|
 | G0 | Refine every parameter-distinct recorded R2a endpoint with ΔD ≤ 4 (largest bound-scaled distance from the truth above 10⁻³; 29 endpoints) with the basin run's code | the basin run refined 4 < ΔD ≤ 10⁵ only, so S₁\* was cut at both ends | **done**: 0.04 CPU h, about 1 min wall on two processes; 27 return to the truth, 2 (oxide merged into the film) are second minima at ΔD 1.41 and 1.40, S₁\* 7.1 × 10⁵ ([near_report.md](../fisher_global/near_report.md)) |
-| G1 | The public repeated Au / Cr / Si scans (Zenodo 10.5281/zenodo.18548583, CC BY 4.0): multi-start refits of five repeats, S₁\* between distinct endpoints, reproducibility across 100 repeats, measured dispersion | shows the picture on measured counts. No independent structure exists for this sample, so only claims that need no truth are made; the source is a synchrotron fast scan, not a laboratory Cu Kα step scan | about 11 CPU hours, about 3 h wall on 4 processes [estimate]; [PREREG-G1.md](prereg/PREREG-G1.md). A laboratory set with independent structure (TEM) remains open |
+| G1 | The public repeated Au / Cr / Si scans (Zenodo 10.5281/zenodo.18548583, CC BY 4.0): multi-start refits of five repeats, S₁\* between distinct endpoints, reproducibility across 100 repeats, measured dispersion | shows the picture on measured counts. No independent structure exists for this sample, so only claims that need no truth are made; the source is a synchrotron fast scan, not a laboratory Cu Kα step scan | **run**; in the registered run σ_q sat on its bound in all 100 repeat fits and the q offset in 83 ([g1_report.md](../fisher_global/g1/g1_report.md)), so it was rerun under declared deviations 1 to 3 (wider q offset and σ_q bounds; 16 random starts per scan, each capped at 60 minutes; a post hoc flag rule) ([report.md](../fisher_global/g1/wide/report.md), [PREREG-G1.md](prereg/PREREG-G1.md)). H-G1a holds (63 of 65 other basins at ΔD ≥ 25; 51 of the 65 are far endpoints, and 12 of the 14 near ones pass). H-G1b fails as registered. H-G1c fails through the Au thickness (across-repeat sd 5.00 times the CRB; Cr 2.79, unresolved). Only 4 of 75 finished random starts reach the best basin, none on two of the five scans, so no scan's best fit is established as the global minimum. The second model's added layer takes the form its start suggests, so it says nothing about the sample. About 55 CPU hours recorded (W1 not recorded). A laboratory set with independent structure (TEM) remains open |
 | G2 | Noisy curves: refit Poisson draws (and negative-binomial draws with φ = 1.34) of existing conditions from the recorded endpoints, about 100 plus 30 candidates | tests whether the picture survives noise; all current results are noise-free | about 9 CPU hours, about 2.3 h wall on 4 processes [estimate]; [PREREG-G2.md](prereg/PREREG-G2.md) |
 | G2b | Mismatched truth: generate the curve from a model the fitting model lacks (a graded interface, a density gradient) and refit with the fitting model | removes the inverse crime; the margin of the wrong basins is measured against a truth that is not a model minimum | **done**: 30 candidates (28 with S₁\* ≤ 10⁴), 2.71 CPU h, 1.4 h wall on two processes, about 0.4 GB per worker (peak working set not logged for the main pass); H-M1 and H-M2 hold under both converged and engine scores (median margin 4.4 × 10⁴; Poisson draws: median D_truth 121); the graded interface is nearly representable by the fitting model (noise-free median D_truth 0.002), so this is a weak mismatch ([g2b_report.md](../fisher_global/g2b/g2b_report.md)) |
 | G2c | Parametric bootstrap on the ~10 closest basins (all with ΔD < 20 at 10⁶): simulate from the truth and from each basin, refit, and compare the likelihood-ratio distribution with χ² | a deviance margin is not a test; four of the five R2a exceptions are within χ²₁₂ 95 % | about 8.5 CPU hours [estimate]; same pre-registration |
@@ -492,5 +498,5 @@ not verified):
 - Figures: five, each with a reproduce command and a data path (section 8); the journal's figure
   format and size rules are to be checked.
 - Claim wording follows the referee review (section 0): audit, window-qualified medians, the oxide
-  exception named, box-constrained minima, and a limitations paragraph stating that no noisy,
-  mismatched-model or measured data are tested until G1, G2 and G2b are done.
+  exception named, box-constrained minima, and a limitations paragraph stating what G1 (measured data)
+  and G2b (mismatched model) test and that G2 (noisy curves) is not done.
