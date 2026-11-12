@@ -25,7 +25,7 @@ Code hashes in the result files: 1211a66, 46fac5c, a2bfaa5, dfd7312.
 | 12 | 1 | 19039.1 | 1.68e+04 | 1.71e+04 | 0.0146 |
 | 13 | 1 | 28886.7 | 2.66e+04 | 2.54e+04 | 0.00982 |
 
-Scan 15: 5 cross-seeded and 14 random starts; 5 reach the best basin (start 15). 5 of 19 fits with no parameter on a bound; on a bound: sigq 9, Cr_rho 8, Cr_d 4, off 4, Au_d 2, Au_sig 1, Si_sig 1, Cr_sig 1.
+Scan 15: 5 cross-seeded and 14 finished random starts; the best basin is reached by 4 cross-seeded and 1 random starts (lowest from start 15). 5 of 19 fits with no parameter on a bound; on a bound: sigq 9, Cr_rho 8, Cr_d 4, off 4, Au_d 2, Au_sig 1, Si_sig 1, Cr_sig 1.
 
 ## M1W, scan 19: 21 starts, 13 distinct basins, best deviance 1611.0
 
@@ -45,7 +45,7 @@ Scan 15: 5 cross-seeded and 14 random starts; 5 reach the best basin (start 15).
 | 11 | 1 | 18426.4 | 1.68e+04 | 1.69e+04 | 0.0175 |
 | 12 | 1 | 18556.9 | 1.69e+04 | 1.7e+04 | 0.0173 |
 
-Scan 19: 5 cross-seeded and 16 random starts; 6 reach the best basin (start 7). 6 of 21 fits with no parameter on a bound; on a bound: Cr_d 10, sigq 7, off 5, b 4, Cr_rho 4, Cr_sig 2, Si_sig 1.
+Scan 19: 5 cross-seeded and 16 finished random starts; the best basin is reached by 4 cross-seeded and 2 random starts (lowest from start 7). 6 of 21 fits with no parameter on a bound; on a bound: Cr_d 10, sigq 7, off 5, b 4, Cr_rho 4, Cr_sig 2, Si_sig 1.
 
 ## M1W, scan 41: 19 starts, 14 distinct basins, best deviance 2027.0
 
@@ -66,9 +66,9 @@ Scan 19: 5 cross-seeded and 16 random starts; 6 reach the best basin (start 7). 
 | 12 | 1 | 18903.0 | 1.69e+04 | 1.7e+04 | 0.0163 |
 | 13 | 2 | 18923.4 | 1.69e+04 | 1.69e+04 | 0.0163 |
 
-Scan 41: 5 cross-seeded and 14 random starts; 1 reach the best basin (start x068). 8 of 19 fits with no parameter on a bound; on a bound: sigq 6, off 5, Cr_rho 4, Cr_d 2, b 1, Si_sig 1, Au_d 1.
+Scan 41: 5 cross-seeded and 14 finished random starts; the best basin is reached by 1 cross-seeded and 0 random starts (lowest from start x068). 8 of 19 fits with no parameter on a bound; on a bound: sigq 6, off 5, Cr_rho 4, Cr_d 2, b 1, Si_sig 1, Au_d 1.
 
-The global minimum on scan 41 is not certain: the best basin is reached by 1 of 19 starts, 0 of them random, and the nearest other basin is at dD 15.6.
+The lowest minimum on scan 41 is a bound solution (Cr_d at 40, b at -1), from start x068; the lowest basin with no parameter on a bound is at dD 15.57.
 
 ## M1W, scan 68: 21 starts, 17 distinct basins, best deviance 2032.2
 
@@ -92,9 +92,7 @@ The global minimum on scan 41 is not certain: the best basin is reached by 1 of 
 | 15 | 1 | 26808.9 | 2.48e+04 | 2.58e+04 | 0.0118 |
 | 16 | 1 | 30162.4 | 2.81e+04 | 2.8e+04 | 0.0109 |
 
-Scan 68: 5 cross-seeded and 16 random starts; 4 reach the best basin (start x076). 8 of 21 fits with no parameter on a bound; on a bound: Cr_rho 10, sigq 8, off 7, Au_d 4, b 3, Cr_d 3, Cr_sig 2, Au_sig 2, Au_rho 1, Si_sig 1.
-
-The global minimum on scan 68 is not certain: the best basin is reached by 4 of 21 starts, 0 of them random, and the nearest other basin is at dD 69.6.
+Scan 68: 5 cross-seeded and 16 finished random starts; the best basin is reached by 4 cross-seeded and 0 random starts (lowest from start x076). 8 of 21 fits with no parameter on a bound; on a bound: Cr_rho 10, sigq 8, off 7, Au_d 4, b 3, Cr_d 3, Cr_sig 2, Au_sig 2, Au_rho 1, Si_sig 1.
 
 ## M1W, scan 76: 20 starts, 12 distinct basins, best deviance 1758.9
 
@@ -113,9 +111,25 @@ The global minimum on scan 68 is not certain: the best basin is reached by 4 of 
 | 10 | 1 | 18004.1 | 1.62e+04 | 1.66e+04 | 0.0184 |
 | 11 | 2 | 24996.0 | 2.32e+04 | 2.32e+04 | 0.0132 |
 
-Scan 76: 5 cross-seeded and 15 random starts; 5 reach the best basin (start 9). 12 of 20 fits with no parameter on a bound; on a bound: sigq 5, off 3, Cr_rho 3, Cr_d 2, b 2, Au_d 2, Au_sig 2, Cr_sig 1.
+Scan 76: 5 cross-seeded and 15 finished random starts; the best basin is reached by 4 cross-seeded and 1 random starts (lowest from start 9). 12 of 20 fits with no parameter on a bound; on a bound: sigq 5, off 3, Cr_rho 3, Cr_d 2, b 2, Au_d 2, Au_sig 2, Cr_sig 1.
 
 H-G1a: 63 of 65 other basins at dD >= 25 (0.969); holds >= 0.80, fails < 0.60.
+
+What the 65 are: 51 are at dD >= 1000, far endpoints of random starts. Of the 14 nearer ones, 12 are at dD >= 25 (0.857). 3 endpoints whose refinement ran out of its evaluation budget count as basins; without them 60 of 62.
+
+Random starts that reach the best basin: 4 of 75 finished (per scan 15: 1 of 14, 19: 2 of 16, 41: 0 of 14, 68: 0 of 16, 76: 1 of 15). The reach figures above count cross-seeded and random starts together.
+
+## Flag for an uncertain global minimum
+
+Rule A, in the code while W4 ran: the best basin is reached by fewer than half of the scan's starts. Rule B, declared deviation 3, written after W4 ended (post hoc): the best basin is reached by one start only, or by no random start.
+
+| scan | starts | reach (cross-seeded + random) | rule A | rule B |
+|---|---|---|---|---|
+| 15 | 19 | 4 + 1 | flagged | - |
+| 19 | 21 | 4 + 2 | flagged | - |
+| 41 | 19 | 1 + 0 | flagged | flagged |
+| 68 | 21 | 4 + 0 | flagged | flagged |
+| 76 | 20 | 4 + 1 | flagged | - |
 
 ## W4 cut to 16 starts per scan
 
@@ -129,21 +143,23 @@ Best deviance of the first 16 random starts against the lowest of the other fits
 | 68 | 16 | 0 | 2244.2 | 2032.2 | none | +212.0 | no |
 | 76 | 15 | 1 | 1758.9 | 1758.9 | none | -0.0 | yes |
 
-H-G1b as coded for the registered run (bests scored on scan 15's counts, nuisances inside the compared vectors): [1175.3, 1109.0, 1746.4, 2607.2]; registered rule all <= 25. The profiled score with the null threshold is in `hg1b_profiled.md`.
+H-G1b as coded for the registered run (bests scored on scan 15's counts, nuisances inside the compared vectors): [1175.3, 1109.0, 1746.4, 2607.2]. Registered rule: holds if all 5 scans share the structure (cross-deviance at most 25), fails if fewer than 4. Here 1 of 5 (scan 15 and those within 25 of it): **fails** under deviation 1, which keeps the registered figures. The profiled score with a null threshold (`hg1b_profiled.md`) is exploratory and gives no verdict.
 
 ## W2: 100 repeat fits from scan 15's best
 
 Median phi 1.178. Deviance over n - p (839 - 11): median 2.18, range 1.80 to 3.32.
 95 of 100 fits with no parameter on a bound; on a bound: Cr_rho 4, b 2.
 
-| parameter | nuisances | across-scan sd (A) | CRB, median over fits (A) | ratio | verdict | ratio with first fit's CRB |
-|---|---|---|---|---|---|---|
-| Au_d | free | 1.02 | 0.204 | 4.97 | fails | 5.00 |
-| Cr_d | free | 0.793 | 0.234 | 3.39 | fails | 2.79 |
-| Au_d | q offset and sigma_q fixed | 1.02 | 0.0502 | 20.22 | fails | 20.46 |
-| Cr_d | q offset and sigma_q fixed | 0.793 | 0.22 | 3.61 | fails | 2.91 |
+Registered: across-scan sd over the CRB of the first repeat fit, as `g1_run.py` computes it. The interval is a seeded bootstrap of the sd over the repeats (2000 resamples, 2.5 to 97.5 %). The median-CRB ratio and the rows with the q offset and sigma_q fixed are not registered.
 
-H-G1c rule: holds if the ratio is at most 2 for both, fails if above 3 for either.
+| parameter | nuisances | across-scan sd (A) | CRB, first repeat fit (A) | ratio | 95 % interval | verdict | CRB, median over fits (A) | ratio, median CRB |
+|---|---|---|---|---|---|---|---|---|
+| Au_d | free | 1.02 | 0.203 | 5.00 | 3.96 to 5.92 | fails | 0.204 | 4.97 |
+| Cr_d | free | 0.793 | 0.284 | 2.79 | 2.20 to 3.37 | unresolved | 0.234 | 3.39 |
+| Au_d | q offset and sigma_q fixed | 1.02 | 0.0496 | 20.46 | 16.23 to 24.26 | fails | 0.0502 | 20.22 |
+| Cr_d | q offset and sigma_q fixed | 0.793 | 0.273 | 2.91 | 2.29 to 3.51 | unresolved | 0.22 | 3.61 |
+
+H-G1c rule: holds if the ratio is at most 2 for both, fails if above 3 for either. Registered verdict, all parameters free: **fails**; Au_d 5.00 (fails), Cr_d 2.79 (unresolved).
 
 Correlations in the inverse Fisher matrix with all parameters free (median over repeats): Au_d with off -0.969, Au_d with sigq -0.045, Cr_d with off -0.288, Cr_d with sigq -0.172, off with sigq +0.035. A thickness strongly correlated with the q offset or sigma_q has a CRB that shrinks when those are fixed, which is why the two CRB rows differ.
 
@@ -157,5 +173,16 @@ Added layer (median, quartiles): thickness 16.8 A (16.1 to 17.3), roughness 4.59
 Lower minimum from the contamination start in 40 repeats, from the recorded M2 best in 60.
 5 of 100 fits with no parameter on a bound; on a bound: b 57, Au_sig 47, Cr_rho 26, ox_rho 14, ox_sig 13, Si_sig 3, sigq 2.
 
-Added-layer SLD within 20 % of the Au SLD in the same fits (126): 60 of 100 repeats; below half of it: 38. An Au-like layer may be an Au sub-layer or a split of the Au interface rather than a contamination layer; the fit cannot tell which (inference).
+Layer type of every W3 fit by its start (Au-like: SLD within 20 % of the same fit's Au SLD; low: below half of it):
+
+| start | fits | Au-like | low | other |
+|---|---|---|---|---|
+| recorded M2 best | 100 | 88 | 0 | 12 |
+| contamination layer | 100 | 3 | 96 | 1 |
+
+Winners: 60 Au-like, 38 low, 2 other. The layer type follows the start, so it describes where the fit began, not the sample. 95 of 100 winners have a parameter on a bound (14 with the layer SLD at its upper bound 120). The two starts end within dD 25 of each other in 16 of 100 repeats. dD >= 0 is expected, since M2W contains M1W.
+
+## Cost
+
+CPU hours, summed over workers and preempted segments: W2 0.5 (2 segments), W3 28.4 (13 segments), W4 20.2 (18 segments), profiled H-G1b 5.9 (1 segments). W1 is not recorded: restarts that found it finished overwrote its resource file.
 

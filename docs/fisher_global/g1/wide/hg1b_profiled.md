@@ -5,7 +5,10 @@ not a registered test. Score: noise-free Poisson deviance of the source fit's st
 target scan's best curve, on the target scan's counts, minimised over i0, b, q offset and sigma_q
 inside the deviation-1 (M1W) bounds; the seven structural parameters of the source are kept.
 
-Null: 200 seeded random pairs of the 100 repeat fits (one sample, different scans). 95th percentile 610.7, median 162.1, max 870.9.
+Exploratory: the registered H-G1b verdict is the one from the as-coded scores in `report.md`; this score and its threshold were not registered and give no verdict.
+
+Null: 200 seeded random pairs of the 100 repeat fits (one sample, different scans). 95th percentile 610.7 (bootstrap 95 % interval 501 to 746), median 162.1, max 870.9.
+Limits: the profile minimiser is L-BFGS-B over the q offset and log sigma_q from two starts, capped at 40 function evaluations per start; whether it converged is not stored, so a score may be above its true minimum.
 Pairs in the same q-offset family (200): 95th percentile 610.7.
 Analytic same-truth reference 2 phi chi2_7 at 95 %, phi 1.18: 33.1 (Poisson Fisher, no scan-to-scan variation). The registered threshold was 25.
 
@@ -36,7 +39,7 @@ Analytic same-truth reference 2 phi chi2_7 at 95 %, phi 1.18: 33.1 (Poisson Fish
 | 76 | 41 | 4944.5 | 1568.8 | 1.54e-03 | 2.33e-03 | yes |
 | 76 | 68 | 191.3 | 70.1 | -3.19e-03 | 1.85e-03 | no |
 
-12 of 20 directed scores above the null 95th percentile.
+12 of 20 directed scores above the null 95th percentile; 6 of 10 scan pairs above in both directions. Directed scores above, by scan involved: 15 6, 19 2, 41 8, 68 4, 76 4 (8 of the 12 involve scan 41).
 
 ## Five drawn scans, repeat fits of the same scans
 
@@ -63,5 +66,7 @@ Analytic same-truth reference 2 phi chi2_7 at 95 %, phi 1.18: 33.1 (Poisson Fish
 | 76 | 41 | 3726.6 | 831.8 | 1.52e-03 | 1.85e-03 | yes |
 | 76 | 68 | 191.3 | 70.1 | -3.19e-03 | 1.85e-03 | no |
 
-6 of 20 directed scores above the null 95th percentile.
+6 of 20 directed scores above the null 95th percentile; 3 of 10 scan pairs above in both directions. Directed scores above, by scan involved: 15 4, 19 0, 41 2, 68 2, 76 4 (4 of the 6 involve scan 15).
+
+The two tables differ in 6 directed scores, all involving scan 41: the gap comes from that scan alone, whose search best and repeat fit differ.
 
