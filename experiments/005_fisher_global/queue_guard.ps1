@@ -28,7 +28,7 @@ function Waiters {
     }
 }
 function Start-JobQueued {
-    Start-Process pwsh -ArgumentList '-NoProfile', '-File', $queue, '-Name', $Name, '-Preemptible', '-Command', "`"$JobCommand`"" -WindowStyle Hidden
+    Start-Process pwsh -ArgumentList '-NoProfile', '-File', $queue, '-Name', $Name, '-Notify', $NotifyTo, '-Preemptible', '-Command', "`"$JobCommand`"" -WindowStyle Hidden
     Log 'job started'
 }
 Start-Sleep 20

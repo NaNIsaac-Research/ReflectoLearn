@@ -14,4 +14,5 @@ if ($LASTEXITCODE) { exit $LASTEXITCODE }
 # workers also stop at their wall-time deadline; only a run with every draw written is done
 $py = Join-Path $env:DEV 'NaNIsaac/_wt/ReflectoLearn-use-sim/.venv/Scripts/python.exe'
 $left = [int](& $py -I "$exp/g2_run.py" status)
+"TEST-QUEUE-STAGE: G2 workers finished, $left of 475 draws left"
 if ($left -eq 0) { Set-Content (Join-Path $out 'run.done') (Get-Date -Format o) }
