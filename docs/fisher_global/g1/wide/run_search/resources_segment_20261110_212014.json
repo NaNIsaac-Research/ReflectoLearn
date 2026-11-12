@@ -1,0 +1,14 @@
+{
+  "wall_hours": 1.369,
+  "cpu_hours": [
+    1.337,
+    1.36,
+    1.338
+  ],
+  "peak_rss_gb": [
+    0.95,
+    0.95,
+    0.95
+  ],
+  "preempted": true
+}
