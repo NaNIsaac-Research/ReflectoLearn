@@ -1,0 +1,31 @@
+{
+ "phi": 1.177840013504196,
+ "scans": {
+  "15": {
+   "best_dev": 2242.064917722816,
+   "best_start": 15,
+   "reach": 5
+  },
+  "19": {
+   "best_dev": 1610.951504548228,
+   "best_start": 7,
+   "reach": 6
+  },
+  "41": {
+   "best_dev": 2026.9857329222687,
+   "best_start": "x068",
+   "reach": 1
+  },
+  "68": {
+   "best_dev": 2032.200935239256,
+   "best_start": "x076",
+   "reach": 4
+  },
+  "76": {
+   "best_dev": 1758.8578984031765,
+   "best_start": 9,
+   "reach": 5
+  }
+ },
+ "code": "46fac5c-dirty"
+}
