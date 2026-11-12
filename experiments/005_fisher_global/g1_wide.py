@@ -443,11 +443,14 @@ def report() -> None:
             + f"(start {best['start']}). {bound_counts(recs)}.",
             "",
         ]
-        if 2 * reach < len(recs):
+        # found once, or never from a random start: nothing independent of the cross-seeding confirms it
+        random_reach = sum(not str(m).startswith("x") for m in bs[0]["members"])
+        if reach == 1 or random_reach == 0:
             nearest = min((b["dD"] for b in others), default=float("nan"))
             lines += [
                 f"The global minimum on scan {s} is not certain: the best basin is reached by {reach} of "
-                + f"{len(recs)} starts and the nearest other basin is at dD {nearest:.3g}"
+                + f"{len(recs)} starts, {random_reach} of them random, and the nearest other basin is at "
+                + f"dD {nearest:.3g}"
                 + ("; random starts (W4) have not run yet." if n_x == len(recs) else "."),
                 "",
             ]
@@ -574,13 +577,14 @@ def report() -> None:
             "",
         ]
         au_rho = float(np.median([by_scan[s]["x"][M2W.names.index("Au_rho")] for s in common]))
-        if abs(np.median(layer[:, 2]) - au_rho) <= 0.2 * au_rho:
-            lines += [
-                f"The added layer's SLD is close to the Au SLD in the same fits ({au_rho:.3g}). It may be an Au "
-                + "sub-layer or a split of the Au interface rather than a contamination layer; the fit cannot "
-                + "tell which (inference).",
-                "",
-            ]
+        au_like = int((np.abs(layer[:, 2] - au_rho) <= 0.2 * au_rho).sum())
+        low = int((layer[:, 2] < 0.5 * au_rho).sum())
+        lines += [
+            f"Added-layer SLD within 20 % of the Au SLD in the same fits ({au_rho:.3g}): {au_like} of "
+            + f"{len(common)} repeats; below half of it: {low}. An Au-like layer may be an Au sub-layer or a split "
+            + "of the Au interface rather than a contamination layer; the fit cannot tell which (inference).",
+            "",
+        ]
 
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "summary.json").write_text(
