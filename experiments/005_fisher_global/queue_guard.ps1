@@ -35,18 +35,22 @@ Start-Sleep 20
 while (-not (Test-Path $DoneFile)) {
     $running = @(Mine)
     if (@(Waiters).Count -eq 0) { $firstSeen = $null } elseif (-not $firstSeen) { $firstSeen = Get-Date }
-    if ($running.Count -gt 0 -and $firstSeen -and ((Get-Date) - $firstSeen).TotalMinutes -ge 5) {
+    # only a job whose workers run is paused; a job still waiting in the queue keeps its place
+    $working = @($running | Where-Object Name -match 'python')
+    if ($working.Count -gt 0 -and $firstSeen -and ((Get-Date) - $firstSeen).TotalMinutes -ge 5) {
         $firstSeen = $null
         $w = (Waiters | Select-Object -First 1).CommandLine
         Log "waiter seen: $($w.Substring(0, [math]::Min(120, $w.Length))); pausing"
         $running | Where-Object Name -match 'python' | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
         $running | Where-Object Name -match 'pwsh' | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        # queue again behind the waiter: waiting for a free queue starved the run for hours while
+        # preemptible lane suites held it back to back
         Start-Sleep 20
-        do { Start-Sleep 30 } until ((& pwsh -NoProfile -File $queue -Status) -eq 'free' -and @(Waiters).Count -eq 0)
+        Start-JobQueued
         Start-Sleep 60
-        if ((& pwsh -NoProfile -File $queue -Status) -eq 'free') { Start-JobQueued }
     } elseif ($running.Count -eq 0) {
-        if ((& pwsh -NoProfile -File $queue -Status) -eq 'free' -and @(Waiters).Count -eq 0) { Start-JobQueued; Start-Sleep 60 }
+        Start-JobQueued
+        Start-Sleep 60
     }
     Start-Sleep 15
 }
