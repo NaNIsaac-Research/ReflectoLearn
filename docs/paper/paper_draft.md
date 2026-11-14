@@ -68,7 +68,7 @@ counts, is the one the records support.
   That is below 10⁶, so the literal criterion is not met, but at 10⁶ counts the structure is 1.4
   deviance units from the truth and is not rejected. The claim is worded around this exception.
 - Noisy or measured curves in which the wrong basins fall within the noise of the truth, or in which
-  the basins merge. All results here use noise-free curves from the fitted model. At ΔD of 4 to 17
+  the basins merge. Sections 6.1 to 6.5 use noise-free curves from the fitted model. At ΔD of 4 to 17
   against a 95 % bound of 21 for 12 free parameters, four of the five R2a exceptions would not be
   rejected by a single test at 10⁶ counts, and overdispersion (φ ≈ 1.3) makes that worse. Under Poisson noise (G2)
   the two closest basins (S₁\* 2.3 × 10⁵) have G < 4 in 12 of 20 draws each, the next (8.6 × 10⁴) in
@@ -195,6 +195,14 @@ count levels. ΔD is the Poisson deviance of an endpoint's curve from the true c
 and S₁ = S / ΔD is the count level at R = 1 below which the endpoint is within ΔD = 1 of the truth
 ([registration](../fisher_global/PREREG.md)).
 
+The noisy refits of section 6.6 (G2) use the basin run's refinement (`basin.refine`, budget 3000
+engine evaluations, convergence tests C1 to C4), each minimum polished on the converged forward, as
+registered in [PREREG-G2.md](prereg/PREREG-G2.md). The registration estimated 9 CPU hours (34 s per
+refinement). The run took 62.3 CPU hours: the median refinement took 14 s, but 137 of the 950
+refinements (14 %) ran to the budget and used 81 % of the engine time. On a shared, preemptible queue the
+four workers ran for about 20.5 hours over 52 hours elapsed
+([run notes](../fisher_global/g2/README.md)).
+
 ## 5. Identifiability method
 
 1. **Local.** Fisher information of Poisson counts, `F = Jᵀ diag(counts) J` from the autograd
@@ -283,6 +291,29 @@ exceptions (ΔD 4.3, 4.3, 11.7, 16.5 at 10⁶) are not rejected, and the overdis
 widen this. They are the oxide-in-film ambiguity (Gil and Windover 2012). A parametric bootstrap on
 the ten closest basins (G2c) is planned. In F1's terms 5 of 48 wrong endpoints are objective errors:
 log-MSE prefers them to the maximum-likelihood fit, which is a different cause from search reach.
+
+### 6.6 Noisy curves (G2, pre-registered)
+
+G2 refits Poisson and negative-binomial draws of the truth curve twice, from the truth and from the
+candidate basin's recorded minimum, and scores G = D_basin − D_truth on the same draw
+([PREREG-G2.md](prereg/PREREG-G2.md), written before the run). Converged-forward scores are the
+headline. All 475 registered draws finished without error: 385 Poisson draws over 100 candidates and
+90 negative-binomial draws (φ = 1.34) over 30 candidates ([g2_report.md](../fisher_global/g2/g2_report.md)).
+
+- H-N1 **fails**. In 0.366 of the 385 Poisson draws the minimum reached from the basin start lies within
+  cross-deviance 25 of the recorded noise-free minimum; the hypothesis holds at 0.80 and fails below
+  0.60. Under noise, a refit started at a wrong basin's minimum does not return to that minimum in most
+  draws.
+- H-N2 **holds**. All 285 Poisson draws of the 95 candidates with S₁\* ≤ 10⁴ have G ≥ 25 on the converged
+  and on the engine scores (smallest G 1736).
+- H-N3 **holds**. All 87 negative-binomial draws of the 29 such candidates have G ≥ 25 on both scores
+  (smallest G 1720).
+
+Descriptive, not part of a verdict: the H-N1 fraction is 0.99 for the five near basins (S₁\* > 10⁴) and
+0.15 for the other 95 candidates, whose median cross-deviance is 1292 against a median ΔD₀ of 4.3 × 10⁴.
+For the five near basins G < 4 (not rejected) in 12, 12, 2, 0 and 0 of 20 draws. Fits that stopped at
+the budget do not change the verdicts: among the H-N2 and H-N3 draws, the smallest G with a basin fit
+not confirmed is 2134 ([run notes](../fisher_global/g2/README.md)).
 
 ## 7. Prior work and novelty
 
@@ -459,6 +490,7 @@ content was read in full: the one-line "relevance" comes from the abstract or th
 | C17 | Fisher information is local and misleads globally | prior art | Raue 2009; Gutenkunst 2007; Transtrum 2011 |
 | C18 | Poisson Fisher information for reflectometry | prior art (neutrons) | Durant 2021, 2022 |
 | C19 | The XRR contamination-layer and angle-offset effects restated in Fisher terms | prior art | Gil 2012; Windover 2014 |
+| C20 | Under Poisson and negative-binomial noise, wrong basins with S₁\* ≤ 10⁴ stay rejected (G ≥ 25 in 285 of 285 and 87 of 87 draws), but a refit from a wrong basin's minimum mostly does not return to it (H-N1 fails, 0.366) | checked (pre-registered G2; H-N2, H-N3 hold, H-N1 fails) | section 6.6; [g2_report.md](../fisher_global/g2/g2_report.md) |
 
 ## 13. Gap list: what would make it submittable
 
