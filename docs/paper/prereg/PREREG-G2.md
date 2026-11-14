@@ -124,6 +124,29 @@ of basin-generated draws with T < 0, and the quantiles of T against χ² of 12 f
 not a test, and for how many of the 10 basins are statistically distinguishable at 10⁶ counts.
 Cost: (30 + 15) draws × 2 refinements × 10 basins at 34 s, about 8.5 CPU hours (inference).
 
+### Choices fixed before the G2c run (2026-11-15, written before any G2c fit)
+
+Fixed in `experiments/005_fisher_global/g2c_run.py`, after G2 and G2b had run and before any G2c draw.
+
+- Overdispersion. The G1 run did not produce the per-q-region φ of the repeats (its report gives the
+  median φ, 1.19), so the overdispersed set uses the registered fallback φ = 1.34 and is labelled so.
+  A per-q-region φ computed later from the G1 fits would be a separate descriptive note, not an input here.
+- Draws: per basin 30 Poisson and 30 negative-binomial draws of the truth curve and 15 Poisson draws of
+  the basin curve, 750 in all, taken from the converged forward as in G2; the basin curve is the
+  converged forward at the basin's recorded minimum. Negative-binomial parameters as in G2
+  (n = λ / (φ − 1), p = 1 / φ).
+- Seeds: stage 4 for the truth Poisson draws, 5 for the basin Poisson draws, 6 for the truth
+  negative-binomial draws; the basin index is the position in `g2c_closest`.
+- Fits as in G2: `basin.refine` with the budget of 3000 engine evaluations unchanged, then the
+  converged-forward polish. T is scored on the converged deviances; the engine T is reported next to it.
+- Order: all truth Poisson draws, then all basin Poisson draws, then all negative-binomial draws, so a
+  stop leaves complete sets. The run goes through the test queue as a preemptible job on 4 processes, with
+  one result file per draw and a checkpoint per fit.
+- Cost, revised. The registered 8.5 CPU hours assumed 34 s per refinement and left out the
+  overdispersed set. G2 took 62.3 CPU hours against 9 estimated; its draws on six of these ten basins
+  took 493 s on average (medians per basin 39 to 76 s; the mean is set by fits that run to the budget).
+  At about 490 s per draw the 750 draws need about 100 CPU hours (inference).
+
 ## What would change the paper
 
 - H-N2 fails or G2b's H-M1 fails: the central claim is restricted to noise-free, mismatch-free data and
