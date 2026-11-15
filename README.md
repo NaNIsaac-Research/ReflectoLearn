@@ -54,7 +54,14 @@ uv run reflectolearn train --config config.yaml
 uv run reflectolearn predict measured.txt -k path/to/best.pt   # 2 columns: 2θ or q, intensity
 ```
 
-`predict` writes `<name>_predict.png` and `<name>_predict.txt` next to the input. Evaluation, tuning, stitching, the benchmark and the ONNX export are in [docs/usage.md](docs/usage.md#commands).
+`predict` writes `<name>_predict.png` and `<name>_predict.txt` next to the input.
+
+## Documentation
+
+- [Usage](docs/usage.md): every command (evaluation, tuning, stitching, the benchmark, the ONNX export), the optional GenX fit, the configuration and the package layout.
+- [Training](docs/training.md) and [refinement](docs/refine.md): the simulated batches the CNN trains on, and the staged gradient fit that follows it.
+- [Findings](docs/FINDINGS.md), [reports](docs/reports/README.md) and the [research index](docs/research/README.md): what the registered experiments found, with their data and limits.
+- [Documentation site](https://nanisaac.github.io/docs/reflectolearn/): these pages with a sidebar, as published.
 
 ## Tests
 
