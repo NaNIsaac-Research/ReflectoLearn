@@ -54,7 +54,11 @@ def input_contract(cfg: Config) -> dict:
                     "interpolate the intensity linearly onto q_grid; points outside the measured q "
                     "range are unmeasured (mask 0)"
                 ),
-                "clip the intensity at 0 and divide by its maximum over the measured points",
+                (
+                    "clip the intensity at 0 and divide by its maximum over the measured points "
+                    "(predict's default negative='floor'; negative='mask' instead marks the grid "
+                    "points with negative intensity unmeasured)"
+                ),
                 (
                     "R = max(that, 1e-15); channel 0 = min(log10 R, 0) where measured, log_floor "
                     "elsewhere"

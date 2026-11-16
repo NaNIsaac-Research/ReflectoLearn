@@ -282,6 +282,12 @@ def predict(
     out_dir: Path | None = typer.Option(
         None, "--out-dir", "-o", help="Output folder. Defaults to next to the input file."
     ),
+    negative: str = typer.Option(
+        "floor",
+        "--negative",
+        help="Negative intensity: 'floor' (clip to 0, the 1e-15 floor), 'mask' (unmeasured) "
+        "or 'error'. Written to the _predict.txt record.",
+    ),
 ):
     """Infer one measured XRR curve, optionally refine the physics, and save the prediction + overlay plot."""
     from reflectolearn.predict import predict_file
@@ -302,6 +308,8 @@ def predict(
         raise typer.BadParameter(f"checkpoint not found: {checkpoint}")
     if x_axis not in ("tth", "q"):
         raise typer.BadParameter("--x-axis must be 'tth' or 'q'.")
+    if negative not in ("floor", "mask", "error"):
+        raise typer.BadParameter("--negative must be 'floor', 'mask' or 'error'.")
 
     cfg = _load_config(config_path, [])
     predict_file(
@@ -316,6 +324,7 @@ def predict(
         mcmc_steps=mcmc_steps,
         device=cfg.device,
         out_dir=out_dir,
+        negative=negative,
     )
 
 
