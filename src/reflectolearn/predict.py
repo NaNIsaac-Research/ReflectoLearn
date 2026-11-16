@@ -162,37 +162,73 @@ def _checked_curve(
             f"{q_grid[0]:.4g} to {q_grid[-1]:.4g} (1/Angstrom); check the unit and the argument "
             "order (q first, then intensity)"
         )
-    negative = int(np.sum(intensity < 0))
-    if negative:
-        warnings.warn(
-            f"{negative} of {intensity.size} intensity points are negative and are clipped to 0; "
-            "check the background subtraction",
-            UserWarning,
-            stacklevel=3,
-        )
     return q_meas, intensity
 
 
+#: How preprocess_measured treats negative intensity (after background subtraction, say).
+NEGATIVE_MODES = ("floor", "mask", "error")
+#: The smallest normalised reflectivity the model sees; log10 of it is the input's lower bound.
+R_FLOOR = 1e-15
+
+
 def preprocess_measured(
-    q_meas: np.ndarray, intensity: np.ndarray, cfg: Config, device: torch.device
+    q_meas: np.ndarray,
+    intensity: np.ndarray,
+    cfg: Config,
+    device: torch.device,
+    *,
+    negative: str = "floor",
+    record: dict | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Convert a measured curve into model input (1, 2, Q).
+
+    negative: what a negative intensity becomes.
+        floor : clipped to 0, so it enters the fit at the R_FLOOR floor (log10 = -15)
+        mask  : the grid points where the interpolated intensity is negative are unmeasured
+                (mask 0), like q outside the measured range
+        error : ValueError
+    record: if given, filled with the step applied: negative (the mode), negative_points (measured
+        points below 0), points (measured points) and floor (R_FLOOR).
+
+    The input arrays are not modified.
 
     Returns:
         x      : (1, 2, Q)  [log10-normalized R, mask]  — model input
         r_norm : (1, Q)     reflectivity-like normalized linear values (for refine's log_r_obs)
         mask   : (1, Q)     {0,1} valid-q mask
     """
+    if negative not in NEGATIVE_MODES:
+        raise ValueError(f"negative must be one of {NEGATIVE_MODES}, got {negative!r}")
     q_grid = cfg.q_grid.cpu().numpy()
     q_meas, intensity = _checked_curve(q_meas, intensity, q_grid)
+    n_negative = int(np.sum(intensity < 0))
+    if n_negative:
+        found = f"{n_negative} of {intensity.size} intensity points are negative"
+        if negative == "error":
+            raise ValueError(f"{found}; check the background subtraction (negative='error')")
+        what = "clipped to 0" if negative == "floor" else "left out as unmeasured"
+        warnings.warn(
+            f"{found} and are {what} (negative={negative!r}); check the background subtraction",
+            UserWarning,
+            stacklevel=2,
+        )
+    if record is not None:
+        record.update(
+            negative=negative,
+            negative_points=n_negative,
+            points=int(intensity.size),
+            floor=R_FLOOR,
+        )
     # Interpolate only within the measured q range; outside is NaN -> unmeasured (mask=0).
     i_grid = np.interp(q_grid, q_meas, intensity, left=np.nan, right=np.nan)
     mask = np.isfinite(i_grid)
+    if negative == "mask":
+        mask &= ~(i_grid < 0)
     i_grid = np.clip(np.nan_to_num(i_grid, nan=0.0), 0.0, None)
 
     # Normalize by the max over the measured region to match the synthetic R scale (max~1).
     imax = i_grid[mask].max() if mask.any() else 1.0
-    r_norm = np.clip(i_grid / max(imax, 1e-30), 1e-15, None)
+    r_norm = np.clip(i_grid / max(imax, 1e-30), R_FLOOR, None)
 
     # Same input preprocessing as the training generator.
     r_log = np.clip(np.log10(r_norm), None, 0.0)
@@ -241,16 +277,22 @@ def predict_curve(
     mcmc_steps: int = 0,
     device: torch.device | None = None,
     name: str = "curve",
+    negative: str = "floor",
 ) -> tuple[dict, dict]:
     """AI prediction, refinement (from the AI thickness and, with alias_check, from half and double
     of it) and, with mcmc_steps > 0, posterior sampling for one measured curve.
 
-    Returns (result, curves): result holds the parameters, FOMs and posterior; curves holds the q grid,
-    observed, AI and refined curves and the mask, for plotting.
+    negative is passed to preprocess_measured.
+
+    Returns (result, curves): result holds the parameters, FOMs, posterior and the preprocessing
+    applied; curves holds the q grid, observed, AI and refined curves and the mask, for plotting.
     """
     device = device or cfg.device
     model, mean, std = predictor
-    x, r_obs, mask = preprocess_measured(q_meas, intensity, cfg, device)
+    preprocess: dict = {}
+    x, r_obs, mask = preprocess_measured(
+        q_meas, intensity, cfg, device, negative=negative, record=preprocess
+    )
     q = cfg.q_grid.to(device)
     coverage = float(mask.mean()) * 100
     logger.info(
@@ -347,6 +389,7 @@ def predict_curve(
     fin = p_final.squeeze(0).tolist()
     result = {
         "file": name,
+        "preprocess": preprocess,
         "ai": dict(zip(PARAM_NAMES, ai)),
         "refined": dict(zip(PARAM_NAMES, fin)) if refine_enabled else None,
         "fom_ai": fom_ai,
@@ -378,6 +421,7 @@ def predict_file(
     mcmc_steps: int = 0,
     device: torch.device | None = None,
     out_dir: str | Path | None = None,
+    negative: str = "floor",
 ) -> dict:
     """Infer a single measured file, optionally physics-refine, then save results/plots/summary."""
     path = Path(path)
@@ -398,6 +442,7 @@ def predict_file(
         mcmc_steps=mcmc_steps,
         device=device,
         name=path.name,
+        negative=negative,
     )
     _report(result)
     _save_outputs(
@@ -520,6 +565,11 @@ def _save_outputs(
         v = result["refined"][k] if refine_enabled else result["ai"][k]
         lines.append(f"{k}\t{v:.4f}\t{UNITS[k]}")
     lines.append(f"# FOM(LogMSE)\t{result['fom_refined'] or result['fom_ai']:.6f}")
+    pre = result["preprocess"]
+    lines.append(
+        f"# preprocess negative={pre['negative']} "
+        f"({pre['negative_points']} of {pre['points']} points)"
+    )
     if result.get("posterior"):
         p = result["posterior"]
         for k in PARAM_NAMES:
