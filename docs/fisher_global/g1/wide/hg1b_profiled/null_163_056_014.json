@@ -1,0 +1,1 @@
+{"set": "all_repeats", "target": 56, "source": 14, "dev_unprofiled": 221.31256899780206, "dev_profiled": 40.33755984732592, "nuisances": {"i0": 1.1201438793192726, "b": -0.05043920437089843, "off": -0.00323211405500024, "sigq": 0.001515108112608077}, "forward_calls": 139, "seconds": 7.778162240982056, "off_bound": {"target": false, "source": false}}

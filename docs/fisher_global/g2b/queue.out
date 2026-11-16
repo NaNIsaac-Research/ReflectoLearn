@@ -1,0 +1,10 @@
+test-queue: xrr-g2b runs pwsh -NoProfile -File X:\Dev\NaNIsaac\_wt\ReflectoLearn-xrrpaper/experiments/005_fisher_global/run_workers.ps1 -Script experiments/005_fisher_global/g2b_run.py -Mode run -Workers 1 -LogDir X:\Dev\NaNIsaac\_wt\ReflectoLearn-xrrpaper/docs/fisher_global/g2b
+{
+  "wall_hours": 0.045,
+  "cpu_hours": [
+    0.121
+  ],
+  "peak_rss_gb": [
+    0.84
+  ]
+}

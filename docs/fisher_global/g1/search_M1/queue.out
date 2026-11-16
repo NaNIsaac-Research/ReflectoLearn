@@ -1,0 +1,1 @@
+test-queue: xrr-g1 runs pwsh -NoProfile -File X:\Dev\NaNIsaac\_wt\ReflectoLearn-xrrpaper/experiments/005_fisher_global/run_workers.ps1 -Script experiments/005_fisher_global/g1_run.py -Mode search -Workers 3 -LogDir X:\Dev\NaNIsaac\_wt\ReflectoLearn-xrrpaper/docs/fisher_global/g1/search_M1
